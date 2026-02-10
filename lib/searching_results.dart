@@ -11,14 +11,23 @@ class SearchingResults extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SvgPicture.asset(
-                  'assets/icons/back.svg',
-                  width: 20,
-                  height: 20,
+                // Header
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: SvgPicture.asset(
+                        'assets/icons/back.svg',
+                        width: 20,
+                        height: 20,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                  ],
                 ),
               ],
             ),
