@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'searching_results.dart';
+import 'search_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,6 +10,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: SearchingResults());
+    return MaterialApp(debugShowCheckedModeBanner: false, home: SearchPage());
   }
 }

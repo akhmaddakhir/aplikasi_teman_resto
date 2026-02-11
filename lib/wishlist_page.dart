@@ -91,11 +91,24 @@ class WishlistPage extends StatelessWidget {
                             borderRadius: BorderRadius.vertical(
                               top: Radius.circular(16),
                             ),
-                            child: Image.asset(
-                              'assets/images/melati_restaurant.png',
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
+                            child: Stack(
+                              children: [
+                                Image.asset(
+                                  'assets/images/melati_restaurant.png',
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: SvgPicture.asset(
+                                    'assets/icons/save.svg',
+                                    width: 28,
+                                    height: 28,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Padding(
@@ -222,11 +235,24 @@ class WishlistPage extends StatelessWidget {
                             borderRadius: BorderRadius.vertical(
                               top: Radius.circular(16),
                             ),
-                            child: Image.asset(
-                              'assets/images/melati_restaurant.png',
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
+                            child: Stack(
+                              children: [
+                                Image.asset(
+                                  'assets/images/melati_restaurant.png',
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: SvgPicture.asset(
+                                    'assets/icons/save.svg',
+                                    width: 28,
+                                    height: 28,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Padding(
@@ -353,11 +379,24 @@ class WishlistPage extends StatelessWidget {
                             borderRadius: BorderRadius.vertical(
                               top: Radius.circular(16),
                             ),
-                            child: Image.asset(
-                              'assets/images/melati_restaurant.png',
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
+                            child: Stack(
+                              children: [
+                                Image.asset(
+                                  'assets/images/melati_restaurant.png',
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: SvgPicture.asset(
+                                    'assets/icons/save.svg',
+                                    width: 28,
+                                    height: 28,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Padding(
@@ -484,11 +523,24 @@ class WishlistPage extends StatelessWidget {
                             borderRadius: BorderRadius.vertical(
                               top: Radius.circular(16),
                             ),
-                            child: Image.asset(
-                              'assets/images/melati_restaurant.png',
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
+                            child: Stack(
+                              children: [
+                                Image.asset(
+                                  'assets/images/melati_restaurant.png',
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: SvgPicture.asset(
+                                    'assets/icons/save.svg',
+                                    width: 28,
+                                    height: 28,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Padding(
