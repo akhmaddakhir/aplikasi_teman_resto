@@ -60,7 +60,7 @@ class SearchPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    SizedBox(width: 16),
+                    SizedBox(width: 8),
                     Container(
                       width: 48,
                       height: 48,
@@ -156,6 +156,7 @@ class SearchPage extends StatelessWidget {
                   "Recent View",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
+                SizedBox(height: 12),
                 Column(
                   children: [
                     Container(
@@ -180,7 +181,7 @@ class SearchPage extends StatelessWidget {
                                   Text(
                                     'Melati Restaurant',
                                     style: TextStyle(
-                                      fontSize: 18,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -196,7 +197,7 @@ class SearchPage extends StatelessWidget {
                                       Text(
                                         '25 min',
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 13,
                                           color: Colors.grey,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -205,21 +206,22 @@ class SearchPage extends StatelessWidget {
                                       Text(
                                         "•",
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 13,
                                           color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       SizedBox(width: 10),
                                       SvgPicture.asset(
                                         'assets/icons/bowl_card.svg',
-                                        width: 20,
-                                        height: 20,
+                                        width: 16,
+                                        height: 16,
                                       ),
                                       SizedBox(width: 6),
                                       Text(
                                         'Javanese',
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 13,
                                           color: Colors.grey,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -231,15 +233,223 @@ class SearchPage extends StatelessWidget {
                                     children: [
                                       SvgPicture.asset(
                                         'assets/icons/location_card.svg',
-                                        width: 20,
-                                        height: 20,
+                                        width: 16,
+                                        height: 16,
                                       ),
                                       SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           'Jl. Kahuripan No. 3, Klojen...',
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: 13,
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(
+                      color: Colors.grey.shade300,
+                      thickness: 2,
+                      height: 60,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(color: Colors.white),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              'assets/images/melati_restaurant.png',
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Melati Restaurant',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/clock_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        '25 min',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        "•",
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      SvgPicture.asset(
+                                        'assets/icons/bowl_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Javanese',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/location_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Jl. Kahuripan No. 3, Klojen...',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(
+                      color: Colors.grey.shade300,
+                      thickness: 2,
+                      height: 60,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(color: Colors.white),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              'assets/images/melati_restaurant.png',
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Melati Restaurant',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/clock_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        '25 min',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        "•",
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      SvgPicture.asset(
+                                        'assets/icons/bowl_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Javanese',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/location_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Jl. Kahuripan No. 3, Klojen...',
+                                          style: TextStyle(
+                                            fontSize: 13,
                                             color: Colors.grey,
                                             fontWeight: FontWeight.w500,
                                           ),
