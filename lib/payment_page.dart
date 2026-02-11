@@ -19,6 +19,7 @@ class PaymentPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -26,191 +27,113 @@ class PaymentPage extends StatelessWidget {
                             onTap: () => Navigator.of(context).pop(),
                             child: SvgPicture.asset(
                               'assets/icons/back.svg',
-                              width: 20,
-                              height: 20,
+                              width: 24,
+                              height: 24,
                             ),
                           ),
                           Text(
                             "Payment",
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Container(width: 20),
+                          Container(width: 24),
                         ],
                       ),
+                      SizedBox(height: 24),
+
+                      // Credit Card Section
+                      Text(
+                        "Credit Card",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       SizedBox(height: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Credit Card",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/visa_payment.svg',
-                                width: 14,
-                                height: 14,
-                              ),
-                              SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Visa",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    "***123",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/mastercard_payment.svg',
-                                width: 26,
-                                height: 26,
-                              ),
-                              SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Mastercard",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    "***123",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            "Bank Transfer",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/visa_payment.svg',
-                                width: 14,
-                                height: 14,
-                              ),
-                              SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Visa",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    "***123",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/visa_payment.svg',
-                                width: 14,
-                                height: 14,
-                              ),
-                              SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Visa",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    "***123",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/visa_payment.svg',
-                                width: 14,
-                                height: 14,
-                              ),
-                              SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Visa",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    "***123",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
+                      _buildPaymentItem(
+                        icon: 'assets/icons/visa_payment.svg',
+                        iconSize: 40,
+                        title: 'Visa',
+                        subtitle: '**** **** **** 1234',
+                      ),
+                      SizedBox(height: 12),
+                      _buildPaymentItem(
+                        icon: 'assets/icons/mastercard_payment.svg',
+                        iconSize: 40,
+                        title: 'Mastercard',
+                        subtitle: '**** **** **** 1234',
+                      ),
+                      SizedBox(height: 24),
+
+                      // Bank Transfer Section
+                      Text(
+                        "Bank Transfer",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      _buildPaymentItem(
+                        icon: 'assets/icons/visa_payment.svg',
+                        iconSize: 40,
+                        title: 'BCA',
+                        subtitle: '',
+                      ),
+                      SizedBox(height: 12),
+                      _buildPaymentItem(
+                        icon: 'assets/icons/visa_payment.svg',
+                        iconSize: 40,
+                        title: 'CIMB Niaga',
+                        subtitle: '',
+                      ),
+                      SizedBox(height: 12),
+                      _buildPaymentItem(
+                        icon: 'assets/icons/visa_payment.svg',
+                        iconSize: 40,
+                        title: 'BRI',
+                        subtitle: '',
+                      ),
+                      SizedBox(height: 12),
+                      _buildPaymentItem(
+                        icon: 'assets/icons/visa_payment.svg',
+                        iconSize: 40,
+                        title: 'Bank Syariah Indonesia',
+                        subtitle: '',
+                      ),
+                      SizedBox(height: 12),
+                      _buildPaymentItem(
+                        icon: 'assets/icons/visa_payment.svg',
+                        iconSize: 40,
+                        title: 'Mandiri',
+                        subtitle: '',
+                      ),
+                      SizedBox(height: 24),
+
+                      // E-Wallet Section
+                      Text(
+                        "E-Wallet",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      _buildPaymentItem(
+                        icon: 'assets/icons/visa_payment.svg',
+                        iconSize: 40,
+                        title: 'GoPay',
+                        subtitle: '',
                       ),
                     ],
                   ),
                 ),
               ),
             ),
+
+            // Fixed Bottom Button
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -250,6 +173,53 @@ class PaymentPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentItem({
+    required String icon,
+    required double iconSize,
+    required String title,
+    required String subtitle,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: SvgPicture.asset(icon, width: iconSize, height: iconSize),
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

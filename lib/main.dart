@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'detail_restaurant.dart';
+import 'payment_success.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,9 +10,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: DetailRestoran(),
-    );
+    return MaterialApp(debugShowCheckedModeBanner: false, home: PaymentSuccess());
   }
 }
