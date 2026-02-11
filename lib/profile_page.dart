@@ -83,7 +83,7 @@ class ProfilePage extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              SizedBox(height: 12),
+                              SizedBox(height: 24),
                               Text(
                                 "OmGatot@gmail.com",
                                 style: TextStyle(
@@ -91,6 +91,197 @@ class ProfilePage extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black,
                                 ),
+                              ),
+                              SizedBox(height: 12),
+
+                              Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/icons/location_profile.svg',
+                                            width: 16,
+                                            height: 16,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            "Manage Address",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SvgPicture.asset(
+                                        'assets/icons/next.svg',
+                                        width: 12,
+                                        height: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/icons/payment_profile.svg',
+                                            width: 12,
+                                            height: 12,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            "Payment",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SvgPicture.asset(
+                                        'assets/icons/next.svg',
+                                        width: 12,
+                                        height: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/icons/orders_profile.svg',
+                                            width: 18,
+                                            height: 18,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            "Orders",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SvgPicture.asset(
+                                        'assets/icons/next.svg',
+                                        width: 12,
+                                        height: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/icons/setting_profile.svg',
+                                            width: 16,
+                                            height: 16,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            "Settings",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SvgPicture.asset(
+                                        'assets/icons/next.svg',
+                                        width: 12,
+                                        height: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/icons/language_profile.svg',
+                                            width: 16,
+                                            height: 16,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            "Language",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SvgPicture.asset(
+                                        'assets/icons/next.svg',
+                                        width: 12,
+                                        height: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/icons/help_profile.svg',
+                                            width: 16,
+                                            height: 16,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            "Helps",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SvgPicture.asset(
+                                        'assets/icons/next.svg',
+                                        width: 12,
+                                        height: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -110,13 +301,10 @@ class ProfilePage extends StatelessWidget {
                     children: [
                       Container(
                         padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black,
-                        ),
+                        decoration: BoxDecoration(shape: BoxShape.circle),
                         child: ClipOval(
                           child: SvgPicture.asset(
-                            'assets/icons/avatar_profile.svg',
+                            'assets/images/avatar_profile.svg',
                             width: 130,
                             height: 130,
                             fit: BoxFit.cover,
@@ -127,7 +315,7 @@ class ProfilePage extends StatelessWidget {
                         bottom: 5,
                         right: 5,
                         child: SvgPicture.asset(
-                          'assets/icons/edit_profile.svg',
+                          'assets/images/edit_profile.svg',
                           width: 32,
                           height: 32,
                         ),
