@@ -1,138 +1,68 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'splashscreen_page.dart';
+import 'bottom_navbar.dart';
+import 'home_page.dart';
+import 'search_page.dart';
+import 'wishlist_page.dart';
+import 'profile_page.dart';
 
-class BottomNavbar extends StatelessWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-  final List<NavbarItem> items;
+void main() {
+  runApp(const MyApp());
+}
 
-  const BottomNavbar({
-    super.key,
-    required this.currentIndex,
-    required this.onTap,
-    required this.items,
-  });
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 90, // ⬅️ PENTING: kasih tinggi biar ga putih
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Background Navbar
-          Positioned.fill(
-            top: 20,
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF6B35),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.12),
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: List.generate(
-                    items.length,
-                    (index) => _buildItem(context, index),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Floating Active Icon
-          Positioned(
-            top: 0,
-            left: _getPosition(context),
-            child: _buildFloatingActiveIcon(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  double _getPosition(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final itemWidth = width / items.length;
-    return itemWidth * currentIndex + (itemWidth / 2) - 28;
-  }
-
-  Widget _buildFloatingActiveIcon() {
-    final item = items[currentIndex];
-
-    return GestureDetector(
-      onTap: () => onTap(currentIndex),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: SvgPicture.asset(
-            item.iconPath,
-            width: 26,
-            height: 26,
-            colorFilter: const ColorFilter.mode(
-              Color(0xFFFF6B35),
-              BlendMode.srcIn,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildItem(BuildContext context, int index) {
-    final isActive = currentIndex == index;
-
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width / items.length,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 18),
-
-            Opacity(
-              opacity: isActive ? 0 : 1,
-              child: SvgPicture.asset(
-                items[index].iconPath,
-                width: 22,
-                height: 22,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 4),
-
-            Text(
-              items[index].label,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
-          ],
-        ),
-      ),
+    return MaterialApp(
+      title: 'Aplikasi Teman Restoo',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(useMaterial3: true, primarySwatch: Colors.orange),
+      home: const SplashScreen(),
     );
   }
 }
 
-class NavbarItem {
-  final String iconPath;
-  final String label;
+class MainPage extends StatefulWidget {
+  const MainPage({super.key});
 
-  const NavbarItem({required this.iconPath, required this.label});
+  @override
+  State<MainPage> createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = const [
+    HomePage(),
+    SearchPage(),
+    WishlistPage(),
+    ProfilePage(),
+  ];
+
+  final List<NavbarItem> _navbarItems = const [
+    NavbarItem(iconPath: 'assets/icons/home_navbar.svg', label: 'Home'),
+    NavbarItem(iconPath: 'assets/icons/search_navbar.svg', label: 'Search'),
+    NavbarItem(iconPath: 'assets/icons/save_navbar.svg', label: 'Wishlist'),
+    NavbarItem(iconPath: 'assets/icons/profile_navbar.svg', label: 'Profile'),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavbar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
+        items: _navbarItems,
+      ),
+    );
+  }
 }

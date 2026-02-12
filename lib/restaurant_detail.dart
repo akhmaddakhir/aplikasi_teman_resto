@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'booking_data.dart';
 
 class RestaurantDetail extends StatefulWidget {
   const RestaurantDetail({super.key});
@@ -295,7 +297,6 @@ class RestaurantDetailState extends State<RestaurantDetail>
                         _buildImageItem('assets/images/gambar_resto_2.jpg'),
                         _buildImageItem('assets/images/gambar_makanan_2.jfif'),
                         _buildImageItem('assets/images/gambar_restoran_4.jfif'),
-                        _buildImageItem('assets/images/gambar_makanan_4.jfif'),
                       ],
                     ),
                   ),
@@ -319,66 +320,110 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 ),
                 SizedBox(height: 8),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Color(0xFFFF4F0F),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            color: Colors.white,
-                            size: 16,
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                          SizedBox(width: 4),
-                          Text(
-                            '25 min',
-                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          decoration: BoxDecoration(
+                            color: Color(0xFFFFF3F0),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            children: [
+                              SvgPicture.asset(
+                                'assets/icons/clock_card.svg',
+                                width: 16,
+                                height: 16,
+                                color: Color(0xFFFF4F0F),
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                '1 hour',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFFF4F0F),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Color(0xFFFFF3F0),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              SvgPicture.asset(
+                                'assets/icons/bowl_card.svg',
+                                width: 14,
+                                height: 14,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Javanese',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFFF4F0F),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 8),
-                    Text('•', style: TextStyle(fontSize: 16)),
-                    SizedBox(width: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Color(0xFFFF4F0F),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.restaurant, color: Colors.white, size: 16),
-                          SizedBox(width: 4),
-                          Text(
-                            'Javanese',
-                            style: TextStyle(color: Colors.white, fontSize: 12),
+                    SizedBox(width: 6),
+                    Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icons/rating_card.svg',
+                          width: 16,
+                          height: 16,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '4.8  (26)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
-                    ),
-                    Spacer(),
-                    Icon(Icons.star, color: Color(0xFFFFB800), size: 20),
-                    SizedBox(width: 4),
-                    Text(
-                      '4.8 (256 reviews)',
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
+                SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.location_on, color: Color(0xFFFF4F0F), size: 20),
-                    SizedBox(width: 4),
+                    SvgPicture.asset(
+                      'assets/icons/location_card.svg',
+                      width: 16,
+                      height: 16,
+                    ),
+                    SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'Jl. Kahuripan No. 3, Klojen, Kota Malang, Jawatimur',
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -415,7 +460,12 @@ class RestaurantDetailState extends State<RestaurantDetail>
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => BookingData()),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFFFF4F0F),
                   shape: RoundedRectangleBorder(

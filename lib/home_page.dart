@@ -81,7 +81,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                     Text(
                       "See all",
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -390,7 +394,7 @@ class _HomePageState extends State<HomePage> {
                               child: Stack(
                                 children: [
                                   Image.asset(
-                                    'assets/images/melati_restaurant.png',
+                                    'assets/images/gambar_restoran_5.jfif',
                                     width: double.infinity,
                                     height: 200,
                                     fit: BoxFit.cover,
@@ -544,7 +548,7 @@ class _HomePageState extends State<HomePage> {
                               child: Stack(
                                 children: [
                                   Image.asset(
-                                    'assets/images/melati_restaurant.png',
+                                    'assets/images/gambar_restoran_4.jfif',
                                     width: double.infinity,
                                     height: 200,
                                     fit: BoxFit.cover,
