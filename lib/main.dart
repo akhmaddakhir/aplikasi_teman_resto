@@ -1,16 +1,5 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
-import 'navigate_page.dart';
-import 'booking_cancelled.dart';
-import 'home_page.dart';
-import 'home_page.dart';
-import 'home_page.dart';
-import 'home_page.dart';
-import 'home_page.dart';
-import 'home_page.dart';
-import 'home_page.dart';
-import 'home_page.dart';
-import 'home_page.dart';
+import 'search_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,6 +10,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: HomePage());
+    return MaterialApp(debugShowCheckedModeBanner: false, home: SearchPage());
   }
 }

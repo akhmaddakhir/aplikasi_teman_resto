@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'restaurant_detail.dart';
+import 'choose_location_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -20,28 +22,38 @@ class HomePage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        SvgPicture.asset(
-                          'assets/icons/location.svg',
-                          width: 16,
-                          height: 16,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          "Jakarta",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChooseLocationPage(),
                           ),
-                        ),
-                        SizedBox(width: 6),
-                        SvgPicture.asset(
-                          'assets/icons/next.svg',
-                          width: 12,
-                          height: 12,
-                        ),
-                      ],
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/location.svg',
+                            width: 16,
+                            height: 16,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "Jakarta",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(width: 6),
+                          SvgPicture.asset(
+                            'assets/icons/next.svg',
+                            width: 12,
+                            height: 12,
+                          ),
+                        ],
+                      ),
                     ),
                     SvgPicture.asset(
                       'assets/icons/notification.svg',
@@ -136,50 +148,60 @@ class HomePage extends StatelessWidget {
                                       ),
                                     ),
                                     SizedBox(height: 6),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 10,
-                                          sigmaY: 10,
-                                        ),
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.25,
-                                            ), // transparan
-                                            borderRadius: BorderRadius.circular(
-                                              24,
-                                            ),
-                                            border: Border.all(
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                RestaurantDetail(),
+                                          ),
+                                        );
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(24),
+                                        child: BackdropFilter(
+                                          filter: ImageFilter.blur(
+                                            sigmaX: 10,
+                                            sigmaY: 10,
+                                          ),
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(),
+                                            decoration: BoxDecoration(
                                               color: Colors.white.withOpacity(
-                                                0.35,
+                                                0.25,
+                                              ), // transparan
+                                              borderRadius:
+                                                  BorderRadius.circular(24),
+                                              border: Border.all(
+                                                color: Colors.white.withOpacity(
+                                                  0.35,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          child: IntrinsicHeight(
-                                            child: Stack(
-                                              children: [
-                                                Center(
-                                                  child: Text(
-                                                    'See more',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                            child: IntrinsicHeight(
+                                              child: Stack(
+                                                children: [
+                                                  Center(
+                                                    child: Text(
+                                                      'See more',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                                Positioned(
-                                                  child: SvgPicture.asset(
-                                                    'assets/icons/back_card.svg',
-                                                    width: 32,
-                                                    height: 32,
+                                                  Positioned(
+                                                    child: SvgPicture.asset(
+                                                      'assets/icons/back_card.svg',
+                                                      width: 32,
+                                                      height: 32,
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -251,50 +273,60 @@ class HomePage extends StatelessWidget {
                                       ),
                                     ),
                                     SizedBox(height: 6),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 10,
-                                          sigmaY: 10,
-                                        ),
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.25,
-                                            ), // transparan
-                                            borderRadius: BorderRadius.circular(
-                                              24,
-                                            ),
-                                            border: Border.all(
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                RestaurantDetail(),
+                                          ),
+                                        );
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(24),
+                                        child: BackdropFilter(
+                                          filter: ImageFilter.blur(
+                                            sigmaX: 10,
+                                            sigmaY: 10,
+                                          ),
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(),
+                                            decoration: BoxDecoration(
                                               color: Colors.white.withOpacity(
-                                                0.35,
+                                                0.25,
+                                              ), // transparan
+                                              borderRadius:
+                                                  BorderRadius.circular(24),
+                                              border: Border.all(
+                                                color: Colors.white.withOpacity(
+                                                  0.35,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          child: IntrinsicHeight(
-                                            child: Stack(
-                                              children: [
-                                                Center(
-                                                  child: Text(
-                                                    'See more',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                            child: IntrinsicHeight(
+                                              child: Stack(
+                                                children: [
+                                                  Center(
+                                                    child: Text(
+                                                      'See more',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                                Positioned(
-                                                  child: SvgPicture.asset(
-                                                    'assets/icons/back_card.svg',
-                                                    width: 32,
-                                                    height: 32,
+                                                  Positioned(
+                                                    child: SvgPicture.asset(
+                                                      'assets/icons/back_card.svg',
+                                                      width: 32,
+                                                      height: 32,
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -323,291 +355,311 @@ class HomePage extends StatelessWidget {
                 // Large Card
                 Column(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: Offset(0, 4),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RestaurantDetail(),
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(16),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
                             ),
-                            child: Stack(
-                              children: [
-                                Image.asset(
-                                  'assets/images/melati_restaurant.png',
-                                  width: double.infinity,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: SvgPicture.asset(
-                                    'assets/icons/save.svg',
-                                    width: 28,
-                                    height: 28,
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(16),
+                              ),
+                              child: Stack(
+                                children: [
+                                  Image.asset(
+                                    'assets/images/melati_restaurant.png',
+                                    width: double.infinity,
+                                    height: 200,
+                                    fit: BoxFit.cover,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Melati Restaurant',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: SvgPicture.asset(
+                                      'assets/icons/save.svg',
+                                      width: 28,
+                                      height: 28,
                                     ),
-                                    Row(
-                                      children: [
-                                        SvgPicture.asset(
-                                          'assets/icons/rating_card.svg',
-                                          width: 16,
-                                          height: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Melati Restaurant',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          '4.8',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey,
-                                            fontWeight: FontWeight.bold,
+                                      ),
+                                      Row(
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/icons/rating_card.svg',
+                                            width: 16,
+                                            height: 16,
                                           ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            '4.8',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/clock_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        '25 min',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
                                         ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    SvgPicture.asset(
-                                      'assets/icons/clock_card.svg',
-                                      width: 16,
-                                      height: 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      '25 min',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
                                       ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text(
-                                      "•",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
+                                      SizedBox(width: 12),
+                                      Text(
+                                        "•",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    SvgPicture.asset(
-                                      'assets/icons/bowl_card.svg',
-                                      width: 16,
-                                      height: 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Javanese',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
+                                      SizedBox(width: 12),
+                                      SvgPicture.asset(
+                                        'assets/icons/bowl_card.svg',
+                                        width: 16,
+                                        height: 16,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    SvgPicture.asset(
-                                      'assets/icons/location_card.svg',
-                                      width: 16,
-                                      height: 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Jl. Kahuripan No.3, Klojen, Kota Malang',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Javanese',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/location_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Jl. Kahuripan No.3, Klojen, Kota Malang',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     SizedBox(height: 24),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: Offset(0, 4),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RestaurantDetail(),
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(16),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
                             ),
-                            child: Stack(
-                              children: [
-                                Image.asset(
-                                  'assets/images/melati_restaurant.png',
-                                  width: double.infinity,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: SvgPicture.asset(
-                                    'assets/icons/save.svg',
-                                    width: 28,
-                                    height: 28,
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(16),
+                              ),
+                              child: Stack(
+                                children: [
+                                  Image.asset(
+                                    'assets/images/melati_restaurant.png',
+                                    width: double.infinity,
+                                    height: 200,
+                                    fit: BoxFit.cover,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Melati Restaurant',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: SvgPicture.asset(
+                                      'assets/icons/save.svg',
+                                      width: 28,
+                                      height: 28,
                                     ),
-                                    Row(
-                                      children: [
-                                        SvgPicture.asset(
-                                          'assets/icons/rating_card.svg',
-                                          width: 16,
-                                          height: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Melati Restaurant',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          '4.8',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey,
-                                            fontWeight: FontWeight.bold,
+                                      ),
+                                      Row(
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/icons/rating_card.svg',
+                                            width: 16,
+                                            height: 16,
                                           ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            '4.8',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/clock_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        '25 min',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
                                         ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    SvgPicture.asset(
-                                      'assets/icons/clock_card.svg',
-                                      width: 16,
-                                      height: 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      '25 min',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
                                       ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text(
-                                      "•",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
+                                      SizedBox(width: 12),
+                                      Text(
+                                        "•",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    SvgPicture.asset(
-                                      'assets/icons/bowl_card.svg',
-                                      width: 16,
-                                      height: 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Javanese',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
+                                      SizedBox(width: 12),
+                                      SvgPicture.asset(
+                                        'assets/icons/bowl_card.svg',
+                                        width: 16,
+                                        height: 16,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    SvgPicture.asset(
-                                      'assets/icons/location_card.svg',
-                                      width: 16,
-                                      height: 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Jl. Kahuripan No.3, Klojen, Kota Malang',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Javanese',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/location_card.svg',
+                                        width: 16,
+                                        height: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Jl. Kahuripan No.3, Klojen, Kota Malang',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     SizedBox(height: 24),

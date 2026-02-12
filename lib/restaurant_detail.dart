@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-class DetailRestoran extends StatefulWidget {
-  const DetailRestoran({super.key});
+class RestaurantDetail extends StatefulWidget {
+  const RestaurantDetail({super.key});
 
   @override
-  State<DetailRestoran> createState() => _DetailRestoranState();
+  State<RestaurantDetail> createState() => RestaurantDetailState();
 }
 
-class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProviderStateMixin {
+class RestaurantDetailState extends State<RestaurantDetail>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String selectedFilter = 'Most relevant';
   String searchQuery = '';
@@ -18,67 +19,67 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
       'name': 'Gudeg Jogja',
       'price': 'Rp 25.000',
       'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'Main Course'
+      'category': 'Main Course',
     },
     {
       'name': 'Nasi Goreng Spesial',
       'price': 'Rp 20.000',
       'image': 'assets/images/gambar_makanan_4.jfif',
-      'category': 'Main Course'
+      'category': 'Main Course',
     },
     {
       'name': 'Rawon Daging',
       'price': 'Rp 30.000',
       'image': 'assets/images/gambar_restoran_4.jfif',
-      'category': 'Main Course'
+      'category': 'Main Course',
     },
     {
       'name': 'Ayam Bakar Madu',
       'price': 'Rp 28.000',
       'image': 'assets/images/gambar_restoran_5.jfif',
-      'category': 'Main Course'
+      'category': 'Main Course',
     },
     {
       'name': 'Soto Ayam',
       'price': 'Rp 18.000',
       'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'Main Course'
+      'category': 'Main Course',
     },
     {
       'name': 'Tongseng Ayam',
       'price': 'Rp 28.000',
       'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'Main Course'
+      'category': 'Main Course',
     },
     {
       'name': 'Gado-Gado',
       'price': 'Rp 15.000',
       'image': 'assets/images/gambar_resto_2.jpg',
-      'category': 'Appetizer'
+      'category': 'Appetizer',
     },
     {
       'name': 'Es Teh Manis',
       'price': 'Rp 5.000',
       'image': 'assets/images/gambar_makanan_4.jfif',
-      'category': 'Beverage'
+      'category': 'Beverage',
     },
     {
       'name': 'Kopi Tubruk',
       'price': 'Rp 12.000',
       'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'Beverage'
+      'category': 'Beverage',
     },
     {
       'name': 'Wedang Jahe',
       'price': 'Rp 15.000',
       'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'Beverage'
+      'category': 'Beverage',
     },
     {
       'name': 'Es Dawet',
       'price': 'Rp 10.000',
       'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'Beverage'
+      'category': 'Beverage',
     },
   ];
 
@@ -101,96 +102,108 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
       'date': DateTime(2025, 2, 5),
       'timeAgo': '6 days ago',
       'rating': 5.0,
-      'review': 'Rawonnya enak banget! Bumbunya meresap sempurna dan dagingnya empuk. Tempatnya juga bersih dan nyaman. Pelayanannya ramah. Pasti balik lagi!',
-      'likes': 45
+      'review':
+          'Rawonnya enak banget! Bumbunya meresap sempurna dan dagingnya empuk. Tempatnya juga bersih dan nyaman. Pelayanannya ramah. Pasti balik lagi!',
+      'likes': 45,
     },
     {
       'name': 'Siti Nurhaliza',
       'date': DateTime(2025, 1, 28),
       'timeAgo': '2 weeks ago',
       'rating': 4.5,
-      'review': 'Soto ayamnya recommended banget. Kuahnya seger, isian komplit. Harga sesuai dengan rasa. Cuma kadang pas weekend agak rame jadi harus nunggu.',
-      'likes': 38
+      'review':
+          'Soto ayamnya recommended banget. Kuahnya seger, isian komplit. Harga sesuai dengan rasa. Cuma kadang pas weekend agak rame jadi harus nunggu.',
+      'likes': 38,
     },
     {
       'name': 'Ahmad Fauzi',
       'date': DateTime(2025, 1, 15),
       'timeAgo': '3 weeks ago',
       'rating': 5.0,
-      'review': 'Pertama kali ke sini langsung jatuh cinta sama nasi gorengnya. Porsinya banyak, bumbu pas, ga terlalu asin. Harga terjangkau untuk mahasiswa.',
-      'likes': 52
+      'review':
+          'Pertama kali ke sini langsung jatuh cinta sama nasi gorengnya. Porsinya banyak, bumbu pas, ga terlalu asin. Harga terjangkau untuk mahasiswa.',
+      'likes': 52,
     },
     {
       'name': 'Dewi Lestari',
       'date': DateTime(2024, 12, 20),
       'timeAgo': '1 month ago',
       'rating': 4.0,
-      'review': 'Tempatnya cozy buat makan keluarga. Menu variatif, semuanya enak-enak. Ayam bakar madunya juara! Cuma parkir agak susah kalau weekend.',
-      'likes': 29
+      'review':
+          'Tempatnya cozy buat makan keluarga. Menu variatif, semuanya enak-enak. Ayam bakar madunya juara! Cuma parkir agak susah kalau weekend.',
+      'likes': 29,
     },
     {
       'name': 'Rizki Pratama',
       'date': DateTime(2024, 12, 10),
       'timeAgo': '2 months ago',
       'rating': 5.0,
-      'review': 'Salah satu resto Jawa terbaik di Malang! Semua menu yang pernah saya coba selalu konsisten enak. Gudeg Jogjanya authentic banget. Highly recommended!',
-      'likes': 67
+      'review':
+          'Salah satu resto Jawa terbaik di Malang! Semua menu yang pernah saya coba selalu konsisten enak. Gudeg Jogjanya authentic banget. Highly recommended!',
+      'likes': 67,
     },
     {
       'name': 'Linda Wijaya',
       'date': DateTime(2024, 11, 25),
       'timeAgo': '2 months ago',
       'rating': 3.5,
-      'review': 'Makanannya enak sih, tapi pas kemarin datang pelayanannya agak lama. Mungkin karena lagi rame. Overall masih worth it.',
-      'likes': 15
+      'review':
+          'Makanannya enak sih, tapi pas kemarin datang pelayanannya agak lama. Mungkin karena lagi rame. Overall masih worth it.',
+      'likes': 15,
     },
     {
       'name': 'Eko Prasetyo',
       'date': DateTime(2024, 11, 10),
       'timeAgo': '3 months ago',
       'rating': 4.5,
-      'review': 'Gado-gadonya mantap! Bumbu kacangnya thick dan gurih. Porsi sayurnya generous. Cocok buat yang vegetarian.',
-      'likes': 31
+      'review':
+          'Gado-gadonya mantap! Bumbu kacangnya thick dan gurih. Porsi sayurnya generous. Cocok buat yang vegetarian.',
+      'likes': 31,
     },
     {
       'name': 'Maya Kusuma',
       'date': DateTime(2024, 10, 28),
       'timeAgo': '3 months ago',
       'rating': 5.0,
-      'review': 'Restoran keluarga favorit kami. Anak-anak suka banget sama soto ayamnya. Suasana tenang, cocok untuk ngobrol santai sambil makan.',
-      'likes': 41
+      'review':
+          'Restoran keluarga favorit kami. Anak-anak suka banget sama soto ayamnya. Suasana tenang, cocok untuk ngobrol santai sambil makan.',
+      'likes': 41,
     },
     {
       'name': 'Doni Setiawan',
       'date': DateTime(2024, 10, 15),
       'timeAgo': '4 months ago',
       'rating': 3.0,
-      'review': 'Rasa standar, ga terlalu spesial. Harga agak mahal untuk porsi yang didapat. Tapi tempatnya bersih dan AC-nya dingin.',
-      'likes': 8
+      'review':
+          'Rasa standar, ga terlalu spesial. Harga agak mahal untuk porsi yang didapat. Tapi tempatnya bersih dan AC-nya dingin.',
+      'likes': 8,
     },
     {
       'name': 'Putri Anggraini',
       'date': DateTime(2024, 9, 30),
       'timeAgo': '4 months ago',
       'rating': 4.5,
-      'review': 'Wedang jahenya the best! Hangat dan pas banget buat musim hujan. Kopi tubruknya juga mantap, ga terlalu pahit. Cocok buat yang suka kopi tradisional.',
-      'likes': 28
+      'review':
+          'Wedang jahenya the best! Hangat dan pas banget buat musim hujan. Kopi tubruknya juga mantap, ga terlalu pahit. Cocok buat yang suka kopi tradisional.',
+      'likes': 28,
     },
     {
       'name': 'Hendra Gunawan',
       'date': DateTime(2024, 9, 10),
       'timeAgo': '5 months ago',
       'rating': 5.0,
-      'review': 'Sudah langganan di sini hampir setahun. Kualitas makanan selalu terjaga. Staff ramah dan helpful. Tempat favorit untuk acara keluarga!',
-      'likes': 73
+      'review':
+          'Sudah langganan di sini hampir setahun. Kualitas makanan selalu terjaga. Staff ramah dan helpful. Tempat favorit untuk acara keluarga!',
+      'likes': 73,
     },
     {
       'name': 'Ratna Sari',
       'date': DateTime(2024, 8, 20),
       'timeAgo': '6 months ago',
       'rating': 4.0,
-      'review': 'Tempatnya instagramable, cocok buat foto-foto. Makanannya juga ga mengecewakan. Tongseng ayamnya enak, bumbunya meresap sempurna.',
-      'likes': 35
+      'review':
+          'Tempatnya instagramable, cocok buat foto-foto. Makanannya juga ga mengecewakan. Tongseng ayamnya enak, bumbunya meresap sempurna.',
+      'likes': 35,
     },
   ];
 
@@ -219,7 +232,7 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
   // Filter reviews berdasarkan filter yang dipilih
   List<Map<String, dynamic>> getFilteredReviews() {
     List<Map<String, dynamic>> filtered = List.from(allReviews);
-    
+
     switch (selectedFilter) {
       case 'Newest':
         filtered.sort((a, b) => b['date'].compareTo(a['date']));
@@ -235,7 +248,7 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
         filtered.sort((a, b) => b['likes'].compareTo(a['likes']));
         break;
     }
-    
+
     return filtered;
   }
 
@@ -315,7 +328,11 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.access_time, color: Colors.white, size: 16),
+                          Icon(
+                            Icons.access_time,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             '25 min',
@@ -415,7 +432,7 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
                 ),
               ),
             ),
-          ), 
+          ),
         ],
       ),
     );
@@ -438,7 +455,7 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
 
   Widget _buildMenuTab() {
     final filteredMenu = getFilteredMenu();
-    
+
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -525,10 +542,7 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
                       SizedBox(height: 8),
                       Text(
                         'Coba cari dengan kata kunci lain',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[400],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                       ),
                     ],
                   ),
@@ -690,11 +704,7 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
       padding: EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.black87,
-          height: 1.5,
-        ),
+        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
       ),
     );
   }
@@ -732,7 +742,7 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
 
   Widget _buildReviewTab() {
     final filteredReviews = getFilteredReviews();
-    
+
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -770,7 +780,10 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('Most relevant', selectedFilter == 'Most relevant'),
+                  _buildFilterChip(
+                    'Most relevant',
+                    selectedFilter == 'Most relevant',
+                  ),
                   SizedBox(width: 8),
                   _buildFilterChip('Newest', selectedFilter == 'Newest'),
                   SizedBox(width: 8),
@@ -781,16 +794,20 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
               ),
             ),
             SizedBox(height: 16),
-            ...filteredReviews.map((review) => Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: _buildReviewItem(
-                review['name'],
-                review['timeAgo'],
-                review['rating'],
-                review['review'],
-                review['likes'],
-              ),
-            )).toList(),
+            ...filteredReviews
+                .map(
+                  (review) => Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: _buildReviewItem(
+                      review['name'],
+                      review['timeAgo'],
+                      review['rating'],
+                      review['review'],
+                      review['likes'],
+                    ),
+                  ),
+                )
+                .toList(),
           ],
         ),
       ),
@@ -824,7 +841,13 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
     );
   }
 
-  Widget _buildReviewItem(String name, String time, double rating, String review, int likes) {
+  Widget _buildReviewItem(
+    String name,
+    String time,
+    double rating,
+    String review,
+    int likes,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -854,10 +877,7 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
                   ),
                   Text(
                     time,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.black54),
                   ),
                 ],
               ),
@@ -866,11 +886,23 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
                 children: [
                   ...List.generate(5, (index) {
                     if (index < rating.floor()) {
-                      return Icon(Icons.star, color: Color(0xFFFFB800), size: 14);
+                      return Icon(
+                        Icons.star,
+                        color: Color(0xFFFFB800),
+                        size: 14,
+                      );
                     } else if (index < rating) {
-                      return Icon(Icons.star_half, color: Color(0xFFFFB800), size: 14);
+                      return Icon(
+                        Icons.star_half,
+                        color: Color(0xFFFFB800),
+                        size: 14,
+                      );
                     } else {
-                      return Icon(Icons.star_border, color: Color(0xFFFFB800), size: 14);
+                      return Icon(
+                        Icons.star_border,
+                        color: Color(0xFFFFB800),
+                        size: 14,
+                      );
                     }
                   }),
                   SizedBox(width: 4),
@@ -896,14 +928,15 @@ class _DetailRestoranState extends State<DetailRestoran> with SingleTickerProvid
               SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.thumb_up_outlined, size: 14, color: Colors.black54),
+                  Icon(
+                    Icons.thumb_up_outlined,
+                    size: 14,
+                    color: Colors.black54,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'Helpful ($likes)',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.black54),
                   ),
                 ],
               ),
