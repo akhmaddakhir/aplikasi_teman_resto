@@ -34,7 +34,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
     'Casual Dining',
     'Date Night',
     'Family Gathering',
-    'Other'
+    'Other',
   ];
 
   @override
@@ -85,8 +85,11 @@ class _BookingFormPageState extends State<BookingFormPage> {
                     /// EMAIL
                     const Text('Email'),
                     const SizedBox(height: 8),
-                    _buildInput(_emailController, 'Enter Email',
-                        keyboard: TextInputType.emailAddress),
+                    _buildInput(
+                      _emailController,
+                      'Enter Email',
+                      keyboard: TextInputType.emailAddress,
+                    ),
 
                     const SizedBox(height: 20),
 
@@ -106,10 +109,12 @@ class _BookingFormPageState extends State<BookingFormPage> {
                               value: _selectedCountryCode,
                               underline: const SizedBox(),
                               items: _countryCodes
-                                  .map((code) => DropdownMenuItem(
-                                        value: code,
-                                        child: Text(code),
-                                      ))
+                                  .map(
+                                    (code) => DropdownMenuItem(
+                                      value: code,
+                                      child: Text(code),
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (value) {
                                 setState(() {
@@ -157,10 +162,9 @@ class _BookingFormPageState extends State<BookingFormPage> {
                           ),
                         ),
                         items: _occasions
-                            .map((e) => DropdownMenuItem(
-                                  value: e,
-                                  child: Text(e),
-                                ))
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
                             .toList(),
                         onChanged: (value) {
                           setState(() {
@@ -180,7 +184,6 @@ class _BookingFormPageState extends State<BookingFormPage> {
               padding: const EdgeInsets.all(24),
               child: SizedBox(
                 width: double.infinity,
-                height: 56,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
@@ -198,14 +201,16 @@ class _BookingFormPageState extends State<BookingFormPage> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF4F0F),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(24),
                     ),
                   ),
                   child: const Text(
                     'Continue',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
                   ),
@@ -218,8 +223,11 @@ class _BookingFormPageState extends State<BookingFormPage> {
     );
   }
 
-  Widget _buildInput(TextEditingController controller, String hint,
-      {TextInputType keyboard = TextInputType.text}) {
+  Widget _buildInput(
+    TextEditingController controller,
+    String hint, {
+    TextInputType keyboard = TextInputType.text,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF5F5F5),
@@ -231,8 +239,10 @@ class _BookingFormPageState extends State<BookingFormPage> {
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );

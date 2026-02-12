@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -29,9 +28,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _handleSocialLogin(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Login dengan $provider')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Login dengan $provider')));
   }
 
   @override
@@ -46,50 +45,38 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 50),
+                const SizedBox(height: 20),
 
                 // Back Button
                 Row(
                   children: [
                     InkWell(
-                      borderRadius: BorderRadius.circular(20),
                       onTap: () => Navigator.pop(context),
-                      child: const SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: Icon(
-                          Icons.arrow_back_ios,
-                          size: 20,
-                        ),
+                      child: SvgPicture.asset(
+                        'assets/icons/back.svg',
+                        width: 20,
+                        height: 20,
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 28),
 
                 // Title
                 const Text(
                   'Register',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Create your account',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
                 ),
 
-                const SizedBox(height: 50),
-
-                // Full Name
+                const SizedBox(height: 32),
                 const Text(
                   'Full Name',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
@@ -213,26 +200,29 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 40),
 
                 // Register Button
-                ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      Navigator.pushNamed(context, '/complete-profile');
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5722),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        Navigator.pushNamed(context, '/complete-profile');
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Register',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                    child: const Text(
+                      'Register',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -286,12 +276,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
+                        Navigator.pushNamed(context, '/login');
                       },
                       child: const Text(
                         'Sign In',
@@ -318,15 +303,12 @@ class _RegisterPageState extends State<RegisterPage> {
   InputDecoration _inputDecoration({Widget? suffixIcon}) {
     return InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFF0F0F0),
+      fillColor: const Color(0xFFF5F5F5),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       suffixIcon: suffixIcon,
     );
   }
@@ -340,11 +322,7 @@ class _RegisterPageState extends State<RegisterPage> {
       borderRadius: BorderRadius.circular(50),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: SvgPicture.asset(
-          assetPath,
-          width: 28,
-          height: 28,
-        ),
+        child: SvgPicture.asset(assetPath, width: 28, height: 28),
       ),
     );
   }

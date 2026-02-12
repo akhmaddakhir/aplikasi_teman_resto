@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
@@ -36,20 +37,45 @@ class TableBookingState extends State<TableBooking>
   final Map<String, bool> _reservedTables = {
     // Floor 1
     'T-01': true,
+    'T-02': false,
+    'T-03': false,
     'T-04': true,
+    'T-05': false,
     'T-06': true,
     'T-07': true,
     'T-08': true,
+    'T-09': false,
+    'T-10': false,
+    'T-11': false,
+    'T-12': false,
+    'T-13': false,
+    'T-14': false,
     // Floor 2
+    'T-01-F2': false,
+    'T-02-F2': false,
+    'T-03-F2': false,
     'T-03-L': true,
     'T-03-R': true,
-    'T-04-C': true, // center large circle
-    'T-05-R': true, // bottom right long table
+    'T-04-C': true,
+    'T-04-L': false,
+    'T-04-R': false,
+    'T-05-F2': false,
+    'T-05-L': false,
+    'T-05-R': true,
+    'T-06-F2': false,
+    'T-07-F2': false,
     // Floor 3
+    'T-01-F3': false,
     'T-02-F3': true,
+    'T-03-F3': false,
     'T-04-F3': true,
-    'T-06-F3': true, // center large circle
+    'T-05-F3': false,
+    'T-06-F3': true,
+    'T-07-F3': false,
     'T-08-F3': true,
+    'T-09-F3': false,
+    'T-10-F3': false,
+    'T-11-F3': false,
   };
 
   @override
@@ -75,24 +101,23 @@ class TableBookingState extends State<TableBooking>
           children: [
             // ── HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(25, 30, 25, 20),
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Book a Table',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: SvgPicture.asset(
+                      'assets/icons/back.svg',
+                      width: 20,
+                      height: 20,
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  Text(
+                    'Select Table',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Container(width: 20),
                 ],
               ),
             ),
@@ -140,7 +165,6 @@ class TableBookingState extends State<TableBooking>
               padding: const EdgeInsets.all(16),
               child: SizedBox(
                 width: double.infinity,
-                height: 55,
                 child: ElevatedButton(
                   onPressed: () {
                     if (_selectedTable == null) {
@@ -159,13 +183,18 @@ class TableBookingState extends State<TableBooking>
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF4F0F),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(24),
                     ),
                   ),
                   child: const Text(
                     'Book a table',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -287,23 +316,30 @@ class TableBookingState extends State<TableBooking>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _longTableVertical("T-03-L", _isReserved("T-03-L")),
+              SizedBox(
+                width: 100,
+                child: _longTableVertical("T-03-L", _isReserved("T-03-L")),
+              ),
               Expanded(
                 child: Column(
                   children: [
-                    _circleTable("T-01", _isReserved("T-01"), 70),
+                    _circleTable("T-01-F2", _isReserved("T-01-F2"), 70),
                     const SizedBox(height: 44),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _circleTable("T-02", _isReserved("T-02"), 60),
-                        _circleTable("T-03", _isReserved("T-03"), 60),
+                        _circleTable("T-02-F2", _isReserved("T-02-F2"), 60),
+                        const SizedBox(width: 20),
+                        _circleTable("T-03-F2", _isReserved("T-03-F2"), 60),
                       ],
                     ),
                   ],
                 ),
               ),
-              _longTableVertical("T-03-R", _isReserved("T-03-R")),
+              SizedBox(
+                width: 100,
+                child: _longTableVertical("T-03-R", _isReserved("T-03-R")),
+              ),
             ],
           ),
           const SizedBox(height: 64),
@@ -313,9 +349,15 @@ class TableBookingState extends State<TableBooking>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _longTableVertical("T-04-L", _isReserved("T-04-L")),
+              SizedBox(
+                width: 100,
+                child: _longTableVertical("T-04-L", _isReserved("T-04-L")),
+              ),
               _circleTable("T-04-C", _isReserved("T-04-C"), 120),
-              _longTableVertical("T-04-R", _isReserved("T-04-R")),
+              SizedBox(
+                width: 100,
+                child: _longTableVertical("T-04-R", _isReserved("T-04-R")),
+              ),
             ],
           ),
           const SizedBox(height: 64),
@@ -325,23 +367,30 @@ class TableBookingState extends State<TableBooking>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _longTableVertical("T-05-L", _isReserved("T-05-L")),
+              SizedBox(
+                width: 100,
+                child: _longTableVertical("T-05-L", _isReserved("T-05-L")),
+              ),
               Expanded(
                 child: Column(
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _circleTable("T-06", _isReserved("T-06"), 60),
-                        _circleTable("T-07", _isReserved("T-07"), 60),
+                        _circleTable("T-06-F2", _isReserved("T-06-F2"), 60),
+                        const SizedBox(width: 20),
+                        _circleTable("T-07-F2", _isReserved("T-07-F2"), 60),
                       ],
                     ),
                     const SizedBox(height: 44),
-                    _circleTable("T-05", _isReserved("T-05"), 70),
+                    _circleTable("T-05-F2", _isReserved("T-05-F2"), 70),
                   ],
                 ),
               ),
-              _longTableVertical("T-05-R", _isReserved("T-05-R")),
+              SizedBox(
+                width: 100,
+                child: _longTableVertical("T-05-R", _isReserved("T-05-R")),
+              ),
             ],
           ),
         ],
@@ -359,23 +408,28 @@ class TableBookingState extends State<TableBooking>
         children: [
           // ── TOP ROW: 2 Rectangle Tables ──
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _rectangleTableWithChairs("T-01-F3", _isReserved("T-01-F3")),
-              const SizedBox(width: 60),
+              const SizedBox(width: 40),
               _rectangleTableWithChairs("T-02-F3", _isReserved("T-02-F3")),
             ],
           ),
           const SizedBox(height: 40),
 
           // ── SECOND ROW: 3 Circle Tables ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _circleTable("T-03-F3", _isReserved("T-03-F3"), 70),
-              _circleTable("T-04-F3", _isReserved("T-04-F3"), 70),
-              _circleTable("T-05-F3", _isReserved("T-05-F3"), 70),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _circleTable("T-03-F3", _isReserved("T-03-F3"), 70),
+                const SizedBox(width: 20),
+                _circleTable("T-04-F3", _isReserved("T-04-F3"), 70),
+                const SizedBox(width: 20),
+                _circleTable("T-05-F3", _isReserved("T-05-F3"), 70),
+              ],
+            ),
           ),
           const SizedBox(height: 40),
 
@@ -384,22 +438,27 @@ class TableBookingState extends State<TableBooking>
           const SizedBox(height: 40),
 
           // ── FOURTH ROW: 3 Circle Tables ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _circleTable("T-07-F3", _isReserved("T-07-F3"), 70),
-              _circleTable("T-08-F3", _isReserved("T-08-F3"), 70),
-              _circleTable("T-09-F3", _isReserved("T-09-F3"), 70),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _circleTable("T-07-F3", _isReserved("T-07-F3"), 70),
+                const SizedBox(width: 20),
+                _circleTable("T-08-F3", _isReserved("T-08-F3"), 70),
+                const SizedBox(width: 20),
+                _circleTable("T-09-F3", _isReserved("T-09-F3"), 70),
+              ],
+            ),
           ),
           const SizedBox(height: 40),
 
           // ── BOTTOM ROW: 2 Rectangle Tables ──
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _rectangleTableWithChairs("T-10-F3", _isReserved("T-10-F3")),
-              const SizedBox(width: 60),
+              const SizedBox(width: 40),
               _rectangleTableWithChairs("T-11-F3", _isReserved("T-11-F3")),
             ],
           ),

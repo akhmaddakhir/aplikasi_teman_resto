@@ -121,14 +121,14 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                         hintText: 'Ex. Joshua Hong',
                         hintStyle: TextStyle(color: Colors.grey[400]),
                         filled: true,
-                        fillColor: const Color(0xFFF0F0F0),
+                        fillColor: const Color(0xFFF5F5F5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 16,
+                          vertical: 14,
                         ),
                       ),
                     ),
@@ -159,10 +159,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             underline: const SizedBox(),
                             icon: const Icon(Icons.keyboard_arrow_down),
                             items: ['+62', '+1', '+44', '+81', '+86']
-                                .map((code) => DropdownMenuItem(
-                                      value: code,
-                                      child: Text(code),
-                                    ))
+                                .map(
+                                  (code) => DropdownMenuItem(
+                                    value: code,
+                                    child: Text(code),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               setState(() {
@@ -181,14 +183,14 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               hintText: 'Enter Phone Number',
                               hintStyle: TextStyle(color: Colors.grey[400]),
                               filled: true,
-                              fillColor: const Color(0xFFF0F0F0),
+                              fillColor: const Color(0xFFF5F5F5),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
-                                vertical: 16,
+                                vertical: 14,
                               ),
                             ),
                           ),
@@ -212,28 +214,30 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       initialValue: selectedGender,
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: const Color(0xFFF0F0F0),
+                        fillColor: const Color(0xFFF5F5F5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 16,
+                          vertical: 14,
                         ),
                       ),
                       items: ['Select', 'Male', 'Female', 'Other']
-                          .map((gender) => DropdownMenuItem(
-                                value: gender,
-                                child: Text(
-                                  gender,
-                                  style: TextStyle(
-                                    color: gender == 'Select'
-                                        ? Colors.grey[400]
-                                        : Colors.black,
-                                  ),
+                          .map(
+                            (gender) => DropdownMenuItem(
+                              value: gender,
+                              child: Text(
+                                gender,
+                                style: TextStyle(
+                                  color: gender == 'Select'
+                                      ? Colors.grey[400]
+                                      : Colors.black,
                                 ),
-                              ))
+                              ),
+                            ),
+                          )
                           .toList(),
                       onChanged: (value) {
                         setState(() {
@@ -249,7 +253,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           Navigator.pushNamed(
-                              context, '/notification-permission');
+                            context,
+                            '/notification-permission',
+                          );
                         }
                       },
                       style: ElevatedButton.styleFrom(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'booking_data.dart';
+import 'review_page.dart';
 
 class RestaurantDetail extends StatefulWidget {
   const RestaurantDetail({super.key});
@@ -436,6 +437,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
             labelColor: Color(0xFFFF4F0F),
             unselectedLabelColor: Colors.black54,
             indicatorColor: Color(0xFFFF4F0F),
+            dividerColor: Colors.transparent,
             tabs: [
               Tab(text: 'Menu'),
               Tab(text: 'About'),
@@ -458,7 +460,6 @@ class RestaurantDetailState extends State<RestaurantDetail>
             padding: EdgeInsets.all(16),
             child: SizedBox(
               width: double.infinity,
-              height: 56,
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -468,15 +469,16 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFFFF4F0F),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                 ),
                 child: Text(
                   'Book a table',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
                 ),
@@ -702,15 +704,22 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ),
             ),
             SizedBox(height: 12),
-            Text(
-              'Pawon Njawi adalah restoran masakan Jawa yang telah berdiri sejak tahun 2015 di jantung kota Malang. Kami berkomitmen untuk menyajikan hidangan tradisional Jawa dengan cita rasa autentik dan kualitas terbaik.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                height: 1.6,
+            Container(
+              padding: EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Color(0xFFFFF3F0),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Pawon Njawi adalah restoran masakan Jawa yang telah berdiri sejak tahun 2015 di jantung kota Malang. Kami berkomitmen untuk menyajikan hidangan tradisional Jawa dengan cita rasa autentik dan kualitas terbaik.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  height: 1.6,
+                ),
               ),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 20),
             Text(
               'Mengapa Memilih Kami?',
               style: TextStyle(
@@ -719,13 +728,13 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 color: Colors.black,
               ),
             ),
-            SizedBox(height: 8),
-            _buildAboutPoint('✓ Bahan baku segar dan berkualitas'),
-            _buildAboutPoint('✓ Resep turun temurun yang otentik'),
-            _buildAboutPoint('✓ Suasana nyaman dan bersih'),
-            _buildAboutPoint('✓ Harga terjangkau'),
-            _buildAboutPoint('✓ Pelayanan ramah dan profesional'),
-            SizedBox(height: 16),
+            SizedBox(height: 12),
+            _buildAboutPoint('Bahan baku segar dan berkualitas'),
+            _buildAboutPoint('Resep turun temurun yang otentik'),
+            _buildAboutPoint('Suasana nyaman dan bersih'),
+            _buildAboutPoint('Harga terjangkau'),
+            _buildAboutPoint('Pelayanan ramah dan profesional'),
+            SizedBox(height: 20),
             Text(
               'Jam Operasional',
               style: TextStyle(
@@ -734,13 +743,31 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 color: Colors.black,
               ),
             ),
-            SizedBox(height: 8),
-            Text(
-              'Senin - Minggu: 10.00 - 22.00 WIB',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                height: 1.6,
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/icons/clock_card.svg',
+                    width: 20,
+                    height: 20,
+                    color: Color(0xFFFF4F0F),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Senin - Minggu: 10.00 - 22.00 WIB',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -751,10 +778,30 @@ class RestaurantDetailState extends State<RestaurantDetail>
 
   Widget _buildAboutPoint(String text) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+      padding: EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            margin: EdgeInsets.only(top: 8, right: 12),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFFF4F0F),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -811,7 +858,12 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ReviewPage()),
+                    );
+                  },
                   child: Row(
                     children: [
                       Icon(Icons.edit, size: 16, color: Colors.black54),
@@ -825,7 +877,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -843,7 +895,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 20),
             ...filteredReviews
                 .map(
                   (review) => Padding(
@@ -935,13 +987,15 @@ class RestaurantDetailState extends State<RestaurantDetail>
               Row(
                 children: [
                   ...List.generate(5, (index) {
-                    if (index < rating.floor()) {
+                    final thresholdFull = index + 1.0;
+                    final thresholdHalf = index + 0.5;
+                    if (rating >= thresholdFull) {
                       return Icon(
                         Icons.star,
                         color: Color(0xFFFFB800),
                         size: 14,
                       );
-                    } else if (index < rating) {
+                    } else if (rating >= thresholdHalf) {
                       return Icon(
                         Icons.star_half,
                         color: Color(0xFFFFB800),

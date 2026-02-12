@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'table_booking.dart';
 
@@ -30,11 +31,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
   String? _timeError;
 
   // ===== AVAILABLE PERIODS (ubah sesuai kebutuhan restoran) =====
-  final List<String> _availablePeriods = [
-    'breakfast',
-    'lunch',
-    'dinner',
-  ];
+  final List<String> _availablePeriods = ['breakfast', 'lunch', 'dinner'];
 
   // ===== SLOT DATA =====
   final List<String> _breakfastSlots = [
@@ -71,10 +68,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
   ];
 
   // Simulasi slot yang tidak tersedia
-  final List<String> _unavailableSlots = [
-    '12:00 PM',
-    '07:00 PM',
-  ];
+  final List<String> _unavailableSlots = ['12:00 PM', '07:00 PM'];
 
   @override
   void initState() {
@@ -118,11 +112,11 @@ class _BookingAddPageState extends State<BookingAddPage> {
 
   void _continueBooking() {
     setState(() {
-      _dateError =
-          _pickedDate == null ? 'Please select the date first.' : null;
+      _dateError = _pickedDate == null ? 'Please select the date first.' : null;
 
-      _timeError =
-          _selectedTime == null ? 'Please select the time first.' : null;
+      _timeError = _selectedTime == null
+          ? 'Please select the time first.'
+          : null;
     });
 
     if (_dateError != null || _timeError != null) return;
@@ -156,7 +150,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
       'September',
       'Oktober',
       'November',
-      'Desember'
+      'Desember',
     ];
     return months[month - 1];
   }
@@ -183,8 +177,11 @@ class _BookingAddPageState extends State<BookingAddPage> {
   Widget _buildDateSection() {
     final now = DateTime.now();
     final todayFlat = DateTime(now.year, now.month, now.day);
-    final daysInMonth =
-        DateTime(_selectedDate.year, _selectedDate.month + 1, 0).day;
+    final daysInMonth = DateTime(
+      _selectedDate.year,
+      _selectedDate.month + 1,
+      0,
+    ).day;
     final firstDayOfWeek =
         DateTime(_selectedDate.year, _selectedDate.month, 1).weekday % 7;
     const dayLabels = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
@@ -279,16 +276,17 @@ class _BookingAddPageState extends State<BookingAddPage> {
                     );
                     final isPast = thisDate.isBefore(todayFlat);
                     final isToday = _isSameDay(thisDate, todayFlat);
-                    final isSel = _pickedDate != null &&
+                    final isSel =
+                        _pickedDate != null &&
                         _isSameDay(thisDate, _pickedDate!);
 
                     return GestureDetector(
                       onTap: isPast
                           ? null
                           : () => setState(() {
-                                _pickedDate = thisDate;
-                                _dateError = null;
-                              }),
+                              _pickedDate = thisDate;
+                              _dateError = null;
+                            }),
                       child: Center(
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 160),
@@ -300,13 +298,14 @@ class _BookingAddPageState extends State<BookingAddPage> {
                             color: isSel
                                 ? const Color(0xFFFF4F0F)
                                 : isToday
-                                    ? const Color(0xFFFF4F0F).withOpacity(0.1)
-                                    : Colors.transparent,
+                                ? const Color(0xFFFF4F0F).withOpacity(0.1)
+                                : Colors.transparent,
                             boxShadow: isSel
                                 ? [
                                     BoxShadow(
-                                      color: const Color(0xFFFF4F0F)
-                                          .withOpacity(0.3),
+                                      color: const Color(
+                                        0xFFFF4F0F,
+                                      ).withOpacity(0.3),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -324,10 +323,10 @@ class _BookingAddPageState extends State<BookingAddPage> {
                                 color: isSel
                                     ? Colors.white
                                     : isPast
-                                        ? const Color(0xFFCCCCCC)
-                                        : isToday
-                                            ? const Color(0xFFFF4F0F)
-                                            : const Color(0xFF222222),
+                                    ? const Color(0xFFCCCCCC)
+                                    : isToday
+                                    ? const Color(0xFFFF4F0F)
+                                    : const Color(0xFF222222),
                               ),
                             ),
                           ),
@@ -407,9 +406,9 @@ class _BookingAddPageState extends State<BookingAddPage> {
               onTap: isUnavailable
                   ? null
                   : () => setState(() {
-                        _selectedTime = time;
-                        _timeError = null;
-                      }),
+                      _selectedTime = time;
+                      _timeError = null;
+                    }),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 alignment: Alignment.center,
@@ -417,15 +416,15 @@ class _BookingAddPageState extends State<BookingAddPage> {
                   color: isSelected
                       ? const Color(0xFFFF4F0F)
                       : isUnavailable
-                          ? const Color(0xFFF5F5F5)
-                          : Colors.white,
+                      ? const Color(0xFFF5F5F5)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
                         ? const Color(0xFFFF4F0F)
                         : isUnavailable
-                            ? const Color(0xFFEEEEEE)
-                            : const Color(0xFFE5E5E5),
+                        ? const Color(0xFFEEEEEE)
+                        : const Color(0xFFE5E5E5),
                     width: 1.5,
                   ),
                   boxShadow: isSelected
@@ -434,7 +433,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                             color: const Color(0xFFFF4F0F).withOpacity(0.25),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
-                          )
+                          ),
                         ]
                       : null,
                 ),
@@ -446,10 +445,11 @@ class _BookingAddPageState extends State<BookingAddPage> {
                     color: isSelected
                         ? Colors.white
                         : isUnavailable
-                            ? const Color(0xFFCCCCCC)
-                            : const Color(0xFF222222),
-                    decoration:
-                        isUnavailable ? TextDecoration.lineThrough : null,
+                        ? const Color(0xFFCCCCCC)
+                        : const Color(0xFF222222),
+                    decoration: isUnavailable
+                        ? TextDecoration.lineThrough
+                        : null,
                   ),
                 ),
               ),
@@ -552,24 +552,23 @@ class _BookingAddPageState extends State<BookingAddPage> {
           children: [
             // ── HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(25, 30, 25, 20),
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Book a Table',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: SvgPicture.asset(
+                      'assets/icons/back.svg',
+                      width: 20,
+                      height: 20,
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  Text(
+                    'Book a Table',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Container(width: 20),
                 ],
               ),
             ),
@@ -677,19 +676,20 @@ class _BookingAddPageState extends State<BookingAddPage> {
               padding: const EdgeInsets.all(20),
               child: SizedBox(
                 width: double.infinity,
-                height: 55,
                 child: ElevatedButton(
                   onPressed: _continueBooking,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF4F0F),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(24),
                     ),
                   ),
                   child: const Text(
                     'Continue',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
                   ),

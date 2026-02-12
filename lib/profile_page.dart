@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'choose_location_page.dart';
 import 'orders_page.dart';
+import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -40,7 +41,7 @@ class ProfileState extends State<ProfilePage> {
                         ),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(16, 80, 16, 16),
+                        padding: EdgeInsets.fromLTRB(16, 80, 16, 90),
                         child: SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +185,7 @@ class ProfileState extends State<ProfilePage> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => OrdersPage(),
+                                      builder: (context) => LoginPage(),
                                     ),
                                   );
                                 },
@@ -192,7 +193,7 @@ class ProfileState extends State<ProfilePage> {
                                   padding: EdgeInsets.only(left: 2.5),
                                   child: _buildMenuItem(
                                     icon: 'assets/icons/logout_profile.svg',
-                                    title: 'Orders',
+                                    title: 'Quit',
                                     iconSize: 16,
                                   ),
                                 ),

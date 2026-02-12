@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'navigate_page.dart';
 import 'booking_detail.dart';
+import 'booking_cancelled.dart';
+import 'booking_data.dart';
 import 'review_page.dart';
 import 'restaurant_detail.dart';
 
@@ -274,7 +276,14 @@ class OrdersPageState extends State<OrdersPage>
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingCancelled(),
+                          ),
+                        );
+                      },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -477,7 +486,7 @@ class OrdersPageState extends State<OrdersPage>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => BookingDetail(),
+                            builder: (context) => BookingData(),
                           ),
                         );
                       },
@@ -681,7 +690,7 @@ class OrdersPageState extends State<OrdersPage>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => BookingDetail(),
+                            builder: (context) => BookingData(),
                           ),
                         );
                       },

@@ -24,7 +24,6 @@ class _FilterPageState extends State<FilterPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -73,26 +72,50 @@ class _FilterPageState extends State<FilterPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() {
+                                    selectedCuisine = 'All';
+                                  });
+                                },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFFFF4F0F),
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: selectedCuisine == 'All'
+                                      ? Color(0xFFFF4F0F)
+                                      : Colors.grey[200],
+                                  foregroundColor: selectedCuisine == 'All'
+                                      ? Colors.white
+                                      : Colors.black,
                                 ),
                                 child: Text("All"),
                               ),
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() {
+                                    selectedCuisine = 'Javanese';
+                                  });
+                                },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[200],
-                                  foregroundColor: Colors.black,
+                                  backgroundColor: selectedCuisine == 'Javanese'
+                                      ? Color(0xFFFF4F0F)
+                                      : Colors.grey[200],
+                                  foregroundColor: selectedCuisine == 'Javanese'
+                                      ? Colors.white
+                                      : Colors.black,
                                 ),
                                 child: Text("Javanese"),
                               ),
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() {
+                                    selectedCuisine = 'Balinese';
+                                  });
+                                },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[200],
-                                  foregroundColor: Colors.black,
+                                  backgroundColor: selectedCuisine == 'Balinese'
+                                      ? Color(0xFFFF4F0F)
+                                      : Colors.grey[200],
+                                  foregroundColor: selectedCuisine == 'Balinese'
+                                      ? Colors.white
+                                      : Colors.black,
                                 ),
                                 child: Text("Balinese"),
                               ),
@@ -147,8 +170,11 @@ class _FilterPageState extends State<FilterPage> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        // Apply filter
-                        Navigator.pop(context);
+                        // Apply filter and return selection
+                        Navigator.pop(context, {
+                          'cuisine': selectedCuisine,
+                          'rating': selectedRating,
+                        });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFFF4F0F),
