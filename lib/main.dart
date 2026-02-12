@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'booking_cancelled.dart';
+import 'review_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,9 +10,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: BookingCancelled(),
-    );
+    return MaterialApp(debugShowCheckedModeBanner: false, home: ReviewPage());
   }
 }

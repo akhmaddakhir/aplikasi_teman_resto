@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class BookingCancelled extends StatefulWidget {
-  const BookingCancelled({super.key});
+class FilterPage extends StatefulWidget {
+  const FilterPage({super.key});
 
   @override
-  State<BookingCancelled> createState() => _BookingCancelledState();
+  State<FilterPage> createState() => _FilterPageState();
 }
 
-class _BookingCancelledState extends State<BookingCancelled> {
-  String? selectedReason;
-  TextEditingController otherReasonController = TextEditingController();
+class _FilterPageState extends State<FilterPage> {
+  String selectedCuisine = 'All';
+  String? selectedRating;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +24,7 @@ class _BookingCancelledState extends State<BookingCancelled> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Header (TIDAK DIRUBAH)
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -38,7 +39,7 @@ class _BookingCancelledState extends State<BookingCancelled> {
                             ),
                           ),
                           Text(
-                            "Cancel Booking",
+                            "Filter",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -51,69 +52,74 @@ class _BookingCancelledState extends State<BookingCancelled> {
 
                     // Content
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(height: 8),
 
-                          // Title
+                          // Cuisine Section
                           Text(
-                            "Please select the reason for cancellations:",
+                            "Cuisine",
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
+                          SizedBox(height: 12),
 
-                          SizedBox(height: 20),
-
-                          // Radio Options
-                          _buildRadioOption('Change in Plans'),
-                          SizedBox(height: 16),
-                          _buildRadioOption('Duplicate Booking'),
-                          SizedBox(height: 16),
-                          _buildRadioOption('Want to book another restaurant'),
-                          SizedBox(height: 16),
-                          _buildRadioOption('Book by Mistake'),
-                          SizedBox(height: 16),
-                          _buildRadioOption('Other'),
-
-                          SizedBox(height: 32),
-
-                          Divider(height: 12, color: Colors.grey.shade300),
+                          // Cuisine Buttons
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () {},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFFFF4F0F),
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: Text("All"),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey[200],
+                                  foregroundColor: Colors.black,
+                                ),
+                                child: Text("Javanese"),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey[200],
+                                  foregroundColor: Colors.black,
+                                ),
+                                child: Text("Balinese"),
+                              ),
+                            ],
+                          ),
 
                           SizedBox(height: 24),
 
+                          // Reviews Section
                           Text(
-                            "Other",
+                            "Reviews",
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
+                          SizedBox(height: 16),
 
+                          _buildRatingOption('4.6 - 5.0', 5),
                           SizedBox(height: 12),
-
-                          TextField(
-                            controller: otherReasonController,
-                            maxLines: 5,
-                            decoration: InputDecoration(
-                              hintText: 'Enter your Reason',
-                              hintStyle: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 14,
-                              ),
-                              filled: true,
-                              fillColor: Color(0xFFF5F5F5),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.all(16),
-                            ),
-                          ),
+                          _buildRatingOption('4.1 - 4.5', 5),
+                          SizedBox(height: 12),
+                          _buildRatingOption('3.6 - 4.0', 5),
+                          SizedBox(height: 12),
+                          _buildRatingOption('3.1 - 3.5', 5),
+                          SizedBox(height: 12),
+                          _buildRatingOption('2.6 - 3.0', 5),
 
                           SizedBox(height: 24),
                         ],
@@ -140,7 +146,10 @@ class _BookingCancelledState extends State<BookingCancelled> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        // Apply filter
+                        Navigator.pop(context);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFFF4F0F),
                         padding: EdgeInsets.symmetric(vertical: 12),
@@ -149,7 +158,7 @@ class _BookingCancelledState extends State<BookingCancelled> {
                         ),
                       ),
                       child: Text(
-                        'Cancel Order',
+                        'Apply',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -167,28 +176,53 @@ class _BookingCancelledState extends State<BookingCancelled> {
     );
   }
 
-  Widget _buildRadioOption(String title) {
+  Widget _buildRatingOption(String ratingRange, int starCount) {
+    bool isSelected = selectedRating == ratingRange;
     return GestureDetector(
       onTap: () {
         setState(() {
-          selectedReason = title;
+          selectedRating = isSelected ? null : ratingRange;
         });
       },
       child: Row(
         children: [
+          // Stars
+          Row(
+            children: List.generate(
+              starCount,
+              (index) => Padding(
+                padding: EdgeInsets.only(right: 6),
+                child: SvgPicture.asset(
+                  'assets/icons/rating_card.svg',
+                  width: 18,
+                  height: 18,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 12),
+          // Rating Range
+          Text(
+            ratingRange,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          Spacer(),
+          // Radio Button
           Container(
             width: 24,
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: selectedReason == title
-                    ? Color(0xFFFF4F0F)
-                    : Colors.grey.shade400,
+                color: isSelected ? Color(0xFFFF4F0F) : Colors.grey.shade400,
                 width: 2,
               ),
             ),
-            child: selectedReason == title
+            child: isSelected
                 ? Center(
                     child: Container(
                       width: 12,
@@ -201,23 +235,8 @@ class _BookingCancelledState extends State<BookingCancelled> {
                   )
                 : null,
           ),
-          SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    otherReasonController.dispose();
-    super.dispose();
   }
 }
