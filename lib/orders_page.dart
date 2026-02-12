@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'navigate_page.dart';
+import 'booking_detail.dart';
+import 'review_page.dart';
+import 'restaurant_detail.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -125,180 +129,198 @@ class OrdersPageState extends State<OrdersPage>
 
   // Active Order Card
   Widget _buildActiveOrderCard() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    'assets/images/melati_restaurant.png',
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RestaurantDetail()),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      'assets/images/melati_restaurant.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Marina Kitchen',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/rating_card.svg',
-                                width: 14,
-                                height: 14,
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Marina Kitchen',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              SizedBox(width: 4),
-                              Text(
-                                '4.8',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[800],
-                                  fontWeight: FontWeight.bold,
+                            ),
+                            Row(
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/icons/rating_card.svg',
+                                  width: 14,
+                                  height: 14,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/clock_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            '20 min',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
+                                SizedBox(width: 4),
+                                Text(
+                                  '4.8',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            "•",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          SizedBox(width: 10),
-                          SvgPicture.asset(
-                            'assets/icons/bowl_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Javanese',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/clock_card.svg',
+                              width: 12,
+                              height: 12,
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/location_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Jl Mangan III 216 Psr II Mabar...',
+                            SizedBox(width: 6),
+                            Text(
+                              '20 min',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
                                 fontWeight: FontWeight.w500,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
+                            SizedBox(width: 10),
+                            Text(
+                              "•",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            SvgPicture.asset(
+                              'assets/icons/bowl_card.svg',
+                              width: 12,
+                              height: 12,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Javanese',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/location_card.svg',
+                              width: 12,
+                              height: 12,
+                            ),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Jl Mangan III 216 Psr II Mabar...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF4F0F),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => NavigatePage(),
                           ),
-                        ],
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFF4F0F),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFFF4F0F),
+                      child: Text(
+                        'Navigate',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFFF4F0F),
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: Text(
-                      'Navigate',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -306,180 +328,203 @@ class OrdersPageState extends State<OrdersPage>
 
   // Completed Order Card
   Widget _buildCompletedOrderCard() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    'assets/images/melati_restaurant.png',
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RestaurantDetail()),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      'assets/images/melati_restaurant.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Marina Kitchen',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/rating_card.svg',
-                                width: 14,
-                                height: 14,
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Marina Kitchen',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              SizedBox(width: 4),
-                              Text(
-                                '4.8',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[800],
-                                  fontWeight: FontWeight.bold,
+                            ),
+                            Row(
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/icons/rating_card.svg',
+                                  width: 14,
+                                  height: 14,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/clock_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            '20 min',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
+                                SizedBox(width: 4),
+                                Text(
+                                  '4.8',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            "•",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          SizedBox(width: 10),
-                          SvgPicture.asset(
-                            'assets/icons/bowl_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Javanese',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/clock_card.svg',
+                              width: 12,
+                              height: 12,
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/location_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Jl Mangan III 216 Psr II Mabar...',
+                            SizedBox(width: 6),
+                            Text(
+                              '20 min',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
                                 fontWeight: FontWeight.w500,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
+                            SizedBox(width: 10),
+                            Text(
+                              "•",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            SvgPicture.asset(
+                              'assets/icons/bowl_card.svg',
+                              width: 12,
+                              height: 12,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Javanese',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/location_card.svg',
+                              width: 12,
+                              height: 12,
+                            ),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Jl Mangan III 216 Psr II Mabar...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingDetail(),
                           ),
-                        ],
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(
-                      'Re-Book',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFFF4F0F),
+                      child: Text(
+                        'Re-Book',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF4F0F),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFFF4F0F),
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                  SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ReviewPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFF4F0F),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'Write a Review',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                      child: Text(
+                        'Write a Review',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -487,162 +532,180 @@ class OrdersPageState extends State<OrdersPage>
 
   // Cancelled Order Card
   Widget _buildCancelledOrderCard() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    'assets/images/melati_restaurant.png',
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RestaurantDetail()),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      'assets/images/melati_restaurant.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Marina Kitchen',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/rating_card.svg',
-                                width: 14,
-                                height: 14,
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Marina Kitchen',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              SizedBox(width: 4),
-                              Text(
-                                '4.8',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[800],
-                                  fontWeight: FontWeight.bold,
+                            ),
+                            Row(
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/icons/rating_card.svg',
+                                  width: 14,
+                                  height: 14,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/clock_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            '20 min',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
+                                SizedBox(width: 4),
+                                Text(
+                                  '4.8',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            "•",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          SizedBox(width: 10),
-                          SvgPicture.asset(
-                            'assets/icons/bowl_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Javanese',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/clock_card.svg',
+                              width: 12,
+                              height: 12,
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/location_card.svg',
-                            width: 12,
-                            height: 12,
-                          ),
-                          SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Jl Mangan III 216 Psr II Mabar...',
+                            SizedBox(width: 6),
+                            Text(
+                              '20 min',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
                                 fontWeight: FontWeight.w500,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
+                            SizedBox(width: 10),
+                            Text(
+                              "•",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            SvgPicture.asset(
+                              'assets/icons/bowl_card.svg',
+                              width: 12,
+                              height: 12,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Javanese',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/location_card.svg',
+                              width: 12,
+                              height: 12,
+                            ),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Jl Mangan III 216 Psr II Mabar...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingDetail(),
                           ),
-                        ],
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFF4F0F),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFFF4F0F),
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: Text(
-                      'Re-Book',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                      child: Text(
+                        'Re-Book',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

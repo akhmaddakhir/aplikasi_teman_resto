@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'payment_page.dart';
 
 class BookingDetail extends StatefulWidget {
   const BookingDetail({super.key});
@@ -298,7 +299,14 @@ class _BookingDetailState extends State<BookingDetail> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PaymentPage(),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFFF4F0F),
                         padding: EdgeInsets.symmetric(vertical: 12),

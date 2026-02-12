@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'home_page.dart';
 
 class PaymentSuccess extends StatelessWidget {
   const PaymentSuccess({super.key});
@@ -88,7 +89,12 @@ class PaymentSuccess extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomePage()),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFFF4F0F),
                         padding: EdgeInsets.symmetric(vertical: 12),
