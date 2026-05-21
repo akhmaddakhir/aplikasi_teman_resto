@@ -9,15 +9,32 @@ class NotificationPermissionPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(30.0),
+        child: Padding(padding: const EdgeInsets.fromLTRB(32, 0, 32, 48),
+          
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const Spacer(),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => Navigator.pop(context),
+                    child: const SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.arrow_back_ios,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 80),
               Container(
-                width: 150,
-                height: 150,
+                width: 144,
+                height: 144,
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   shape: BoxShape.circle,
@@ -29,7 +46,7 @@ class NotificationPermissionPage extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 48),
               const Text(
                 'Enable Notification Access',
                 style: TextStyle(
@@ -39,17 +56,20 @@ class NotificationPermissionPage extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               const Text(
                 'We need notification access to send you important updates and information.',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   color: Colors.black54,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 210), 
+
+              // 👇 Spacer mendorong tombol ke bagian bawah
+              const Spacer(),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -74,7 +94,7 @@ class NotificationPermissionPage extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/location-permission');
@@ -82,13 +102,12 @@ class NotificationPermissionPage extends StatelessWidget {
                 child: const Text(
                   'Maybe Later',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     color: Color(0xFFFF5722),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              const SizedBox(height: 50),
             ],
           ),
         ),
