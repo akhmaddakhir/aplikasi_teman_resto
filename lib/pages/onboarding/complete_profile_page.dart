@@ -63,7 +63,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       'Complete Your Profile',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),

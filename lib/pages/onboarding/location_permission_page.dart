@@ -5,8 +5,7 @@ class LocationPermissionPage extends StatefulWidget {
   const LocationPermissionPage({Key? key}) : super(key: key);
 
   @override
-  State<LocationPermissionPage> createState() =>
-      _LocationPermissionPageState();
+  State<LocationPermissionPage> createState() => _LocationPermissionPageState();
 }
 
 class _LocationPermissionPageState extends State<LocationPermissionPage> {
@@ -34,16 +33,35 @@ class _LocationPermissionPageState extends State<LocationPermissionPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(30.0),
+          padding: const EdgeInsets.fromLTRB(32, 0, 32, 48),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(),
+              const SizedBox(height: 32),
+
+              Row(
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => Navigator.pop(context),
+                    child: const SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.arrow_back_ios,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 80),
 
               /// ICON
               Container(
-                width: 150,
-                height: 150,
+                width: 144,
+                height: 144,
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   shape: BoxShape.circle,
@@ -56,7 +74,7 @@ class _LocationPermissionPageState extends State<LocationPermissionPage> {
                 ),
               ),
 
-              const SizedBox(height: 50),
+              const SizedBox(height: 48),
 
               /// TITLE
               const Text(
@@ -68,20 +86,19 @@ class _LocationPermissionPageState extends State<LocationPermissionPage> {
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-              /// SUBTITLE
               const Text(
                 'We need your location to show available\nnearby restaurant.',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   color: Colors.black54,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 210),
+              const Spacer(),
 
               /// ALLOW LOCATION
               SizedBox(
@@ -114,7 +131,7 @@ class _LocationPermissionPageState extends State<LocationPermissionPage> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               /// CHOOSE MANUALLY (INI YANG TADI BUG)
               TextButton(
@@ -122,14 +139,13 @@ class _LocationPermissionPageState extends State<LocationPermissionPage> {
                 child: const Text(
                   'Choose Location Manually',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     color: Color(0xFFFF5722),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
 
-              const SizedBox(height: 50),
             ],
           ),
         ),

@@ -67,7 +67,6 @@ class NotificationPermissionPage extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
 
-              // 👇 Spacer mendorong tombol ke bagian bawah
               const Spacer(),
 
               SizedBox(
