@@ -129,8 +129,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     child: const Text(
                       'Continue',
                       style: TextStyle(
-                        fontFamily: 'Alexandria',
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

@@ -64,8 +64,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       borderRadius: BorderRadius.circular(20),
                       onTap: () => Navigator.pop(context),
                       child: const SizedBox(
-                        width: 44,
-                        height: 44,
+                        width: 40,
+                        height: 40,
                         child: Icon(Icons.arrow_back_ios, size: 20),
                       ),
                     ),
@@ -80,19 +80,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         minHeight: MediaQuery.of(context).size.height -
                             MediaQuery.of(context).padding.top -
                             MediaQuery.of(context).padding.bottom -
-                            80, // tinggi back button + padding atas
+                            80,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 32),
 
                           // Icon
                           const Center(
                             child: Icon(
                               Icons.lock_outline_rounded,
-                              size: 80,
+                              size: 64,
                               color: Color(0xFFFF5722),
                             ),
                           ),
@@ -113,13 +113,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             'Don\'t worry! Enter your email and we\'ll\nsend you a reset code.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 16,
                               color: Colors.black54,
                               height: 1.5,
                             ),
                           ),
 
-                          const SizedBox(height: 50),
+                          const SizedBox(height: 48),
 
                           // Email Label
                           const Text(
@@ -144,7 +144,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
-                                vertical: 16,
+                                vertical: 14,
                               ),
                             ),
                             validator: (value) {
@@ -168,16 +168,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               backgroundColor: const Color(0xFFFF5722),
                               disabledBackgroundColor:
                                   const Color(0xFFFF5722).withOpacity(0.6),
-                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
+                                borderRadius: BorderRadius.circular(50),
                               ),
                               elevation: 0,
                             ),
                             child: _isLoading
                                 ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
+                                    height: 16,
+                                    width: 14,
                                     child: CircularProgressIndicator(
                                       color: Colors.white,
                                       strokeWidth: 2.5,
@@ -357,7 +357,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               // Back Button
               Row(
@@ -366,8 +366,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                     borderRadius: BorderRadius.circular(20),
                     onTap: () => Navigator.pop(context),
                     child: const SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 40,
+                      height: 40,
                       child: Icon(Icons.arrow_back_ios, size: 20),
                     ),
                   ),
@@ -387,13 +387,13 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
 
                         // Icon
                         const Center(
                           child: Icon(
                             Icons.mark_email_unread_outlined,
-                            size: 80,
+                            size: 64,
                             color: Color(0xFFFF5722),
                           ),
                         ),
@@ -405,7 +405,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                           'Check your email',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: 32,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -414,13 +414,13 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                           'We sent a 4-digit code to\n${_maskEmail(widget.email)}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 16,
                             color: Colors.black54,
                             height: 1.5,
                           ),
                         ),
 
-                        const SizedBox(height: 50),
+                        const SizedBox(height: 48),
 
                         // OTP Boxes
                         Row(
@@ -437,13 +437,13 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                         ),
 
                         if (_hasError) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           const Text(
                             'Incorrect code. Please try again.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.redAccent,
-                              fontSize: 13,
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -457,9 +457,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                             backgroundColor: const Color(0xFFFF5722),
                             disabledBackgroundColor:
                                 const Color(0xFFFF5722).withOpacity(0.6),
-                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
+                              borderRadius: BorderRadius.circular(50),
                             ),
                             elevation: 0,
                           ),
@@ -625,35 +625,35 @@ class ResetPasswordSuccessPage extends StatelessWidget {
               const Center(
                 child: Icon(
                   Icons.check_circle_outline_rounded,
-                  size: 80,
+                  size: 64,
                   color: Color(0xFF4CAF50),
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
               // Title
               const Text(
                 'Password Reset\nSuccessful!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
                   height: 1.3,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               const Text(
                 'Your password has been reset successfully.\nYou can now sign in with your new password.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   color: Colors.black54,
-                  height: 1.6,
+                  height: 1.5,
                 ),
               ),
 
-              const SizedBox(height: 60),
+              const SizedBox(height: 48),
 
               // Back to Login Button
               ElevatedButton(
@@ -665,9 +665,9 @@ class ResetPasswordSuccessPage extends StatelessWidget {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF5722),
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(50),
                   ),
                   elevation: 0,
                 ),

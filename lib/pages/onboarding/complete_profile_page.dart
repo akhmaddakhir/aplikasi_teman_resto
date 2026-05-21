@@ -36,28 +36,34 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 65),
+                    const SizedBox(height: 32),
 
                     // Back Button
                     Row(
                       children: [
-                        IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.arrow_back_ios),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => Navigator.pop(context),
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(
+                              Icons.arrow_back_ios,
+                              size: 20,
+                            ),
+                          ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 50),
+                    const SizedBox(height: 16),
 
                     // Title
                     const Text(
                       'Complete Your Profile',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -70,8 +76,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       child: Stack(
                         children: [
                           Container(
-                            width: 150,
-                            height: 150,
+                            width: 144,
+                            height: 144,
                             decoration: BoxDecoration(
                               color: Colors.grey[100],
                               shape: BoxShape.circle,
@@ -84,8 +90,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             ),
                           ),
                           Positioned(
-                            bottom: 0,
-                            right: 0,
+                            bottom: 4,
+                            right: 4,
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: const BoxDecoration(
@@ -103,7 +109,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 48),
 
                     // Name Field
                     const Text(
@@ -118,7 +124,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        hintText: 'Ex. Joshua Hong',
+                        hintText: 'Ex. Om Gatot',
                         hintStyle: TextStyle(color: Colors.grey[400]),
                         filled: true,
                         fillColor: const Color(0xFFF0F0F0),
@@ -128,12 +134,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 16,
+                          vertical: 14,
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
                     // Phone Number Field
                     const Text(
@@ -149,7 +155,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       children: [
                         // Country Code Dropdown
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF0F0F0),
                             borderRadius: BorderRadius.circular(12),
@@ -188,7 +194,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
-                                vertical: 16,
+                                vertical: 14,
                               ),
                             ),
                           ),
@@ -196,7 +202,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       ],
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
                     // Gender Dropdown
                     const Text(
@@ -219,10 +225,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 16,
+                          vertical: 14,
                         ),
                       ),
-                      items: ['Select', 'Male', 'Female', 'Other']
+                      items: ['Select', 'Male', 'Female']
                           .map((gender) => DropdownMenuItem(
                                 value: gender,
                                 child: Text(
@@ -242,7 +248,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       },
                     ),
 
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 32),
 
                     // Complete Profile Button
                     ElevatedButton(
@@ -257,7 +263,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                         elevation: 0,
                       ),
@@ -270,7 +276,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 48),
                   ],
                 ),
               ),

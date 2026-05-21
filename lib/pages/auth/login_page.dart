@@ -72,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 65),
+                    const SizedBox(height: 32),
 
                     // Back Button
                     Row(
@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
 
-                    const SizedBox(height: 75),
+                    const SizedBox(height: 16),
 
                     // Title
                     const Text(
@@ -113,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 50),
+                    const SizedBox(height: 48),
 
                     // Email
                     const Text(
@@ -130,13 +130,15 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFF0F0F0),
+                        hintText: 'example@email.com',
+                        hintStyle: const TextStyle(color: Colors.black38),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 16,
+                          vertical: 14,
                         ),
                       ),
                       validator: (value) {
@@ -150,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                       },
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
                     // Password
                     const Text(
@@ -167,13 +169,15 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFF0F0F0),
+                        hintText: '••••••••••••',
+                        hintStyle: const TextStyle(color: Colors.black38),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 16,
+                          vertical: 14,
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -197,7 +201,7 @@ class _LoginPageState extends State<LoginPage> {
                       },
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
                     // Forgot Password
                     Align(
@@ -214,7 +218,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 32),
 
                     // Sign In Button
                     ElevatedButton(
@@ -223,7 +227,7 @@ class _LoginPageState extends State<LoginPage> {
                         backgroundColor: const Color(0xFFFF5722),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                         elevation: 0,
                       ),
@@ -237,7 +241,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 32),
 
                     // Divider
                     Row(
@@ -254,7 +258,7 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 32),
 
                     // Social Login
                     Row(
@@ -264,12 +268,12 @@ class _LoginPageState extends State<LoginPage> {
                           assetPath: 'assets/icons/google.svg',
                           onPressed: () => _handleSocialLogin('Google'),
                         ),
-                        const SizedBox(width: 30),
+                        const SizedBox(width: 32),
                         _buildSocialButton(
                           assetPath: 'assets/icons/apple.svg',
                           onPressed: () => _handleSocialLogin('Apple'),
                         ),
-                        const SizedBox(width: 30),
+                        const SizedBox(width: 32),
                         _buildSocialButton(
                           assetPath: 'assets/icons/facebook.svg',
                           onPressed: () => _handleSocialLogin('Facebook'),
@@ -277,7 +281,7 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 32),
 
                     // Register
                     Row(
@@ -307,7 +311,7 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
