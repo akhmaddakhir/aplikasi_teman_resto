@@ -38,7 +38,7 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -68,10 +68,9 @@ class _HomePageState extends State<HomePage> {
                           selectedLocation,
                           style: const TextStyle(
                             fontFamily: _font,
-                            fontSize: 17,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: Colors.black87,
-                            letterSpacing: -0.4,
                           ),
                         ),
                         const SizedBox(width: 2),
@@ -120,7 +119,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -135,10 +134,9 @@ class _HomePageState extends State<HomePage> {
                             'Popular near you',
                             style: TextStyle(
                               fontFamily: _font,
-                              fontSize: 17,
+                              fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF0A0A0A),
-                              letterSpacing: -0.5,
                             ),
                           ),
                           GestureDetector(
@@ -154,7 +152,7 @@ class _HomePageState extends State<HomePage> {
                               'See all',
                               style: TextStyle(
                                 fontFamily: _font,
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: _orange,
                               ),
@@ -163,9 +161,9 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 13),
+                    const SizedBox(height: 12),
                     SizedBox(
-                      height: 265,
+                      height: 270,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -224,7 +222,7 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(width: 13),
                           _PopularCard(
                             imagePath: 'assets/images/gambar_restoran_4.jfif',
-                            title: 'SEMAJA Menteng',
+                            title: 'Semaja Menteng',
                             address: 'Jl. Gereja No.11, Gondangdia',
                             rating: '4.9',
                             distance: '3.5 km',
@@ -238,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 32),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
@@ -248,10 +246,9 @@ class _HomePageState extends State<HomePage> {
                             'Another Restaurants',
                             style: TextStyle(
                               fontFamily: _font,
-                              fontSize: 17,
+                              fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF0A0A0A),
-                              letterSpacing: -0.5,
                             ),
                           ),
                           GestureDetector(
@@ -267,7 +264,7 @@ class _HomePageState extends State<HomePage> {
                               'See all',
                               style: TextStyle(
                                 fontFamily: _font,
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: _orange,
                               ),
@@ -276,7 +273,7 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 13),
+                    const SizedBox(height: 12),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
@@ -326,7 +323,7 @@ class _HomePageState extends State<HomePage> {
                                   builder: (_) => const RestaurantDetail()),
                             ),
                           ),
-                          const SizedBox(height: 110),
+                          const SizedBox(height: 64),
                         ],
                       ),
                     ),
@@ -366,20 +363,20 @@ class _PopularCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 200,
-        height: 265,
+        height: 270,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.22),
-              blurRadius: 28,
+              blurRadius: 8,
               spreadRadius: -4,
               offset: const Offset(0, 10),
             ),
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withOpacity(0.22),
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: const Offset(0, 10),
             ),
           ],
         ),
@@ -419,7 +416,7 @@ class _PopularCard extends StatelessWidget {
                         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.18),
                             borderRadius: BorderRadius.circular(50),
@@ -437,7 +434,7 @@ class _PopularCard extends StatelessWidget {
                                 rating,
                                 style: const TextStyle(
                                   fontFamily: _font,
-                                  fontSize: 11.5,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
@@ -453,26 +450,26 @@ class _PopularCard extends StatelessWidget {
                         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.white.withOpacity(0.18),
                             borderRadius: BorderRadius.circular(50),
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.14),
+                                color: Colors.white.withOpacity(0.28),
                                 width: 1),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.location_on_rounded,
-                                  size: 11,
+                                  size: 12,
                                   color: Colors.white.withOpacity(0.9)),
-                              const SizedBox(width: 3),
+                              const SizedBox(width: 4),
                               Text(
                                 distance,
                                 style: TextStyle(
                                   fontFamily: _font,
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white.withOpacity(0.9),
                                 ),
@@ -498,24 +495,24 @@ class _PopularCard extends StatelessWidget {
                         title,
                         style: const TextStyle(
                           fontFamily: _font,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
                           letterSpacing: -0.3,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Text(
                         address,
                         style: TextStyle(
                           fontFamily: _font,
-                          fontSize: 11,
+                          fontSize: 12,
                           color: Colors.white.withOpacity(0.6),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 11),
+                      const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(50),
                         child: BackdropFilter(
@@ -523,7 +520,7 @@ class _PopularCard extends StatelessWidget {
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                                horizontal: 2, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.20),
                               borderRadius: BorderRadius.circular(50),
@@ -535,26 +532,30 @@ class _PopularCard extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'See more',
-                                  style: TextStyle(
-                                    fontFamily: _font,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                    letterSpacing: 0.2,
+                                const SizedBox(width: 20),
+                                Expanded(
+                                  child: const Text(
+                                    'See more',
+                                    style: TextStyle(
+                                      fontFamily: _font,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      letterSpacing: 0.2,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                                 Container(
-                                  width: 32,
-                                  height: 32,
+                                  width: 28,
+                                  height: 28,
                                   decoration: const BoxDecoration(
                                     color: Colors.white,
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
                                     Icons.chevron_right,
-                                    size: 18,
+                                    size: 20,
                                     color: Colors.black,
                                   ),
                                 ),
@@ -641,7 +642,7 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                   Image.asset(
                     widget.imagePath,
                     width: double.infinity,
-                    height: 188,
+                    height: 168,
                     fit: BoxFit.cover,
                   ),
                   Positioned(
@@ -650,8 +651,8 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                     child: GestureDetector(
                       onTap: () => setState(() => _saved = !_saved),
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.95),
                           shape: BoxShape.circle,
@@ -666,8 +667,8 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                           _saved
                               ? Icons.favorite_rounded
                               : Icons.favorite_border_rounded,
-                          size: 17,
-                          color: _saved ? _orange : const Color(0xFFCCCCCC),
+                          size: 20,
+                          color: _saved ? _orange : const Color(0xFF000000),
                         ),
                       ),
                     ),
@@ -677,7 +678,7 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                     left: 12,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 11, vertical: 5),
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: widget.isOpen
                             ? const Color(0xFF16A34A)
@@ -695,17 +696,16 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           Text(
                             widget.isOpen
                                 ? 'Open now'
                                 : 'Closes ${widget.closingTime ?? ''}',
                             style: const TextStyle(
                               fontFamily: _font,
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
-                              letterSpacing: 0.15,
                             ),
                           ),
                         ],
@@ -716,7 +716,7 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(15, 14, 15, 16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -731,33 +731,30 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF0A0A0A),
-                            letterSpacing: -0.35,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 5),
+                            horizontal: 12, vertical:4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF3EE),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.star_rounded,
-                                size: 13, color: _orange),
-                            const SizedBox(width: 3),
+                                size: 14, color: _orange),
+                            const SizedBox(width: 4),
                             Text(
                               widget.rating,
                               style: const TextStyle(
                                 fontFamily: _font,
-                                fontSize: 12.5,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w800,
                                 color: _orange,
-                                letterSpacing: -0.1,
                               ),
                             ),
                           ],
@@ -765,32 +762,32 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       _InfoChip(
                         icon: Icons.access_time_rounded,
                         label: widget.duration,
                       ),
-                      const SizedBox(width: 7),
+                      const SizedBox(width: 8),
                       _InfoChip(
                         icon: Icons.restaurant_rounded,
                         label: widget.cuisine,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 16),
                   const Divider(
                     height: 1,
                     thickness: 0.5,
                     color: Color(0xFFEEEEEE),
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       const Icon(Icons.location_on_rounded,
-                          size: 13, color: Color(0xFFC0C0C0)),
-                      const SizedBox(width: 5),
+                          size: 14, color: Color(0xFFC0C0C0)),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           widget.address,
@@ -831,13 +828,13 @@ class _InfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: _orange),
-          const SizedBox(width: 5),
+          Icon(icon, size: 14, color: _orange),
+          const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
