@@ -106,7 +106,7 @@ class _NotificationPageState extends State<NotificationPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        toolbarHeight: 70,
+        toolbarHeight: 80,
         centerTitle: true,
         leading: Center(
           child: IconButton(
@@ -120,58 +120,50 @@ class _NotificationPageState extends State<NotificationPage> {
             color: _textBlack,
             fontWeight: FontWeight.w800,
             fontSize: 20,
-            letterSpacing: -0.5,
           ),
         ),
-        actions: const [
-          SizedBox(width: 48),
-        ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(50),
-          child: Container(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: ['All', 'Promo', 'Booking'].map((filter) {
-                bool isActive = _currentFilter == filter;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => setState(() => _currentFilter = filter),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isActive ? _primaryOrange : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isActive ? _primaryOrange : _lightGray,
-                          width: 1.2,
-                        ),
+          preferredSize: const Size.fromHeight(32),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: ['All', 'Promo', 'Booking'].map((filter) {
+              bool isActive = _currentFilter == filter;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(50),
+                  onTap: () => setState(() => _currentFilter = filter),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isActive ? _primaryOrange : Colors.white,
+                      borderRadius: BorderRadius.circular(50),
+                      border: Border.all(
+                        color: isActive ? _primaryOrange : _lightGray,
+                        width: 1.2,
                       ),
-                      child: Text(
-                        filter,
-                        style: TextStyle(
-                          color: isActive ? Colors.white : _grayText,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                    ),
+                    child: Text(
+                      filter,
+                      style: TextStyle(
+                        color: isActive ? Colors.white : _grayText,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ),
       body: Column(
         children: [
-          const Divider(height: 1, thickness: 1, color: _lightGray),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.only(top: 8, bottom: 24),
+              padding: const EdgeInsets.only(top: 24, bottom: 40),
               itemCount: _filteredNotifs.length,
               itemBuilder: (context, index) {
                 final item = _filteredNotifs[index];
@@ -182,13 +174,13 @@ class _NotificationPageState extends State<NotificationPage> {
                   children: [
                     if (showLabel)
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
                         child: Text(
                           item.day,
                           style: const TextStyle(
                             color: Color(0xFFCCCCCC),
                             fontWeight: FontWeight.w800,
-                            fontSize: 10,
+                            fontSize: 12,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -234,8 +226,8 @@ class _NotificationPageState extends State<NotificationPage> {
     return InkWell(
       onTap: () => setState(() => notif.isUnread = false),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: notif.isUnread ? _unreadBg : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -248,8 +240,8 @@ class _NotificationPageState extends State<NotificationPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 color: iconBg,
                 borderRadius: BorderRadius.circular(12),
@@ -271,21 +263,20 @@ class _NotificationPageState extends State<NotificationPage> {
                             fontSize: 14,
                             fontWeight: notif.isUnread ? FontWeight.w800 : FontWeight.w600,
                             color: notif.isUnread ? _textBlack : const Color(0xFF666666),
-                            letterSpacing: -0.2,
                           ),
                         ),
                       ),
                       Text(
                         notif.time,
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: Color(0xFFBBBBBB),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
                   Text(
                     notif.desc,
                     style: TextStyle(
