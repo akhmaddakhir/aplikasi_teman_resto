@@ -84,38 +84,45 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios, size: 20),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => Navigator.pop(context),
+                    child: const SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.arrow_back_ios,
+                        size: 20,
+                      ),
+                    ),
                   ),
                   Expanded(
                     child: Text(
                       'Choose Location',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        fontSize: 22,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textDark,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
                 ],
               ),
 
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 40),
               // Search Field
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.inputFill,
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(50),
                 ),
                 child: Row(
                   children: [
@@ -141,7 +148,7 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Location List
               Expanded(
@@ -163,7 +170,7 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 18,
+                          vertical: 16,
                         ),
                         decoration: const BoxDecoration(
                           border: Border(
@@ -181,9 +188,9 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                                 Text(
                                   location['name'],
                                   style: GoogleFonts.inter(
-                                    fontSize: 15,
-                                    fontWeight: location['isCurrent'] 
-                                        ? FontWeight.w700 
+                                    fontSize: 16,
+                                    fontWeight: location['isCurrent']
+                                        ? FontWeight.w700
                                         : FontWeight.w500,
                                     color: location['isCurrent']
                                         ? AppColors.primary
@@ -191,7 +198,7 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                                   ),
                                 ),
                                 if (location['isCurrent']) ...[
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 16),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 10,
@@ -201,22 +208,23 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                                       color: AppColors.primary.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                        color: AppColors.primary.withOpacity(0.2),
+                                        color:
+                                            AppColors.primary.withOpacity(0.2),
                                         width: 1,
                                       ),
                                     ),
                                     child: Row(
                                       children: [
                                         const Icon(
-                                          Icons.location_on, 
-                                          size: 12, 
+                                          Icons.location_on,
+                                          size: 12,
                                           color: AppColors.primary,
                                         ),
-                                        const SizedBox(width: 4),
+                                        const SizedBox(width: 2),
                                         Text(
                                           'Current Location',
                                           style: GoogleFonts.inter(
-                                            fontSize: 11,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                             color: AppColors.primary,
                                           ),
@@ -229,8 +237,8 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                             ),
                             Icon(
                               Icons.chevron_right,
-                              color: location['isCurrent'] 
-                                  ? AppColors.primary 
+                              color: location['isCurrent']
+                                  ? AppColors.primary
                                   : AppColors.textGrey,
                             ),
                           ],
