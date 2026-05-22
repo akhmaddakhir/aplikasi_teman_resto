@@ -16,18 +16,28 @@ class SeeAllPage extends StatefulWidget {
 
 class _SeeAllPageState extends State<SeeAllPage> {
   static const Color _orange = Color(0xFFFF4F0F);
-  static const String _font  = 'Inter';
+  static const String _font = 'Inter';
 
   String _selectedFilter = 'All';
-  final List<String> _filters = ['All', 'Nearest', 'Top Rated', 'Open Now', 'New'];
+  final List<String> _filters = [
+    'All',
+    'Nearest',
+    'Top Rated',
+    'Open Now',
+    'New'
+  ];
 
   List<Map<String, dynamic>> get _filtered {
     List<Map<String, dynamic>> list = List.from(_restaurants);
     switch (_selectedFilter) {
       case 'Nearest':
         list.sort((a, b) {
-          final da = double.tryParse((a['distance'] as String).replaceAll(' km', '')) ?? 99;
-          final db = double.tryParse((b['distance'] as String).replaceAll(' km', '')) ?? 99;
+          final da = double.tryParse(
+                  (a['distance'] as String).replaceAll(' km', '')) ??
+              99;
+          final db = double.tryParse(
+                  (b['distance'] as String).replaceAll(' km', '')) ??
+              99;
           return da.compareTo(db);
         });
         break;
@@ -105,7 +115,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
     },
     {
       'image': 'assets/images/gambar_restoran_6.jfif',
-      'title': 'SEMAJA Menteng',
+      'title': 'Semaja Menteng',
       'rating': '4.9',
       'duration': '40 min',
       'cuisine': 'International',
@@ -131,30 +141,23 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 child: Row(
                   children: [
                     // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                    Row(
+                      children: [
+                        InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => Navigator.pop(context),
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(
+                              Icons.arrow_back_ios,
+                              size: 20,
                             ),
-                          ],
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 18,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 8),
                     Text(
                       widget.title,
                       style: const TextStyle(
@@ -162,7 +165,6 @@ class _SeeAllPageState extends State<SeeAllPage> {
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0A0A0A),
-                        letterSpacing: -0.5,
                       ),
                     ),
                     const Spacer(),
@@ -172,7 +174,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF0EB),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(50),
                       ),
                       child: Text(
                         '${_restaurants.length} places',
@@ -188,7 +190,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               // ── Filter chips ─────────────────────────────────────
               SizedBox(
@@ -206,27 +208,23 @@ class _SeeAllPageState extends State<SeeAllPage> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 8),
+                            horizontal: 24, vertical: 8),
                         decoration: BoxDecoration(
                           color: active ? _orange : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: active
-                                  ? _orange.withOpacity(0.30)
-                                  : Colors.black.withOpacity(0.06),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(
+                            color: active ? _orange : const Color(0xFFF3F3F3),
+                            width: 1.2,
+                          ),
                         ),
                         child: Text(
                           _filters[i],
                           style: TextStyle(
                             fontFamily: _font,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: active ? Colors.white : const Color(0xFF555555),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                active ? Colors.white : const Color(0xFF999999),
                           ),
                         ),
                       ),
@@ -235,16 +233,15 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               // ── List ─────────────────────────────────────────────
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                   itemCount: _filtered.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 14),
-                  itemBuilder: (_, i) =>
-                      _SeeAllCard(data: _filtered[i]),
+                  itemBuilder: (_, i) => _SeeAllCard(data: _filtered[i]),
                 ),
               ),
             ],
@@ -269,7 +266,7 @@ class _SeeAllCard extends StatefulWidget {
 class _SeeAllCardState extends State<_SeeAllCard> {
   bool _saved = false;
   static const Color _orange = Color(0xFFFF4F0F);
-  static const String _font  = 'Inter';
+  static const String _font = 'Inter';
 
   @override
   Widget build(BuildContext context) {
@@ -305,8 +302,8 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                     borderRadius: BorderRadius.circular(16),
                     child: Image.asset(
                       d['image'] as String,
-                      width: 90,
-                      height: 90,
+                      width: 80,
+                      height: 80,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -316,19 +313,19 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                     left: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 3),
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: isOpen
                             ? const Color(0xFF16A34A)
                             : const Color(0xFFD97706),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(50),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 5,
-                            height: 5,
+                            width: 4,
+                            height: 4,
                             decoration: const BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -339,7 +336,7 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                             isOpen ? 'Open' : 'Closed',
                             style: const TextStyle(
                               fontFamily: _font,
-                              fontSize: 9,
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -370,7 +367,6 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF1A1A1A),
-                              letterSpacing: -0.4,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -381,13 +377,13 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                             _saved
                                 ? Icons.favorite_rounded
                                 : Icons.favorite_border_rounded,
-                            size: 22,
+                            size: 20,
                             color: _saved ? _orange : const Color(0xFFD1D1D1),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     // Address
                     Row(
                       children: [
@@ -409,26 +405,29 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     // Chips: rating, duration, cuisine
-                    Row(
-                      children: [
-                        _MiniChip(
-                          icon: Icons.star_rounded,
-                          label: d['rating'] as String,
-                          isHighlight: true,
-                        ),
-                        const SizedBox(width: 8),
-                        _MiniChip(
-                          icon: Icons.access_time_rounded,
-                          label: d['duration'] as String,
-                        ),
-                        const SizedBox(width: 8),
-                        _MiniChip(
-                          icon: Icons.restaurant_rounded,
-                          label: d['cuisine'] as String,
-                        ),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _MiniChip(
+                            icon: Icons.star_rounded,
+                            label: d['rating'] as String,
+                            isHighlight: true,
+                          ),
+                          const SizedBox(width: 8),
+                          _MiniChip(
+                            icon: Icons.access_time_rounded,
+                            label: d['duration'] as String,
+                          ),
+                          const SizedBox(width: 8),
+                          _MiniChip(
+                            icon: Icons.restaurant_rounded,
+                            label: d['cuisine'] as String,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -461,18 +460,18 @@ class _MiniChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isHighlight ? const Color(0xFFFFF3EE) : const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: _orange),
+          Icon(icon, size: 14, color: _orange),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               fontFamily: _font,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
               color: isHighlight ? _orange : const Color(0xFF3A3A3A),
             ),
