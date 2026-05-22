@@ -60,7 +60,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFF),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -72,10 +72,10 @@ class _SearchPageState extends State<SearchPage> {
                 children: [
                   Expanded(
                     child: Container(
-                      height: 50,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.06),
@@ -92,12 +92,12 @@ class _SearchPageState extends State<SearchPage> {
                         textAlignVertical: TextAlignVertical.center,
                         style: const TextStyle(
                           fontFamily: _font,
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w500,
                           color: Color(0xFF0A0A0A),
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Find your next favourite spot...',
+                          hintText: 'Your Favorite Restaurant',
                           hintStyle: TextStyle(
                             fontFamily: _font,
                             fontSize: 14,
@@ -117,27 +117,28 @@ class _SearchPageState extends State<SearchPage> {
                             ),
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 0),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 16),
                   GestureDetector(
                     onTap: () => Navigator.push(context,
                         MaterialPageRoute(builder: (_) => const FilterPage())),
                     child: Container(
-                      width: 50,
-                      height: 50,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: _orange,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
                         child: SvgPicture.asset(
                           'assets/icons/filter.svg',
-                          width: 20,
-                          height: 20,
+                          width: 24,
+                          height: 24,
                           colorFilter: const ColorFilter.mode(
                               Colors.white, BlendMode.srcIn),
                         ),
@@ -147,7 +148,7 @@ class _SearchPageState extends State<SearchPage> {
                 ],
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 32),
 
               // ── Recent Searches ──────────────────────────────────
               Row(
@@ -157,10 +158,9 @@ class _SearchPageState extends State<SearchPage> {
                     'Recent Search',
                     style: TextStyle(
                       fontFamily: _font,
-                      fontSize: 17,
+                      fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0A0A0A),
-                      letterSpacing: -0.5,
                     ),
                   ),
                   GestureDetector(
@@ -169,7 +169,7 @@ class _SearchPageState extends State<SearchPage> {
                       'Clear all',
                       style: TextStyle(
                         fontFamily: _font,
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: _orange,
                       ),
@@ -199,7 +199,7 @@ class _SearchPageState extends State<SearchPage> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 13),
+                              horizontal: 16, vertical: 12),
                           child: Row(
                             children: [
                               Container(
@@ -228,8 +228,8 @@ class _SearchPageState extends State<SearchPage> {
                                 ),
                               ),
                               GestureDetector(
-                                onTap: () => setState(
-                                    () => _recentSearches.removeAt(i)),
+                                onTap: () =>
+                                    setState(() => _recentSearches.removeAt(i)),
                                 child: const Icon(
                                   Icons.close_rounded,
                                   size: 18,
@@ -259,10 +259,9 @@ class _SearchPageState extends State<SearchPage> {
                 'Recent View',
                 style: TextStyle(
                   fontFamily: _font,
-                  fontSize: 17,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0A0A0A),
-                  letterSpacing: -0.5,
                 ),
               ),
 
@@ -270,12 +269,20 @@ class _SearchPageState extends State<SearchPage> {
 
               Column(
                 children: _recentViewed
-                    .map((item) => _HorizontalRestaurantCard(
-                          item: item,
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail())),
+                    .asMap()
+                    .entries
+                    .map((entry) => Padding(
+                          padding: EdgeInsets.only(
+                              bottom: entry.key == _recentViewed.length - 1
+                                  ? 0
+                                  : 14),
+                          child: _HorizontalRestaurantCard(
+                            item: entry.value,
+                            onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const RestaurantDetail())),
+                          ),
                         ))
                     .toList(),
               ),
@@ -317,7 +324,6 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -369,7 +375,9 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
                         GestureDetector(
                           onTap: () => setState(() => _saved = !_saved),
                           child: Icon(
-                            _saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            _saved
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
                             size: 22,
                             color: _saved ? _orange : const Color(0xFFD1D1D1),
                           ),
@@ -398,21 +406,24 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _MiniChip(
-                            icon: Icons.star_rounded,
-                            label: widget.item.rating,
-                            isHighlight: true), 
-                        const SizedBox(width: 8),
-                        _MiniChip(
-                            icon: Icons.access_time_rounded,
-                            label: widget.item.duration),
-                        const SizedBox(width: 8),
-                        _MiniChip(
-                            icon: Icons.restaurant_rounded,
-                            label: widget.item.cuisine),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _MiniChip(
+                              icon: Icons.star_rounded,
+                              label: widget.item.rating,
+                              isHighlight: true),
+                          const SizedBox(width: 8),
+                          _MiniChip(
+                              icon: Icons.access_time_rounded,
+                              label: widget.item.duration),
+                          const SizedBox(width: 8),
+                          _MiniChip(
+                              icon: Icons.restaurant_rounded,
+                              label: widget.item.cuisine),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -429,12 +440,12 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
 class _MiniChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool isHighlight; 
+  final bool isHighlight;
 
   const _MiniChip({
     required this.icon,
     required this.label,
-    this.isHighlight = false, 
+    this.isHighlight = false,
   });
 
   static const Color _orange = Color(0xFFFF4F0F);
@@ -446,18 +457,18 @@ class _MiniChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isHighlight ? const Color(0xFFFFF3EE) : const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: _orange),
+          Icon(icon, size: 14, color: _orange),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               fontFamily: _font,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
               color: isHighlight ? _orange : const Color(0xFF3A3A3A),
             ),
