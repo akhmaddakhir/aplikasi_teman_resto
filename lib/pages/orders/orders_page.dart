@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../restaurant/restaurant_detail.dart';
 import '../navigate/navigate_page.dart';
 import '../booking/booking_cancelled.dart';
 import '../booking/booking_data.dart';
 import './review_page.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -30,7 +28,7 @@ class OrdersPageState extends State<OrdersPage>
     super.dispose();
   }
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -38,26 +36,30 @@ class OrdersPageState extends State<OrdersPage>
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(25, 20, 25, 30),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    icon: const Icon(Icons.arrow_back_ios),
+                    icon:
+                        const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                    color: const Color(0xFF0D0D0D),
                   ),
                   Expanded(
                     child: Text(
                       'My Orders',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0D0D0D),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  const SizedBox(width: 44),
                 ],
               ),
             ),
@@ -142,34 +144,73 @@ class OrdersPageState extends State<OrdersPage>
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: Offset(0, 4),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Padding(
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           child: Column(
             children: [
               Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      'assets/images/melati_restaurant.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          'assets/images/melati_restaurant.png',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 6,
+                        left: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF16A34A),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'Open',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,91 +218,39 @@ class OrdersPageState extends State<OrdersPage>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Marina Kitchen',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Text(
+                                'Marina Kitchen',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1A1A1A),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Row(
-                              children: [
-                                SvgPicture.asset(
-                                  'assets/icons/rating_card.svg',
-                                  width: 14,
-                                  height: 14,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  '4.8',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[700],
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            const Icon(
+                              Icons.favorite_border_rounded,
+                              size: 20,
+                              color: Color(0xFFD1D1D1),
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
-                            SvgPicture.asset(
-                              'assets/icons/clock_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              '20 min',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              "•",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            SvgPicture.asset(
-                              'assets/icons/bowl_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Javanese',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          children: [
-                            SvgPicture.asset(
-                              'assets/icons/location_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
+                            const Icon(Icons.location_on_rounded,
+                                size: 14, color: Color(0xFFFF4F0F)),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 'Jl Mangan III 216 Psr II Mabar...',
                                 style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 12,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w400,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -269,12 +258,35 @@ class OrdersPageState extends State<OrdersPage>
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _MiniChip(
+                                icon: Icons.star_rounded,
+                                label: '4.8',
+                                isHighlight: true,
+                              ),
+                              const SizedBox(width: 8),
+                              _MiniChip(
+                                icon: Icons.access_time_rounded,
+                                label: '20 min',
+                              ),
+                              const SizedBox(width: 8),
+                              _MiniChip(
+                                icon: Icons.restaurant_rounded,
+                                label: 'Javanese',
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -288,9 +300,9 @@ class OrdersPageState extends State<OrdersPage>
                         );
                       },
                       style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Cancel',
                         style: TextStyle(
                           fontSize: 14,
@@ -300,7 +312,7 @@ class OrdersPageState extends State<OrdersPage>
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
@@ -313,13 +325,13 @@ class OrdersPageState extends State<OrdersPage>
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFF4F0F),
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: const Color(0xFFFF4F0F),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Navigate',
                         style: TextStyle(
                           fontSize: 14,
@@ -348,34 +360,73 @@ class OrdersPageState extends State<OrdersPage>
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: Offset(0, 4),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Padding(
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           child: Column(
             children: [
               Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      'assets/images/melati_restaurant.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          'assets/images/melati_restaurant.png',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 6,
+                        left: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF16A34A),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'Open',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,91 +434,39 @@ class OrdersPageState extends State<OrdersPage>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Marina Kitchen',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Text(
+                                'Marina Kitchen',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1A1A1A),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Row(
-                              children: [
-                                SvgPicture.asset(
-                                  'assets/icons/rating_card.svg',
-                                  width: 14,
-                                  height: 14,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  '4.8',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[700],
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            const Icon(
+                              Icons.favorite_border_rounded,
+                              size: 20,
+                              color: Color(0xFFD1D1D1),
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
-                            SvgPicture.asset(
-                              'assets/icons/clock_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              '20 min',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              "•",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            SvgPicture.asset(
-                              'assets/icons/bowl_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Javanese',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          children: [
-                            SvgPicture.asset(
-                              'assets/icons/location_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
+                            const Icon(Icons.location_on_rounded,
+                                size: 14, color: Color(0xFFFF4F0F)),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 'Jl Mangan III 216 Psr II Mabar...',
                                 style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 12,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w400,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -475,12 +474,35 @@ class OrdersPageState extends State<OrdersPage>
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _MiniChip(
+                                icon: Icons.star_rounded,
+                                label: '4.8',
+                                isHighlight: true,
+                              ),
+                              const SizedBox(width: 8),
+                              _MiniChip(
+                                icon: Icons.access_time_rounded,
+                                label: '20 min',
+                              ),
+                              const SizedBox(width: 8),
+                              _MiniChip(
+                                icon: Icons.restaurant_rounded,
+                                label: 'Javanese',
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -494,9 +516,9 @@ class OrdersPageState extends State<OrdersPage>
                         );
                       },
                       style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Re-Book',
                         style: TextStyle(
                           fontSize: 14,
@@ -506,7 +528,7 @@ class OrdersPageState extends State<OrdersPage>
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
@@ -517,13 +539,13 @@ class OrdersPageState extends State<OrdersPage>
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFF4F0F),
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: const Color(0xFFFF4F0F),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Write a Review',
                         style: TextStyle(
                           fontSize: 14,
@@ -552,34 +574,73 @@ class OrdersPageState extends State<OrdersPage>
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: Offset(0, 4),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Padding(
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           child: Column(
             children: [
               Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      'assets/images/melati_restaurant.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          'assets/images/melati_restaurant.png',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 6,
+                        left: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD97706),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'Closed',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,91 +648,39 @@ class OrdersPageState extends State<OrdersPage>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Marina Kitchen',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Text(
+                                'Marina Kitchen',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1A1A1A),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Row(
-                              children: [
-                                SvgPicture.asset(
-                                  'assets/icons/rating_card.svg',
-                                  width: 14,
-                                  height: 14,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  '4.8',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[700],
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            const Icon(
+                              Icons.favorite_border_rounded,
+                              size: 20,
+                              color: Color(0xFFD1D1D1),
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
-                            SvgPicture.asset(
-                              'assets/icons/clock_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              '20 min',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              "•",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            SvgPicture.asset(
-                              'assets/icons/bowl_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Javanese',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          children: [
-                            SvgPicture.asset(
-                              'assets/icons/location_card.svg',
-                              width: 12,
-                              height: 12,
-                            ),
-                            SizedBox(width: 6),
+                            const Icon(Icons.location_on_rounded,
+                                size: 14, color: Color(0xFFFF4F0F)),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 'Jl Mangan III 216 Psr II Mabar...',
                                 style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 12,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w400,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -679,12 +688,35 @@ class OrdersPageState extends State<OrdersPage>
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _MiniChip(
+                                icon: Icons.star_rounded,
+                                label: '4.8',
+                                isHighlight: true,
+                              ),
+                              const SizedBox(width: 8),
+                              _MiniChip(
+                                icon: Icons.access_time_rounded,
+                                label: '20 min',
+                              ),
+                              const SizedBox(width: 8),
+                              _MiniChip(
+                                icon: Icons.restaurant_rounded,
+                                label: 'Javanese',
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -698,13 +730,13 @@ class OrdersPageState extends State<OrdersPage>
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFF4F0F),
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: const Color(0xFFFF4F0F),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Re-Book',
                         style: TextStyle(
                           fontSize: 14,
@@ -719,6 +751,48 @@ class OrdersPageState extends State<OrdersPage>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MiniChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isHighlight;
+
+  const _MiniChip({
+    required this.icon,
+    required this.label,
+    this.isHighlight = false,
+  });
+
+  static const Color _orange = Color(0xFFFF4F0F);
+  static const String _font = 'Inter';
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isHighlight ? const Color(0xFFFFF3EE) : const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(50),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: _orange),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 12,
+              fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
+              color: isHighlight ? _orange : const Color(0xFF3A3A3A),
+            ),
+          ),
+        ],
       ),
     );
   }
