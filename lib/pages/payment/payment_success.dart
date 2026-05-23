@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:teman_resto/main.dart'; // ganti dari home_page.dart ke main.dart
 
 class PaymentSuccess extends StatefulWidget {
@@ -84,7 +83,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                           children: [
                             Text(
                               'Booking Confirmed!',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 26,
                                 fontWeight: FontWeight.w900,
                                 color: const Color(0xFF1A1A1A),
@@ -95,7 +95,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                             Text(
                               'Your table has been reserved.\nSee you at the restaurant!',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 14,
                                 color: const Color(0xFF888888),
                                 height: 1.6,
@@ -167,7 +168,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                               const SizedBox(width: 8),
                               Text(
                                 'Booking ID: ',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 13,
                                   color: Colors.white.withOpacity(0.6),
                                   fontWeight: FontWeight.w600,
@@ -175,7 +177,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                               ),
                               Text(
                                 '#BK20251010',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 13,
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
@@ -232,7 +235,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                       ),
                       child: Text(
                         'Back to Home',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -250,12 +254,14 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                         // supaya .then() tetap bisa push /bookings walau
                         // PaymentSuccess sudah keluar dari tree.
                         final nav = Navigator.of(context);
-                        nav.pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => const MainPage(),
-                          ),
-                          (route) => false,
-                        ).then((_) => nav.pushNamed('/bookings'));
+                        nav
+                            .pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => const MainPage(),
+                              ),
+                              (route) => false,
+                            )
+                            .then((_) => nav.pushNamed('/bookings'));
                       },
                       style: TextButton.styleFrom(
                         backgroundColor: const Color(0xFFF5F5F5),
@@ -265,7 +271,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                       ),
                       child: Text(
                         'View My Bookings',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1A1A1A),
@@ -302,7 +309,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
               Expanded(
                 child: Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 13,
                     color: const Color(0xFF888888),
                     fontWeight: FontWeight.w500,
@@ -311,7 +319,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
               ),
               Text(
                 value,
-                style: GoogleFonts.inter(
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A1A1A),

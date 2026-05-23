@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:teman_resto/utils/app_colors.dart';
 
 class ChooseLocationPage extends StatefulWidget {
@@ -105,7 +104,8 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                     child: Text(
                       'Choose Location',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textDark,
@@ -187,7 +187,8 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                               children: [
                                 Text(
                                   location['name'],
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: 16,
                                     fontWeight: location['isCurrent']
                                         ? FontWeight.w700
@@ -223,7 +224,8 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                                         const SizedBox(width: 2),
                                         Text(
                                           'Current Location',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                             color: AppColors.primary,

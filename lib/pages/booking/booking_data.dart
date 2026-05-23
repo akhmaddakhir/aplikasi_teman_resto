@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import './booking_add.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class BookingData extends StatelessWidget {
   const BookingData({Key? key}) : super(key: key);
@@ -57,7 +56,8 @@ class _BookingFormPageState extends State<BookingFormPage> {
                     child: Text(
                       'Book a Table',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),

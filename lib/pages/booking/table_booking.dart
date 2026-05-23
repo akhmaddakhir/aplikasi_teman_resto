@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:teman_resto/widgets/table_widget.dart';
 import 'package:teman_resto/pages/booking/booking_detail.dart';
 
@@ -32,17 +31,44 @@ class TableBookingState extends State<TableBooking>
   String? _selectedTable;
 
   final Map<String, bool> _reservedTables = {
-    'T-01': true, 'T-02': false, 'T-03': false, 'T-04': true,
-    'T-05': false, 'T-06': true, 'T-07': true, 'T-08': true,
-    'T-09': false, 'T-10': false, 'T-11': false, 'T-12': false,
-    'T-13': false, 'T-14': false,
-    'F2-T-01': false, 'F2-T-02': false, 'F2-T-03': false,
-    'F2-T-03-L': true, 'F2-T-03-R': true, 'F2-T-04': true,
-    'F2-T-04-L': false, 'F2-T-04-R': false, 'F2-T-05': false,
-    'F2-T-05-L': false, 'F2-T-05-R': true, 'F2-T-06': false, 'F2-T-07': false,
-    'F3-T-01': false, 'F3-T-02': true, 'F3-T-03': false, 'F3-T-04': false,
-    'F3-T-05': true, 'F3-T-06': false, 'F3-T-07': false, 'F3-T-08': false,
-    'F3-T-09': false, 'F3-T-10': false, 'F3-T-11': false,
+    'T-01': true,
+    'T-02': false,
+    'T-03': false,
+    'T-04': true,
+    'T-05': false,
+    'T-06': true,
+    'T-07': true,
+    'T-08': true,
+    'T-09': false,
+    'T-10': false,
+    'T-11': false,
+    'T-12': false,
+    'T-13': false,
+    'T-14': false,
+    'F2-T-01': false,
+    'F2-T-02': false,
+    'F2-T-03': false,
+    'F2-T-03-L': true,
+    'F2-T-03-R': true,
+    'F2-T-04': true,
+    'F2-T-04-L': false,
+    'F2-T-04-R': false,
+    'F2-T-05': false,
+    'F2-T-05-L': false,
+    'F2-T-05-R': true,
+    'F2-T-06': false,
+    'F2-T-07': false,
+    'F3-T-01': false,
+    'F3-T-02': true,
+    'F3-T-03': false,
+    'F3-T-04': false,
+    'F3-T-05': true,
+    'F3-T-06': false,
+    'F3-T-07': false,
+    'F3-T-08': false,
+    'F3-T-09': false,
+    'F3-T-10': false,
+    'F3-T-11': false,
   };
 
   @override
@@ -62,24 +88,35 @@ class TableBookingState extends State<TableBooking>
   void _sel(String id) => setState(() => _selectedTable = id);
 
   Widget _t(String id) => RectangleTableWithChairs(
-        id: id, reserved: _isReserved(id), isSelected: _isSel(id),
-        onTap: () => _sel(id));
+      id: id,
+      reserved: _isReserved(id),
+      isSelected: _isSel(id),
+      onTap: () => _sel(id));
 
   Widget _sq(String id) => SquareTable(
-        id: id, reserved: _isReserved(id), isSelected: _isSel(id),
-        onTap: () => _sel(id));
+      id: id,
+      reserved: _isReserved(id),
+      isSelected: _isSel(id),
+      onTap: () => _sel(id));
 
   Widget _lg(String id) => LargeRectangleTable(
-        id: id, reserved: _isReserved(id), isSelected: _isSel(id),
-        onTap: () => _sel(id));
+      id: id,
+      reserved: _isReserved(id),
+      isSelected: _isSel(id),
+      onTap: () => _sel(id));
 
   Widget _lv(String id) => LongTableVertical(
-        id: id, reserved: _isReserved(id), isSelected: _isSel(id),
-        onTap: () => _sel(id));
+      id: id,
+      reserved: _isReserved(id),
+      isSelected: _isSel(id),
+      onTap: () => _sel(id));
 
   Widget _c(String id, double size) => CircleTable(
-        id: id, reserved: _isReserved(id), isSelected: _isSel(id),
-        size: size, onTap: () => _sel(id));
+      id: id,
+      reserved: _isReserved(id),
+      isSelected: _isSel(id),
+      size: size,
+      onTap: () => _sel(id));
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +138,8 @@ class TableBookingState extends State<TableBooking>
                     child: Text(
                       'Select Table',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(width: 48),
@@ -113,8 +151,14 @@ class TableBookingState extends State<TableBooking>
               labelColor: const Color(0xFFFF5C28),
               unselectedLabelColor: Colors.grey,
               indicatorColor: const Color(0xFFFF5C28),
-              labelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
-              unselectedLabelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+              labelStyle: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600),
+              unselectedLabelStyle: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500),
               tabs: const [
                 Tab(text: '1st Floor'),
                 Tab(text: '2nd Floor'),
@@ -167,7 +211,10 @@ class TableBookingState extends State<TableBooking>
                   ),
                   child: const Text(
                     'Book a table',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white),
                   ),
                 ),
               ),
@@ -185,33 +232,46 @@ class TableBookingState extends State<TableBooking>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(mainAxisAlignment: MainAxisAlignment.center,
+          Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [_t("T-01"), const SizedBox(width: 40), _t("T-02")]),
           const SizedBox(height: 32),
-          _f1Section(left: ["T-03","T-05"], center: "T-13", right: ["T-04","T-06"]),
+          _f1Section(
+              left: ["T-03", "T-05"], center: "T-13", right: ["T-04", "T-06"]),
           const SizedBox(height: 32),
-          _f1Section(left: ["T-07","T-09"], center: "T-14", right: ["T-08","T-10"]),
+          _f1Section(
+              left: ["T-07", "T-09"], center: "T-14", right: ["T-08", "T-10"]),
           const SizedBox(height: 32),
-          Row(mainAxisAlignment: MainAxisAlignment.center,
+          Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [_t("T-11"), const SizedBox(width: 40), _t("T-12")]),
         ],
       ),
     );
   }
 
-  Widget _f1Section({required List<String> left, required String center, required List<String> right}) {
+  Widget _f1Section(
+      {required List<String> left,
+      required String center,
+      required List<String> right}) {
     const double h = 240.0;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SizedBox(height: h, child: Column(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [_sq(left[0]), _sq(left[1])])),
+        SizedBox(
+            height: h,
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [_sq(left[0]), _sq(left[1])])),
         const SizedBox(width: 20),
         _lg(center),
         const SizedBox(width: 20),
-        SizedBox(height: h, child: Column(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [_sq(right[0]), _sq(right[1])])),
+        SizedBox(
+            height: h,
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [_sq(right[0]), _sq(right[1])])),
       ],
     );
   }
@@ -222,27 +282,41 @@ class TableBookingState extends State<TableBooking>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
       child: Column(
         children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.center,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _lv("F2-T-03-L"),
-              Expanded(child: Column(children: [
+              Expanded(
+                  child: Column(children: [
                 _c("F2-T-01", 50),
                 const SizedBox(height: 24),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [_c("F2-T-02", 42), _c("F2-T-03", 42)]),
               ])),
               _lv("F2-T-03-R"),
             ],
           ),
           const SizedBox(height: 40),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.center,
-              children: [_lv("F2-T-04-L"), _c("F2-T-04", 95), _lv("F2-T-04-R")]),
+          Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _lv("F2-T-04-L"),
+                _c("F2-T-04", 95),
+                _lv("F2-T-04-R")
+              ]),
           const SizedBox(height: 40),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.center,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _lv("F2-T-05-L"),
-              Expanded(child: Column(children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Expanded(
+                  child: Column(children: [
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [_c("F2-T-06", 42), _c("F2-T-07", 42)]),
                 const SizedBox(height: 28),
                 _c("F2-T-05", 50),
@@ -261,19 +335,31 @@ class TableBookingState extends State<TableBooking>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
       child: Column(
         children: [
-          Row(mainAxisAlignment: MainAxisAlignment.center,
-              children: [_t("F3-T-01"), const SizedBox(width: 28), _t("F3-T-02")]),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            _t("F3-T-01"),
+            const SizedBox(width: 28),
+            _t("F3-T-02")
+          ]),
           const SizedBox(height: 28),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [_c("F3-T-03", 50), _c("F3-T-04", 50), _c("F3-T-05", 50)]),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+            _c("F3-T-03", 50),
+            _c("F3-T-04", 50),
+            _c("F3-T-05", 50)
+          ]),
           const SizedBox(height: 24),
           Center(child: _c("F3-T-06", 75)),
           const SizedBox(height: 24),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [_c("F3-T-07", 50), _c("F3-T-08", 50), _c("F3-T-09", 50)]),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+            _c("F3-T-07", 50),
+            _c("F3-T-08", 50),
+            _c("F3-T-09", 50)
+          ]),
           const SizedBox(height: 28),
-          Row(mainAxisAlignment: MainAxisAlignment.center,
-              children: [_t("F3-T-10"), const SizedBox(width: 28), _t("F3-T-11")]),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            _t("F3-T-10"),
+            const SizedBox(width: 28),
+            _t("F3-T-11")
+          ]),
         ],
       ),
     );

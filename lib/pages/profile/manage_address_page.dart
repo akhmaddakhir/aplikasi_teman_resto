@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ManageAddressPage extends StatefulWidget {
   const ManageAddressPage({Key? key}) : super(key: key);
@@ -129,7 +128,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                 const SizedBox(width: 12),
                 Text(
                   data.label,
-                  style: GoogleFonts.nunito(
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF1A1A1A),
@@ -146,7 +146,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                     ),
                     child: Text(
                       'Default',
-                      style: GoogleFonts.nunito(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -180,7 +181,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                                 size: 18, color: Color(0xFF1A1A1A)),
                             const SizedBox(width: 8),
                             Text('Set as Default',
-                                style: GoogleFonts.nunito(
+                                style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontWeight: FontWeight.w600)),
                           ],
                         ),
@@ -193,7 +195,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                               size: 18, color: Color(0xFF1A1A1A)),
                           const SizedBox(width: 8),
                           Text('Edit',
-                              style: GoogleFonts.nunito(
+                              style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontWeight: FontWeight.w600)),
                         ],
                       ),
@@ -207,7 +210,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                                 size: 18, color: Color(0xFFE24B4A)),
                             const SizedBox(width: 8),
                             Text('Delete',
-                                style: GoogleFonts.nunito(
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xFFE24B4A),
                                 )),
@@ -232,7 +236,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                     const SizedBox(width: 4),
                     Text(
                       '${data.name}  ·  ${data.phone}',
-                      style: GoogleFonts.nunito(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 14,
                         color: const Color(0xFF555555),
                         fontWeight: FontWeight.w600,
@@ -253,7 +258,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                     Expanded(
                       child: Text(
                         '${data.address},\n${data.city}',
-                        style: GoogleFonts.nunito(
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 14,
                           color: const Color(0xFF777777),
                           height: 1.5,
@@ -287,7 +293,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
           const SizedBox(height: 16),
           Text(
             'No addresses yet',
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 20,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF1A1A1A),
@@ -297,7 +304,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
           Text(
             'Add your delivery address to\nget started with ordering.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 14,
               color: const Color(0xFF888888),
               height: 1.5,
@@ -315,10 +323,11 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: () => _showAddressSheet(context),
-          icon: const Icon(Icons.add_rounded, size: 20),
+          icon: const Icon(Icons.add_rounded, size: 24),
           label: Text(
             'Add New Address',
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -367,7 +376,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
               const SizedBox(height: 16),
               Text(
                 'Delete Address?',
-                style: GoogleFonts.nunito(
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A1A1A),
@@ -377,7 +387,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
               Text(
                 'Are you sure you want to remove the "${data.label}" address?',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 14,
                   color: const Color(0xFF888888),
                   height: 1.5,
@@ -393,12 +404,13 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                         backgroundColor: const Color(0xFFF7F6F2),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.nunito(
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1A1A1A),
@@ -419,12 +431,13 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       child: Text(
                         'Delete',
-                        style: GoogleFonts.nunito(
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -481,7 +494,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
               ),
               Text(
                 existing == null ? 'Add New Address' : 'Edit Address',
-                style: GoogleFonts.nunito(
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A1A1A),
@@ -539,7 +553,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                   ),
                   child: Text(
                     existing == null ? 'Save Address' : 'Update Address',
-                    style: GoogleFonts.nunito(
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -570,10 +585,12 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
-        style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1A1A1A)),
+        style: TextStyle(
+            fontFamily: 'Inter', fontSize: 14, color: const Color(0xFF1A1A1A)),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.nunito(
+          hintStyle: TextStyle(
+            fontFamily: 'Inter',
             color: const Color(0xFFBBBAB5),
             fontSize: 14,
           ),

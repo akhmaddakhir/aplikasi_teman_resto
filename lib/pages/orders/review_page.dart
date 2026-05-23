@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ReviewPage extends StatefulWidget {
   const ReviewPage({super.key});
@@ -22,7 +21,12 @@ class _ReviewPageState extends State<ReviewPage> {
   static const _textLight = Color(0xFFB0B0B0);
 
   final List<String> _ratingLabels = [
-    '', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'
+    '',
+    'Poor',
+    'Fair',
+    'Good',
+    'Very Good',
+    'Excellent'
   ];
 
   @override
@@ -64,7 +68,8 @@ class _ReviewPageState extends State<ReviewPage> {
                     child: Text(
                       'Write a Review',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                         color: _textDark,
@@ -84,7 +89,6 @@ class _ReviewPageState extends State<ReviewPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     // ── Restaurant Card ──────────────────────────────────
                     Container(
                       decoration: BoxDecoration(
@@ -121,7 +125,8 @@ class _ReviewPageState extends State<ReviewPage> {
                                   children: [
                                     Text(
                                       'Marina Kitchen',
-                                      style: GoogleFonts.plusJakartaSans(
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
                                         color: _textDark,
@@ -140,14 +145,14 @@ class _ReviewPageState extends State<ReviewPage> {
                                             'assets/icons/rating_card.svg',
                                             width: 12,
                                             height: 12,
-                                            colorFilter:
-                                                const ColorFilter.mode(
-                                                    _orange, BlendMode.srcIn),
+                                            colorFilter: const ColorFilter.mode(
+                                                _orange, BlendMode.srcIn),
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             '4.8',
-                                            style: GoogleFonts.plusJakartaSans(
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
                                               color: _orange,
@@ -198,7 +203,8 @@ class _ReviewPageState extends State<ReviewPage> {
                         children: [
                           Text(
                             'How was your experience?',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                               color: _textDark,
@@ -208,7 +214,8 @@ class _ReviewPageState extends State<ReviewPage> {
                           const SizedBox(height: 6),
                           Text(
                             'Tap a star to rate your visit',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 13,
                               color: _textLight,
                               fontWeight: FontWeight.w400,
@@ -227,10 +234,12 @@ class _ReviewPageState extends State<ReviewPage> {
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 150),
                                   curve: Curves.easeOut,
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 6),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 6),
                                   child: Icon(
-                                    filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                                    filled
+                                        ? Icons.star_rounded
+                                        : Icons.star_outline_rounded,
                                     size: filled ? 44 : 40,
                                     color: filled
                                         ? _starActive
@@ -257,7 +266,8 @@ class _ReviewPageState extends State<ReviewPage> {
                                     ),
                                     child: Text(
                                       _ratingLabels[selectedRating],
-                                      style: GoogleFonts.plusJakartaSans(
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                         color: _orange,
@@ -295,7 +305,8 @@ class _ReviewPageState extends State<ReviewPage> {
                         children: [
                           Text(
                             'Add a detailed review',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: _textDark,
@@ -304,7 +315,8 @@ class _ReviewPageState extends State<ReviewPage> {
                           const SizedBox(height: 4),
                           Text(
                             'Tell others what you liked or disliked',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 12,
                               color: _textLight,
                             ),
@@ -313,14 +325,16 @@ class _ReviewPageState extends State<ReviewPage> {
                           TextField(
                             controller: reviewController,
                             maxLines: 6,
-                            style: GoogleFonts.plusJakartaSans(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 14,
                               color: _textDark,
                             ),
                             decoration: InputDecoration(
                               hintText:
                                   'Share your thoughts about the food, service, atmosphere...',
-                              hintStyle: GoogleFonts.plusJakartaSans(
+                              hintStyle: TextStyle(
+                                fontFamily: 'Inter',
                                 color: _textLight,
                                 fontSize: 13,
                                 height: 1.5,
@@ -385,7 +399,8 @@ class _ReviewPageState extends State<ReviewPage> {
                   ),
                   child: Text(
                     'Submit Review',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -414,7 +429,8 @@ class _ReviewPageState extends State<ReviewPage> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: 12,
             color: const Color(0xFF9E9E9E),
             fontWeight: FontWeight.w500,
@@ -438,7 +454,8 @@ class _ReviewPageState extends State<ReviewPage> {
         Expanded(
           child: Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 12,
               color: const Color(0xFF9E9E9E),
               fontWeight: FontWeight.w500,

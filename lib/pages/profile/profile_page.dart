@@ -436,14 +436,14 @@ class _LogoutBottomSheet extends StatelessWidget {
                     backgroundColor: const Color(0xFFF4F4F4),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: const Text(
                     'Cancel',
                     style: TextStyle(
                       fontFamily: _font,
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
                     ),
@@ -466,14 +466,14 @@ class _LogoutBottomSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: const Text(
                     'Log Out',
                     style: TextStyle(
                       fontFamily: _font,
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),

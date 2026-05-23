@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:teman_resto/pages/payment/payment_success.dart';
 
 class PaymentPage extends StatefulWidget {
@@ -89,7 +88,8 @@ class _PaymentPageState extends State<PaymentPage> {
             child: Text(
               'Payment',
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF1A1A1A),
@@ -174,7 +174,8 @@ class _PaymentPageState extends State<PaymentPage> {
                 if (isCard) ...[
                   Text(
                     selected.detail,
-                    style: GoogleFonts.spaceMono(
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -190,7 +191,8 @@ class _PaymentPageState extends State<PaymentPage> {
                         children: [
                           Text(
                             'CARD HOLDER',
-                            style: GoogleFonts.nunito(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               color: Colors.white.withOpacity(0.6),
                               fontSize: 9,
                               letterSpacing: 1.2,
@@ -200,7 +202,8 @@ class _PaymentPageState extends State<PaymentPage> {
                           const SizedBox(height: 2),
                           Text(
                             'Floyd Miles',
-                            style: GoogleFonts.nunito(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -213,7 +216,8 @@ class _PaymentPageState extends State<PaymentPage> {
                         children: [
                           Text(
                             'EXPIRES',
-                            style: GoogleFonts.nunito(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               color: Colors.white.withOpacity(0.6),
                               fontSize: 9,
                               letterSpacing: 1.2,
@@ -223,7 +227,8 @@ class _PaymentPageState extends State<PaymentPage> {
                           const SizedBox(height: 2),
                           Text(
                             selected.expiry ?? '',
-                            style: GoogleFonts.nunito(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -236,7 +241,8 @@ class _PaymentPageState extends State<PaymentPage> {
                 ] else ...[
                   Text(
                     selected.detail,
-                    style: GoogleFonts.nunito(
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       color: Colors.white.withOpacity(0.85),
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -256,7 +262,8 @@ class _PaymentPageState extends State<PaymentPage> {
       case PaymentType.visa:
         return Text(
           'VISA',
-          style: GoogleFonts.nunito(
+          style: TextStyle(
+            fontFamily: 'Inter',
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.w900,
@@ -296,7 +303,8 @@ class _PaymentPageState extends State<PaymentPage> {
           ),
           child: Text(
             'OVO',
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w900,
@@ -312,7 +320,8 @@ class _PaymentPageState extends State<PaymentPage> {
           ),
           child: Text(
             'GoPay',
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w900,
@@ -325,7 +334,8 @@ class _PaymentPageState extends State<PaymentPage> {
   Widget _buildSectionLabel(String label) {
     return Text(
       label.toUpperCase(),
-      style: GoogleFonts.nunito(
+      style: TextStyle(
+        fontFamily: 'Inter',
         fontSize: 11,
         fontWeight: FontWeight.w800,
         color: const Color(0xFFBBBAB5),
@@ -363,7 +373,8 @@ class _PaymentPageState extends State<PaymentPage> {
                 children: [
                   Text(
                     method.name,
-                    style: GoogleFonts.nunito(
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1A1A1A),
@@ -372,7 +383,8 @@ class _PaymentPageState extends State<PaymentPage> {
                   const SizedBox(height: 1),
                   Text(
                     method.detail,
-                    style: GoogleFonts.nunito(
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       color: const Color(0xFF888888),
                     ),
@@ -418,7 +430,8 @@ class _PaymentPageState extends State<PaymentPage> {
           alignment: Alignment.center,
           child: Text(
             'VISA',
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               color: Colors.white,
               fontSize: 12,
               fontWeight: FontWeight.w900,
@@ -474,7 +487,8 @@ class _PaymentPageState extends State<PaymentPage> {
           alignment: Alignment.center,
           child: Text(
             'OVO',
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               color: Colors.white,
               fontSize: 12,
               fontWeight: FontWeight.w900,
@@ -492,7 +506,8 @@ class _PaymentPageState extends State<PaymentPage> {
           alignment: Alignment.center,
           child: Text(
             'GoPay',
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               color: Colors.white,
               fontSize: 11,
               fontWeight: FontWeight.w900,
@@ -526,7 +541,8 @@ class _PaymentPageState extends State<PaymentPage> {
             const SizedBox(width: 8),
             Text(
               'Add Payment Method',
-              style: GoogleFonts.nunito(
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFFFF4F0F),
@@ -565,7 +581,8 @@ class _PaymentPageState extends State<PaymentPage> {
           ),
           child: Text(
             'Continue',
-            style: GoogleFonts.nunito(
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: Colors.white,

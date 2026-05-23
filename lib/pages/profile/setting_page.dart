@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -16,6 +15,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Privacy
   bool _locationAccess = true;
+
+  // Profile data
+  String _profileName = 'Floyd Miles';
+  String _profileEmail = 'tanya.hill@example.com';
 
   @override
   Widget build(BuildContext context) {
@@ -78,8 +81,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         title: 'Location Access',
                         subtitle: 'Used to find nearby restaurants',
                         value: _locationAccess,
-                        onChanged: (v) =>
-                            setState(() => _locationAccess = v),
+                        onChanged: (v) => setState(() => _locationAccess = v),
                       ),
                       _buildDivider(),
                       _buildNavItem(
@@ -127,9 +129,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     Center(
                       child: Text(
                         'FoodApp v1.0.0',
-                        style: GoogleFonts.nunito(
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 12,
-                          color: const Color(0xFFCCCAC4),
+                          color: Color(0xFFCCCAC4),
                         ),
                       ),
                     ),
@@ -146,23 +149,23 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildTopBar(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(8, 16, 20, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            color: const Color(0xFF1A1A1A),
+            color: const Color(0xFF0D0D0D),
           ),
           Expanded(
             child: Text(
               'Settings',
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: const TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1A1A1A),
-                letterSpacing: -0.3,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0D0D0D),
               ),
             ),
           ),
@@ -177,7 +180,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.black.withOpacity(0.06), width: 0.5),
       ),
       child: Row(
@@ -185,54 +188,54 @@ class _SettingsPageState extends State<SettingsPage> {
           ClipOval(
             child: Image.network(
               'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-              width: 52,
-              height: 52,
+              width: 56,
+              height: 56,
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Floyd Miles',
-                  style: GoogleFonts.nunito(
+                  _profileName,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1A1A1A),
-                    letterSpacing: -0.3,
+                    color: Color(0xFF1A1A1A),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'tanya.hill@example.com',
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    color: const Color(0xFF888888),
+                  _profileEmail,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: Color(0xFF888888),
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           TextButton(
-            onPressed: () {
-              // TODO: navigate to edit profile
-            },
+            onPressed: () => _showEditProfileSheet(context),
             style: TextButton.styleFrom(
               backgroundColor: const Color(0xFFFFF1EC),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
             child: Text(
               'Edit',
-              style: GoogleFonts.nunito(
-                fontSize: 13,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFFF4F0F),
+                color: Color(0xFFFF4F0F),
               ),
             ),
           ),
@@ -244,11 +247,11 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSectionLabel(String label) {
     return Text(
       label.toUpperCase(),
-      style: GoogleFonts.nunito(
-        fontSize: 11,
-        fontWeight: FontWeight.w800,
-        color: const Color(0xFFBBBAB5),
-        letterSpacing: 1.2,
+      style: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFFBBBAB5),
       ),
     );
   }
@@ -257,7 +260,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.black.withOpacity(0.06), width: 0.5),
       ),
       child: Column(children: children),
@@ -303,9 +306,8 @@ class _SettingsPageState extends State<SettingsPage> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: iconBgColor ??
-                  const Color(0xFFFF4F0F).withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
+              color: iconBgColor ?? const Color(0xFFFF4F0F).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
@@ -313,26 +315,28 @@ class _SettingsPageState extends State<SettingsPage> {
               size: 20,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.nunito(
-                    fontSize: 15,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1A1A1A),
+                    color: Color(0xFF1A1A1A),
                   ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 1),
                   Text(
                     subtitle,
-                    style: GoogleFonts.nunito(
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 12,
-                      color: const Color(0xFF888888),
+                      color: Color(0xFF888888),
                     ),
                   ),
                 ],
@@ -372,9 +376,8 @@ class _SettingsPageState extends State<SettingsPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: iconBgColor ??
-                    const Color(0xFFFF4F0F).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
+                color: iconBgColor ?? const Color(0xFFFF4F0F).withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
@@ -382,15 +385,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 size: 20,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.nunito(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: titleColor ?? const Color(0xFF1A1A1A),
                     ),
@@ -399,9 +403,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 1),
                     Text(
                       subtitle,
-                      style: GoogleFonts.nunito(
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 12,
-                        color: const Color(0xFF888888),
+                        color: Color(0xFF888888),
                       ),
                     ),
                   ],
@@ -411,7 +416,7 @@ class _SettingsPageState extends State<SettingsPage> {
             const Icon(
               Icons.chevron_right_rounded,
               color: Color(0xFFCCCAC4),
-              size: 18,
+              size: 20,
             ),
           ],
         ),
@@ -419,7 +424,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showChangePasswordSheet(BuildContext context) {
+  void _showEditProfileSheet(BuildContext context) {
+    // Create text controllers with current values
+    final nameController = TextEditingController(text: _profileName);
+    final emailController = TextEditingController(text: _profileEmail);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -433,7 +442,7 @@ class _SettingsPageState extends State<SettingsPage> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,45 +451,123 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Container(
                   width: 40,
                   height: 4,
+                  margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
               Text(
-                'Change Password',
-                style: GoogleFonts.nunito(
+                'Edit Profile',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A1A1A),
-                  letterSpacing: -0.4,
+                  color: Color(0xFF1A1A1A),
                 ),
               ),
-              const SizedBox(height: 20),
-              _buildPasswordField('Current Password'),
+              const SizedBox(height: 16),
+              // Name field label
+              const Text(
+                'Name',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: nameController,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  color: Color(0xFF1A1A1A),
+                ),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFF0F0F0),
+                  hintText: 'Enter your name',
+                  hintStyle: const TextStyle(
+                    fontFamily: 'Inter',
+                    color: Colors.black38,
+                    fontSize: 16,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
-              _buildPasswordField('New Password'),
-              const SizedBox(height: 12),
-              _buildPasswordField('Confirm New Password'),
+              // Email field label
+              const Text(
+                'Email',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  color: Color(0xFF1A1A1A),
+                ),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFF0F0F0),
+                  hintText: 'Enter your email',
+                  hintStyle: const TextStyle(
+                    fontFamily: 'Inter',
+                    color: Colors.black38,
+                    fontSize: 16,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    setState(() {
+                      _profileName = nameController.text;
+                      _profileEmail = emailController.text;
+                    });
+                    Navigator.pop(context);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF4F0F),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: Text(
-                    'Update Password',
-                    style: GoogleFonts.nunito(
-                      fontSize: 15,
+                    'Save Changes',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -494,28 +581,153 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildPasswordField(String hint) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F6F2),
-        borderRadius: BorderRadius.circular(14),
+  void _showChangePasswordSheet(BuildContext context) {
+    // Create a mutable object to hold visibility state
+    final passwordVisibility = {
+      'current': false,
+      'new': false,
+      'confirm': false,
+    };
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Text(
+                  'Change Password',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildPasswordFieldModal(
+                  'Current Password',
+                  isVisible: passwordVisibility['current']!,
+                  onVisibilityToggle: () {
+                    setModalState(() {
+                      passwordVisibility['current'] =
+                          !passwordVisibility['current']!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildPasswordFieldModal(
+                  'New Password',
+                  isVisible: passwordVisibility['new']!,
+                  onVisibilityToggle: () {
+                    setModalState(() {
+                      passwordVisibility['new'] = !passwordVisibility['new']!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildPasswordFieldModal(
+                  'Confirm New Password',
+                  isVisible: passwordVisibility['confirm']!,
+                  onVisibilityToggle: () {
+                    setModalState(() {
+                      passwordVisibility['confirm'] =
+                          !passwordVisibility['confirm']!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF4F0F),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Update Password',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: TextField(
-        obscureText: true,
-        style: GoogleFonts.nunito(fontSize: 15, color: const Color(0xFF1A1A1A)),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.nunito(
-            color: const Color(0xFFBBBAB5),
-            fontSize: 15,
+    );
+  }
+
+  Widget _buildPasswordFieldModal(
+    String hint, {
+    required bool isVisible,
+    required VoidCallback onVisibilityToggle,
+  }) {
+    return TextFormField(
+      obscureText: !isVisible,
+      style: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 16,
+        color: Color(0xFF1A1A1A),
+      ),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFFF0F0F0),
+        hintText: hint,
+        hintStyle: const TextStyle(
+          fontFamily: 'Inter',
+          color: Colors.black38,
+          fontSize: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            isVisible ? Icons.visibility : Icons.visibility_off,
+            color: Colors.grey,
+            size: 20,
           ),
-          border: InputBorder.none,
-          suffixIcon: const Icon(
-            Icons.visibility_outlined,
-            color: Color(0xFFBBBAB5),
-            size: 18,
-          ),
+          onPressed: onVisibilityToggle,
         ),
       ),
     );
@@ -547,19 +759,21 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 16),
               Text(
                 'Delete Account?',
-                style: GoogleFonts.nunito(
-                  fontSize: 18,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A1A1A),
+                  color: Color(0xFF1A1A1A),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 'This action is permanent and cannot be undone. All your data, orders, and reviews will be deleted.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
-                  fontSize: 13,
-                  color: const Color(0xFF888888),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  color: Color(0xFF888888),
                   height: 1.5,
                 ),
               ),
@@ -571,36 +785,38 @@ class _SettingsPageState extends State<SettingsPage> {
                       onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(
                         backgroundColor: const Color(0xFFF7F6F2),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.nunito(
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A1A1A),
+                          color: Color(0xFF1A1A1A),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE24B4A),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       child: Text(
                         'Delete',
-                        style: GoogleFonts.nunito(
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -638,29 +854,30 @@ class _SettingsPageState extends State<SettingsPage> {
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.logout_rounded,
-                  color: Color(0xFFE24B4A), size: 28),
+                  color: Color(0xFFE24B4A), size: 32),
             ),
             const SizedBox(height: 16),
             Text(
               'Log Out?',
-              style: GoogleFonts.nunito(
+              style: const TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF1A1A1A),
-                letterSpacing: -0.4,
+                color: Color(0xFF1A1A1A),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
               "You'll need to sign in again to\naccess your account and orders.",
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: const TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 14,
-                color: const Color(0xFF888888),
+                color: Color(0xFF888888),
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
             Row(
               children: [
                 Expanded(
@@ -668,17 +885,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     onPressed: () => Navigator.pop(context),
                     style: TextButton.styleFrom(
                       backgroundColor: const Color(0xFFF4F4F4),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     child: Text(
                       'Cancel',
-                      style: GoogleFonts.nunito(
-                        fontSize: 15,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1A1A1A),
+                        color: Color(0xFF1A1A1A),
                       ),
                     ),
                   ),
@@ -696,16 +914,17 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE24B4A),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     child: Text(
                       'Log Out',
-                      style: GoogleFonts.nunito(
-                        fontSize: 15,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),

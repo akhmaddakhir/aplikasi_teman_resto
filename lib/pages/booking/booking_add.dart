@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import './table_booking.dart';
 
 class BookingAddPage extends StatefulWidget {
@@ -209,7 +208,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                   child: Center(
                     child: Text(
                       '${_getMonthName(_selectedDate.month)} ${_selectedDate.year}',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.3,
@@ -234,7 +234,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                           child: Center(
                             child: Text(
                               d,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFFAAAAAA),
@@ -309,7 +310,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                           child: Center(
                             child: Text(
                               '$dayNum',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 13,
                                 fontWeight: (isSel || isToday)
                                     ? FontWeight.w700
@@ -433,7 +435,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                 ),
                 child: Text(
                   time,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: isSelected
@@ -458,7 +461,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
             const SizedBox(width: 6),
             Text(
               'Tidak tersedia',
-              style: GoogleFonts.inter(
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 11,
                 color: const Color(0xFF999999),
               ),
@@ -481,7 +485,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
       child: Center(
         child: Text(
           '00',
-          style: GoogleFonts.inter(
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: 9,
             fontWeight: FontWeight.w600,
             color: color,
@@ -522,7 +527,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
           child: Center(
             child: Text(
               text,
-              style: GoogleFonts.inter(
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: isActive
@@ -557,7 +563,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                     child: Text(
                       'Book a Table',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -577,7 +584,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                     // ── GUESTS ──
                     Text(
                       'Guests',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -597,7 +605,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                             alignment: Alignment.center,
                             child: Text(
                               '$_guestCount',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 18,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -613,7 +622,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                     // ── DATE ──
                     Text(
                       'Date',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -626,7 +636,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           _dateError!,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: Colors.red,
@@ -639,7 +650,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                     // ── TIME ──
                     Text(
                       'Time',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -652,7 +664,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           _timeError!,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: Colors.red,
