@@ -15,7 +15,7 @@ class ProfilePage extends StatelessWidget {
           _buildHeader(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 136),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -33,16 +33,14 @@ class ProfilePage extends StatelessWidget {
                       icon: Icons.credit_card_outlined,
                       title: 'Payment',
                       subtitle: 'Visa •••• 4242',
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/payment'),
+                      onTap: () => Navigator.pushNamed(context, '/payment'),
                     ),
                     _MenuItemData(
                       icon: Icons.receipt_long_outlined,
                       title: 'My Orders',
                       subtitle: '3 active orders',
                       badge: '3',
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/orders'),
+                      onTap: () => Navigator.pushNamed(context, '/orders'),
                     ),
                   ], context),
                   const SizedBox(height: 24),
@@ -52,8 +50,7 @@ class ProfilePage extends StatelessWidget {
                     _MenuItemData(
                       icon: Icons.settings_outlined,
                       title: 'Settings',
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/settings'),
+                      onTap: () => Navigator.pushNamed(context, '/settings'),
                     ),
                     _MenuItemData(
                       icon: Icons.help_outline_rounded,
@@ -89,12 +86,12 @@ class ProfilePage extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 92,
-                  height: 92,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.4), width: 3),
+                        color: Colors.white.withOpacity(0.4), width: 1),
                   ),
                   child: ClipOval(
                     child: Image.network(
@@ -105,7 +102,7 @@ class ProfilePage extends StatelessWidget {
                 ),
                 Positioned(
                   bottom: 0,
-                  right: 0,
+                  right: 6,
                   child: Container(
                     width: 26,
                     height: 26,
@@ -114,12 +111,12 @@ class ProfilePage extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.edit_outlined,
-                        size: 14, color: _orange),
+                        size: 16, color: _orange),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             const Text(
               'Floyd Miles',
               style: TextStyle(
@@ -127,7 +124,6 @@ class ProfilePage extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 4),
@@ -136,7 +132,7 @@ class ProfilePage extends StatelessWidget {
               style: TextStyle(
                 fontFamily: _font,
                 color: Colors.white.withOpacity(0.75),
-                fontSize: 13,
+                fontSize: 14,
               ),
             ),
             const SizedBox(height: 6),
@@ -144,8 +140,8 @@ class ProfilePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.location_on,
-                    color: Colors.white.withOpacity(0.75), size: 13),
-                const SizedBox(width: 3),
+                    color: Colors.white.withOpacity(0.75), size: 14),
+                const SizedBox(width: 2),
                 Text(
                   'Jakarta, Indonesia',
                   style: TextStyle(
@@ -156,7 +152,7 @@ class ProfilePage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
             // Stats row
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -175,7 +171,7 @@ class ProfilePage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -222,7 +218,7 @@ class ProfilePage extends StatelessWidget {
       label.toUpperCase(),
       style: const TextStyle(
         fontFamily: _font,
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: FontWeight.w700,
         color: Color(0xFFBBBBBB),
         letterSpacing: 1.2,
@@ -230,19 +226,17 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuCard(
-      List<_MenuItemData> items, BuildContext context) {
+  Widget _buildMenuCard(List<_MenuItemData> items, BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-            color: Colors.black.withOpacity(0.06), width: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.28), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -256,8 +250,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(
-      _MenuItemData item, bool isLast, BuildContext context) {
+  Widget _buildMenuItem(_MenuItemData item, bool isLast, BuildContext context) {
     final Color iconColor =
         item.isDestructive ? const Color(0xFFE24B4A) : _orange;
     final Color iconBg = item.isDestructive
@@ -266,12 +259,11 @@ class ProfilePage extends StatelessWidget {
 
     return InkWell(
       onTap: item.onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 Container(
@@ -279,11 +271,11 @@ class ProfilePage extends StatelessWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     color: iconBg,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(item.icon, color: iconColor, size: 20),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,7 +284,7 @@ class ProfilePage extends StatelessWidget {
                         item.title,
                         style: TextStyle(
                           fontFamily: _font,
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: item.isDestructive
                               ? const Color(0xFFE24B4A)
@@ -315,18 +307,18 @@ class ProfilePage extends StatelessWidget {
                 ),
                 if (item.badge != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: _orange,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                     child: Text(
                       item.badge!,
                       style: const TextStyle(
                         fontFamily: _font,
                         color: Colors.white,
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -337,7 +329,7 @@ class ProfilePage extends StatelessWidget {
                   color: item.isDestructive
                       ? const Color(0xFFE24B4A).withOpacity(0.4)
                       : const Color(0xFFCCCCCC),
-                  size: 18,
+                  size: 20,
                 ),
               ],
             ),
@@ -396,7 +388,7 @@ class _LogoutBottomSheet extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+      padding: const EdgeInsets.fromLTRB(16, 32, 16, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -407,8 +399,11 @@ class _LogoutBottomSheet extends StatelessWidget {
               color: Color(0xFFFFEEEE),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.logout_rounded,
-                color: Color(0xFFE24B4A), size: 28),
+            child: const Icon(
+              Icons.logout_rounded,
+              color: Color(0xFFE24B4A),
+              size: 32,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -418,10 +413,9 @@ class _LogoutBottomSheet extends StatelessWidget {
               fontSize: 20,
               fontWeight: FontWeight.w800,
               color: Color(0xFF1A1A1A),
-              letterSpacing: -0.4,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           const Text(
             "You'll need to sign in again to\naccess your account and orders.",
             textAlign: TextAlign.center,
@@ -432,7 +426,7 @@ class _LogoutBottomSheet extends StatelessWidget {
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
           Row(
             children: [
               Expanded(
@@ -440,16 +434,16 @@ class _LogoutBottomSheet extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF4F4F4),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
                     'Cancel',
                     style: TextStyle(
                       fontFamily: _font,
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
                     ),
@@ -469,17 +463,17 @@ class _LogoutBottomSheet extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE24B4A),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
                     'Log Out',
                     style: TextStyle(
                       fontFamily: _font,
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),

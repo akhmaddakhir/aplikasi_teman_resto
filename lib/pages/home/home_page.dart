@@ -323,7 +323,7 @@ class _HomePageState extends State<HomePage> {
                                   builder: (_) => const RestaurantDetail()),
                             ),
                           ),
-                          const SizedBox(height: 64),
+                          const SizedBox(height: 56),
                         ],
                       ),
                     ),

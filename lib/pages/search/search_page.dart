@@ -70,7 +70,7 @@ class _SearchPageState extends State<SearchPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 56),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

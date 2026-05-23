@@ -109,7 +109,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
               slivers: [
                 _buildAppBar(),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 160),
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 136),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _animated(0, _buildDistanceSection()),

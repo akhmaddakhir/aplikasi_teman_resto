@@ -161,7 +161,7 @@ class WishlistState extends State<WishlistPage> {
               child: filtered.isEmpty
                   ? _buildEmptyState()
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 56),
                       itemCount: filtered.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 16),
                       itemBuilder: (context, index) =>

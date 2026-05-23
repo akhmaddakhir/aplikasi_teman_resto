@@ -327,7 +327,7 @@ class _SearchResultsState extends State<SearchResults> {
                 child: results.isEmpty
                     ? _EmptyState(query: _query)
                     : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 56),
                         itemCount: results.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 16),
                         itemBuilder: (_, i) => _ResultCard(

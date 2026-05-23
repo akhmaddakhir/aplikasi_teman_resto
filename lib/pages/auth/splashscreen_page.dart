@@ -132,8 +132,6 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 8),
-
                   // Brand name
                   SlideTransition(
                     position: _titleSlide,
@@ -144,7 +142,7 @@ class _SplashScreenState extends State<SplashScreen>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 34,
+                          fontSize: 32,
                           fontWeight: FontWeight.w800,
                           color: _primary,
                           letterSpacing: -0.8,
