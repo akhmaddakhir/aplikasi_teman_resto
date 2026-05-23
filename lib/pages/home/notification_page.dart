@@ -19,7 +19,7 @@ class _NotificationPageState extends State<NotificationPage> {
   static const Color _primaryOrange = Color(0xFFFF4F0F);
   static const Color _unreadBg = Color(0xFFFFFAF8);
   static const Color _unreadBorder = Color(0xFFFFE0D6);
-  static const Color _grayText = Color(0xFF999999);
+  static const Color _grayText = Color(0xFF4A4A4A);
   static const Color _lightGray = Color(0xFFF3F3F3);
   static const Color _textBlack = Color(0xFF111111);
 
@@ -30,7 +30,8 @@ class _NotificationPageState extends State<NotificationPage> {
       id: 0,
       type: 'promo',
       title: 'Weekend Special Deal',
-      desc: 'Get 30% off all bookings this weekend at Melati Restaurant. Valid Sat–Sun only.',
+      desc:
+          'Get 30% off all bookings this weekend at Melati Restaurant. Valid Sat–Sun only.',
       time: '2m ago',
       isUnread: true,
       day: 'TODAY',
@@ -39,7 +40,8 @@ class _NotificationPageState extends State<NotificationPage> {
       id: 1,
       type: 'booking',
       title: 'Booking Confirmed',
-      desc: 'Your table for 2 at Panon Njawi on Sat, 10 May at 19:00 is confirmed.',
+      desc:
+          'Your table for 2 at Panon Njawi on Sat, 10 May at 19:00 is confirmed.',
       time: '1h ago',
       isUnread: true,
       day: 'TODAY',
@@ -48,7 +50,8 @@ class _NotificationPageState extends State<NotificationPage> {
       id: 2,
       type: 'booking',
       title: 'Booking Reminder',
-      desc: "Don't forget! You have a reservation at Lakana Restaurant today at 18:30.",
+      desc:
+          "Don't forget! You have a reservation at Lakana Restaurant today at 18:30.",
       time: '3h ago',
       isUnread: true,
       day: 'TODAY',
@@ -57,7 +60,8 @@ class _NotificationPageState extends State<NotificationPage> {
       id: 3,
       type: 'promo',
       title: 'New Restaurant Alert',
-      desc: 'SEMAJA Menteng is now live on the app. Be the first to book a table!',
+      desc:
+          'SEMAJA Menteng is now live on the app. Be the first to book a table!',
       time: '5h ago',
       isUnread: false,
       day: 'TODAY',
@@ -66,7 +70,8 @@ class _NotificationPageState extends State<NotificationPage> {
       id: 4,
       type: 'booking',
       title: 'Review Request',
-      desc: 'How was your dinner at Kinan Dapur? Tap here to share your experience.',
+      desc:
+          'How was your dinner at Kinan Dapur? Tap here to share your experience.',
       time: 'Yesterday',
       isUnread: false,
       day: 'YESTERDAY',
@@ -75,7 +80,8 @@ class _NotificationPageState extends State<NotificationPage> {
       id: 5,
       type: 'system',
       title: 'Account Verified',
-      desc: 'Your phone number has been verified successfully. Enjoy full access!',
+      desc:
+          'Your phone number has been verified successfully. Enjoy full access!',
       time: '2d ago',
       isUnread: false,
       day: 'EARLIER',
@@ -84,7 +90,8 @@ class _NotificationPageState extends State<NotificationPage> {
       id: 6,
       type: 'system',
       title: 'App Update Available',
-      desc: 'Version 2.1.0 is here with smoother booking flow and new restaurant filters.',
+      desc:
+          'Version 2.1.0 is here with smoother booking flow and new restaurant filters.',
       time: '5d ago',
       isUnread: false,
       day: 'EARLIER',
@@ -93,7 +100,9 @@ class _NotificationPageState extends State<NotificationPage> {
 
   List<NotifModel> get _filteredNotifs {
     if (_currentFilter == 'All') return _notifications;
-    return _notifications.where((n) => n.type.toLowerCase() == _currentFilter.toLowerCase()).toList();
+    return _notifications
+        .where((n) => n.type.toLowerCase() == _currentFilter.toLowerCase())
+        .toList();
   }
 
   @override
@@ -110,7 +119,8 @@ class _NotificationPageState extends State<NotificationPage> {
         centerTitle: true,
         leading: Center(
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: _textBlack),
+            icon: const Icon(Icons.arrow_back_ios_new,
+                size: 20, color: _textBlack),
             onPressed: () => Navigator.maybePop(context),
           ),
         ),
@@ -135,7 +145,8 @@ class _NotificationPageState extends State<NotificationPage> {
                   onTap: () => setState(() => _currentFilter = filter),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     decoration: BoxDecoration(
                       color: isActive ? _primaryOrange : Colors.white,
                       borderRadius: BorderRadius.circular(50),
@@ -167,7 +178,8 @@ class _NotificationPageState extends State<NotificationPage> {
               itemCount: _filteredNotifs.length,
               itemBuilder: (context, index) {
                 final item = _filteredNotifs[index];
-                bool showLabel = index == 0 || item.day != _filteredNotifs[index - 1].day;
+                bool showLabel =
+                    index == 0 || item.day != _filteredNotifs[index - 1].day;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,8 +273,12 @@ class _NotificationPageState extends State<NotificationPage> {
                           notif.title,
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: notif.isUnread ? FontWeight.w800 : FontWeight.w600,
-                            color: notif.isUnread ? _textBlack : const Color(0xFF666666),
+                            fontWeight: notif.isUnread
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                            color: notif.isUnread
+                                ? _textBlack
+                                : const Color(0xFF666666),
                           ),
                         ),
                       ),
@@ -281,7 +297,9 @@ class _NotificationPageState extends State<NotificationPage> {
                     notif.desc,
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: notif.isUnread ? const Color(0xFF777777) : const Color(0xFFAAAAAA),
+                      color: notif.isUnread
+                          ? const Color(0xFF777777)
+                          : const Color(0xFFAAAAAA),
                       height: 1.4,
                     ),
                     maxLines: 2,

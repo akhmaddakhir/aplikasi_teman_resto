@@ -197,7 +197,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 height: 36,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   itemCount: _filters.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (_, i) {
@@ -224,7 +224,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color:
-                                active ? Colors.white : const Color(0xFF999999),
+                                active ? Colors.white : const Color(0xFF4A4A4A),
                           ),
                         ),
                       ),

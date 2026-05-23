@@ -18,7 +18,6 @@ class WishlistState extends State<WishlistPage> {
     'Javanese',
     'Balinese',
     'Sundanese',
-    'Betawi',
     'Minang',
   ];
 
@@ -99,7 +98,7 @@ class WishlistState extends State<WishlistPage> {
           children: [
             // ── Header ──────────────────────────────────────────
             const Padding(
-              padding: EdgeInsets.fromLTRB(20, 22, 20, 0),
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 0),
               child: Center(
                 child: Text(
                   'Wishlist',
@@ -108,20 +107,19 @@ class WishlistState extends State<WishlistPage> {
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF0A0A0A),
-                    letterSpacing: -0.5,
                   ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 24),
 
             // ── Filter Chips ─────────────────────────────────────
             SizedBox(
               height: 36,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: cuisineFilters.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
@@ -132,7 +130,7 @@ class WishlistState extends State<WishlistPage> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOut,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       decoration: BoxDecoration(
                         color: isSelected ? _orange : const Color(0xFFF4F4F4),
                         borderRadius: BorderRadius.circular(50),
@@ -156,14 +154,14 @@ class WishlistState extends State<WishlistPage> {
               ),
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 24),
 
             // ── Card List ────────────────────────────────────────
             Expanded(
               child: filtered.isEmpty
                   ? _buildEmptyState()
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
                       itemCount: filtered.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 16),
                       itemBuilder: (context, index) =>
@@ -182,34 +180,34 @@ class WishlistState extends State<WishlistPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 80,
+            height: 80,
             decoration: const BoxDecoration(
               color: Color(0xFFF4F4F4),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.bookmark_border_rounded,
-              size: 28,
+              size: 40,
               color: Color(0xFFCCCCCC),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           const Text(
             'No saved restaurants',
             style: TextStyle(
               fontFamily: _font,
-              fontSize: 15,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: Color(0xFF1A1A1A),
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           const Text(
             'Restaurants you save will appear here.',
             style: TextStyle(
               fontFamily: _font,
-              fontSize: 13,
+              fontSize: 14,
               color: Color(0xFFAAAAAA),
               fontWeight: FontWeight.w400,
             ),
@@ -245,63 +243,73 @@ class _WishlistCardState extends State<_WishlistCard> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => RestaurantDetail()),
+        MaterialPageRoute(builder: (_) => const RestaurantDetail()),
       ),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.07),
               blurRadius: 16,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Gambar ──────────────────────────────────────────
             ClipRRect(
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
+                  const BorderRadius.vertical(top: Radius.circular(16)),
               child: Stack(
                 children: [
                   Image.asset(
                     item['image'],
                     width: double.infinity,
-                    height: 195,
+                    height: 168,
                     fit: BoxFit.cover,
                   ),
-
-                  // Gradient bawah
                   Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: 72,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.38),
-                            Colors.transparent,
+                    top: 12,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _saved = !_saved),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.13),
+                              blurRadius: 10,
+                            ),
                           ],
+                        ),
+                        child: Icon(
+                          _saved
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          size: 20,
+                          color: _saved ? _orange : const Color(0xFF000000),
                         ),
                       ),
                     ),
                   ),
-
-                  // Status badge
                   Positioned(
                     bottom: 12,
                     left: 12,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 11, vertical: 5),
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: isOpen
                             ? const Color(0xFF16A34A)
@@ -319,64 +327,30 @@ class _WishlistCardState extends State<_WishlistCard> {
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           Text(
                             isOpen
                                 ? 'Open now'
                                 : 'Closes ${item['closingTime']}',
                             style: const TextStyle(
                               fontFamily: _font,
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
-                              letterSpacing: 0.15,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-
-                  // Favourite button
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _saved = !_saved),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.13),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          _saved
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          size: 17,
-                          color: _saved ? _orange : const Color(0xFFCCCCCC),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
-
-            // ── Info ─────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(15, 14, 15, 16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nama + rating chip
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -388,33 +362,30 @@ class _WishlistCardState extends State<_WishlistCard> {
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF0A0A0A),
-                            letterSpacing: -0.35,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 5),
+                            horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF3EE),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.star_rounded,
-                                size: 13, color: _orange),
-                            const SizedBox(width: 3),
+                                size: 14, color: _orange),
+                            const SizedBox(width: 4),
                             Text(
                               item['rating'],
                               style: const TextStyle(
                                 fontFamily: _font,
-                                fontSize: 12.5,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w800,
                                 color: _orange,
-                                letterSpacing: -0.1,
                               ),
                             ),
                           ],
@@ -422,40 +393,32 @@ class _WishlistCardState extends State<_WishlistCard> {
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 10),
-
-                  // Info chips: durasi + cuisine
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       _InfoChip(
                         icon: Icons.access_time_rounded,
                         label: item['duration'],
                       ),
-                      const SizedBox(width: 7),
+                      const SizedBox(width: 8),
                       _InfoChip(
                         icon: Icons.restaurant_rounded,
                         label: item['cuisine'],
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 11),
-
+                  const SizedBox(height: 16),
                   const Divider(
                     height: 1,
                     thickness: 0.5,
                     color: Color(0xFFEEEEEE),
                   ),
-
-                  const SizedBox(height: 11),
-
-                  // Alamat
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       const Icon(Icons.location_on_rounded,
-                          size: 13, color: Color(0xFFC0C0C0)),
-                      const SizedBox(width: 5),
+                          size: 14, color: Color(0xFFC0C0C0)),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           item['address'],
@@ -499,13 +462,13 @@ class _InfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: _orange),
-          const SizedBox(width: 5),
+          Icon(icon, size: 14, color: _orange),
+          const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
