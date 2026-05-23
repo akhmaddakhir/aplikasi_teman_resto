@@ -48,8 +48,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
                       itemCount: _addresses.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 12),
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, i) =>
                           _buildAddressCard(_addresses[i], context),
                     ),
@@ -65,23 +64,23 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
   Widget _buildTopBar(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(8, 16, 20, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            color: const Color(0xFF1A1A1A),
+            color: const Color(0xFF0D0D0D),
           ),
           Expanded(
             child: Text(
               'Manage Address',
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: const TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1A1A1A),
-                letterSpacing: -0.3,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0D0D0D),
               ),
             ),
           ),
@@ -95,12 +94,12 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: data.isDefault
               ? _orange.withOpacity(0.4)
-              : Colors.black.withOpacity(0.06),
-          width: data.isDefault ? 1.5 : 0.5,
+              : Colors.white.withOpacity(0.28),
+          width: data.isDefault ? 1 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -115,7 +114,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
         children: [
           // Header row
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 8, 0),
+            padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
             child: Row(
               children: [
                 Container(
@@ -123,32 +122,32 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: _orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(data.icon, color: _orange, size: 18),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Text(
                   data.label,
                   style: GoogleFonts.nunito(
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF1A1A1A),
                   ),
                 ),
                 if (data.isDefault) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
                       color: _orange,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                     child: Text(
                       'Default',
                       style: GoogleFonts.nunito(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -160,7 +159,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                   icon: const Icon(Icons.more_vert_rounded,
                       color: Color(0xFFBBBBBB), size: 20),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   onSelected: (value) {
                     if (value == 'edit') {
@@ -179,7 +178,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                           children: [
                             const Icon(Icons.check_circle_outline_rounded,
                                 size: 18, color: Color(0xFF1A1A1A)),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
                             Text('Set as Default',
                                 style: GoogleFonts.nunito(
                                     fontWeight: FontWeight.w600)),
@@ -192,7 +191,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                         children: [
                           const Icon(Icons.edit_outlined,
                               size: 18, color: Color(0xFF1A1A1A)),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Text('Edit',
                               style: GoogleFonts.nunito(
                                   fontWeight: FontWeight.w600)),
@@ -206,7 +205,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                           children: [
                             const Icon(Icons.delete_outline_rounded,
                                 size: 18, color: Color(0xFFE24B4A)),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
                             Text('Delete',
                                 style: GoogleFonts.nunito(
                                   fontWeight: FontWeight.w600,
@@ -222,31 +221,31 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
           ),
           // Address detail
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Icon(Icons.person_outline_rounded,
-                        size: 14, color: Colors.grey.shade500),
-                    const SizedBox(width: 6),
+                        size: 16, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
                     Text(
                       '${data.name}  ·  ${data.phone}',
                       style: GoogleFonts.nunito(
-                        fontSize: 13,
+                        fontSize: 14,
                         color: const Color(0xFF555555),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(top: 1),
+                      padding: const EdgeInsets.only(top: 2),
                       child: Icon(Icons.location_on_outlined,
                           size: 14, color: Colors.grey.shade500),
                     ),
@@ -255,7 +254,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                       child: Text(
                         '${data.address},\n${data.city}',
                         style: GoogleFonts.nunito(
-                          fontSize: 13,
+                          fontSize: 14,
                           color: const Color(0xFF777777),
                           height: 1.5,
                         ),
@@ -274,7 +273,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
   Widget _buildEmptyState() {
     return Center(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             width: 80,
@@ -289,12 +288,12 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
           Text(
             'No addresses yet',
             style: GoogleFonts.nunito(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF1A1A1A),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             'Add your delivery address to\nget started with ordering.',
             textAlign: TextAlign.center,
@@ -311,7 +310,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
 
   Widget _buildAddButton(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
@@ -320,7 +319,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
           label: Text(
             'Add New Address',
             style: GoogleFonts.nunito(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -328,10 +327,8 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
             backgroundColor: _orange,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            elevation: 4,
-            shadowColor: _orange.withOpacity(0.35),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ),
@@ -351,8 +348,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
     showDialog(
       context: context,
       builder: (_) => Dialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -372,17 +368,17 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
               Text(
                 'Delete Address?',
                 style: GoogleFonts.nunito(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A1A1A),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 'Are you sure you want to remove the "${data.label}" address?',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
-                  fontSize: 13,
+                  fontSize: 14,
                   color: const Color(0xFF888888),
                   height: 1.5,
                 ),
@@ -395,10 +391,9 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                       onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(
                         backgroundColor: const Color(0xFFF7F6F2),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: Text(
@@ -411,7 +406,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
@@ -421,11 +416,10 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE24B4A),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: Text(
@@ -448,16 +442,12 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
   }
 
   void _showAddressSheet(BuildContext context, {_AddressData? existing}) {
-    final labelController =
-        TextEditingController(text: existing?.label ?? '');
-    final nameController =
-        TextEditingController(text: existing?.name ?? '');
-    final phoneController =
-        TextEditingController(text: existing?.phone ?? '');
+    final labelController = TextEditingController(text: existing?.label ?? '');
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    final phoneController = TextEditingController(text: existing?.phone ?? '');
     final addressController =
         TextEditingController(text: existing?.address ?? '');
-    final cityController =
-        TextEditingController(text: existing?.city ?? '');
+    final cityController = TextEditingController(text: existing?.city ?? '');
 
     showModalBottomSheet(
       context: context,
@@ -472,7 +462,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -482,7 +472,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                 child: Container(
                   width: 40,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
+                  margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(2),
@@ -495,10 +485,9 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A1A1A),
-                  letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _buildField('Label (e.g. Home, Office)', labelController),
               const SizedBox(height: 12),
               _buildField('Full Name', nameController),
@@ -517,9 +506,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                     if (existing == null) {
                       setState(() {
                         _addresses.add(_AddressData(
-                          id: DateTime.now()
-                              .millisecondsSinceEpoch
-                              .toString(),
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
                           label: labelController.text.isEmpty
                               ? 'Address'
                               : labelController.text,
@@ -547,13 +534,13 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: Text(
                     existing == null ? 'Save Address' : 'Update Address',
                     style: GoogleFonts.nunito(
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -576,20 +563,19 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF7F6F2),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
-        style: GoogleFonts.nunito(
-            fontSize: 15, color: const Color(0xFF1A1A1A)),
+        style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1A1A1A)),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.nunito(
             color: const Color(0xFFBBBAB5),
-            fontSize: 15,
+            fontSize: 14,
           ),
           border: InputBorder.none,
         ),
