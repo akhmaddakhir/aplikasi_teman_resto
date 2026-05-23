@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:teman_resto/pages/search/search_results.dart';
 
 class FilterPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
   // ── State ──────────────────────────────────────────────────────────
   String? selectedCuisine;
   String? selectedRating;
-  double selectedDistance = 5.0;
+  double selectedDistance = 1.0;
 
   // ── Data ───────────────────────────────────────────────────────────
   static const List<_DistanceOption> _distanceOptions = [
@@ -40,15 +41,14 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
     'Balinese',
     'Sundanese',
     'Minang',
-    'Betawi',
   ];
 
   final List<_RatingOption> _ratingOptions = const [
-    _RatingOption(label: '4.6 – 5.0 ★ Excellent', filled: 5, half: false),
-    _RatingOption(label: '4.1 – 4.5 ★ Very Good', filled: 4, half: true),
-    _RatingOption(label: '3.6 – 4.0 ★ Good', filled: 4, half: false),
-    _RatingOption(label: '3.1 – 3.5 ★ Fair', filled: 3, half: true),
-    _RatingOption(label: '2.6 – 3.0 ★ Average', filled: 3, half: false),
+    _RatingOption(label: '4.6 – 5.0 Excellent', filled: 5, half: false),
+    _RatingOption(label: '4.1 – 4.5 Very Good', filled: 4, half: true),
+    _RatingOption(label: '3.6 – 4.0 Good', filled: 4, half: false),
+    _RatingOption(label: '3.1 – 3.5 Fair', filled: 3, half: true),
+    _RatingOption(label: '2.6 – 3.0 Average', filled: 3, half: false),
   ];
 
   // ── Animation ──────────────────────────────────────────────────────
@@ -106,17 +106,16 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
         body: Stack(
           children: [
             CustomScrollView(
-              physics: const BouncingScrollPhysics(),
               slivers: [
                 _buildAppBar(),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 160),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _animated(0, _buildDistanceSection()),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       _animated(1, _buildCuisineSection()),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       _animated(2, _buildRatingSection()),
                     ]),
                   ),
@@ -161,7 +160,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.white,
       systemOverlayStyle: SystemUiOverlayStyle.dark,
-      toolbarHeight: 70,
+      toolbarHeight: 80,
       centerTitle: true,
       leading: Center(
         child: IconButton(
@@ -173,11 +172,10 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
       title: const Text(
         'Filter',
         style: TextStyle(
-          fontFamily: 'Georgia',
-          fontSize: 17,
+          fontFamily: 'Inter',
+          fontSize: 18,
           fontWeight: FontWeight.w700,
           color: _ink,
-          letterSpacing: -0.5,
         ),
       ),
       actions: [
@@ -191,7 +189,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
                 duration: const Duration(milliseconds: 200),
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _activeCount > 0 ? _accentBg : _chip,
                     borderRadius: BorderRadius.circular(20),
@@ -199,11 +197,10 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
                   child: Text(
                     'Reset${_activeCount > 0 ? ' ($_activeCount)' : ''}',
                     style: TextStyle(
-                      fontFamily: 'Georgia',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: _activeCount > 0 ? _accent : _sub,
-                      letterSpacing: 0.1,
                     ),
                   ),
                 ),
@@ -241,27 +238,26 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
         children: [
           // Card header
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
                     color: _accentBg,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, size: 17, color: _accent),
+                  child: Icon(icon, size: 18, color: _accent),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   label,
                   style: const TextStyle(
-                    fontFamily: 'Georgia',
-                    fontSize: 15,
+                    fontFamily: 'Inter',
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: _ink,
-                    letterSpacing: -0.3,
                   ),
                 ),
               ],
@@ -288,54 +284,45 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
           Text(
             'Max radius from your location',
             style: TextStyle(
-              fontFamily: 'Georgia',
+              fontFamily: 'Inter',
               fontSize: 12,
               color: _sub,
-              letterSpacing: 0.1,
             ),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: _distanceOptions.asMap().entries.map((e) {
-              final i = e.key;
-              final opt = e.value;
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _distanceOptions.map((opt) {
               final sel = selectedDistance == opt.value;
-              final isLast = i == _distanceOptions.length - 1;
 
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => selectedDistance = opt.value);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    margin: EdgeInsets.only(right: isLast ? 0 : 7),
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                    decoration: BoxDecoration(
-                      color: sel ? _accent : _chip,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: sel
-                          ? [
-                              BoxShadow(
-                                  color: _accent.withOpacity(0.25),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3))
-                            ]
-                          : [],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      opt.label,
-                      style: TextStyle(
-                        fontFamily: 'Georgia',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: sel ? _white : _ink,
-                        letterSpacing: 0.1,
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => selectedDistance = opt.value);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: sel ? _accent : _chip,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        opt.label,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: sel ? _white : _ink,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               );
@@ -356,9 +343,9 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
         children: [
           Text(
             'Filter restaurants by food type',
-            style: TextStyle(fontFamily: 'Georgia', fontSize: 12, color: _sub),
+            style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: _sub),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -373,39 +360,25 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: sel ? _accent : _chip,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: sel ? _accent : Colors.transparent,
                       width: 1.5,
                     ),
-                    boxShadow: sel
-                        ? [
-                            BoxShadow(
-                                color: _accent.withOpacity(0.22),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3))
-                          ]
-                        : [],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (sel) ...[
-                        const Icon(Icons.check_rounded,
-                            size: 13, color: Colors.white),
-                        const SizedBox(width: 5),
-                      ],
                       Text(
                         label,
                         style: TextStyle(
-                          fontFamily: 'Georgia',
-                          fontSize: 13,
+                          fontFamily: 'Inter',
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: sel ? _white : _ink,
-                          letterSpacing: -0.1,
                         ),
                       ),
                     ],
@@ -429,7 +402,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
         children: [
           Text(
             'Minimum average customer rating',
-            style: TextStyle(fontFamily: 'Georgia', fontSize: 12, color: _sub),
+            style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: _sub),
           ),
           const SizedBox(height: 8),
           ...List.generate(_ratingOptions.length, (i) {
@@ -468,7 +441,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
                               Text(
                                 range,
                                 style: TextStyle(
-                                  fontFamily: 'Georgia',
+                                  fontFamily: 'Inter',
                                   fontSize: 13,
                                   fontWeight:
                                       sel ? FontWeight.w700 : FontWeight.w600,
@@ -480,7 +453,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
                                 Text(
                                   badge,
                                   style: TextStyle(
-                                    fontFamily: 'Georgia',
+                                    fontFamily: 'Inter',
                                     fontSize: 11,
                                     color: _muted,
                                     letterSpacing: 0.1,
@@ -553,14 +526,14 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
       height: 56,
       decoration: BoxDecoration(
         color: _chip,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _border, width: 1.2),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          const Icon(Icons.tune_rounded, size: 21, color: _ink),
+          const Icon(Icons.tune_rounded, size: 24, color: _ink),
           Positioned(
             top: -5,
             right: -5,
@@ -575,7 +548,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
               child: Text(
                 '$_activeCount',
                 style: const TextStyle(
-                  fontFamily: 'Georgia',
+                  fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
@@ -609,14 +582,8 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
         height: 56,
         decoration: BoxDecoration(
           color: _accent,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: _accent.withOpacity(0.30),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(12),
+         
         ),
         alignment: Alignment.center,
         child: Row(
@@ -630,11 +597,10 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
                   ? 'Apply $_activeCount Filter${_activeCount > 1 ? 's' : ''}'
                   : 'Apply Filters',
               style: const TextStyle(
-                fontFamily: 'Georgia',
+                fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
-                letterSpacing: 0.1,
               ),
             ),
           ],
@@ -650,14 +616,17 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
       children: List.generate(5, (si) {
         final isHalf = si == filled && half;
         final isFilled = si < filled;
-        return Icon(
-          isHalf
-              ? Icons.star_half_rounded
-              : isFilled
-                  ? Icons.star_rounded
-                  : Icons.star_outline_rounded,
-          size: 17,
-          color: (isFilled || isHalf) ? _gold : _border,
+        return Opacity(
+          opacity: (isFilled || isHalf) ? 1.0 : 0.2,
+          child: SvgPicture.asset(
+            'assets/icons/star.svg',
+            width: 12,
+            height: 12,
+            colorFilter: ColorFilter.mode(
+              (isFilled || isHalf) ? _gold : _border,
+              BlendMode.srcIn,
+            ),
+          ),
         );
       }),
     );
