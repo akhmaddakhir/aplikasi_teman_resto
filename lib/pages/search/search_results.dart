@@ -91,7 +91,7 @@ class _SearchResultsState extends State<SearchResults> {
     },
     {
       'image': 'assets/images/gambar_restoran_6.jfif',
-      'title': 'SEMAJA Menteng',
+      'title': 'Semaja Menteng',
       'rating': '4.9',
       'duration': '40 min',
       'cuisine': 'International',
@@ -137,15 +137,14 @@ class _SearchResultsState extends State<SearchResults> {
     // Filter by distance
     if (_filterDistance != null) {
       filtered = filtered.where((r) {
-        final distStr =
-            (r['distance'] as String).replaceAll(' km', '').trim();
+        final distStr = (r['distance'] as String).replaceAll(' km', '').trim();
         final dist = double.tryParse(distStr) ?? 0.0;
         return dist <= _filterDistance!;
       }).toList();
     }
 
-    filtered.sort(
-        (a, b) => (a['title'] as String).compareTo(b['title'] as String));
+    filtered
+        .sort((a, b) => (a['title'] as String).compareTo(b['title'] as String));
     return filtered;
   }
 
@@ -162,9 +161,6 @@ class _SearchResultsState extends State<SearchResults> {
     _filterRating = widget.filterRating;
     _filterDistance = widget.filterDistance;
     _searchController = TextEditingController(text: widget.initialQuery);
-    _searchController.addListener(() {
-      setState(() => _query = _searchController.text);
-    });
   }
 
   @override
@@ -187,42 +183,23 @@ class _SearchResultsState extends State<SearchResults> {
             children: [
               // ── App Bar ──────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                padding: const EdgeInsets.fromLTRB(0, 16, 16, 0),
                 child: Row(
                   children: [
                     // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 18,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new,
+                          size: 20, color: Colors.black),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    const SizedBox(width: 12),
 
                     // Search field
                     Expanded(
                       child: Container(
-                        height: 50,
+                        height: 48,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.06),
@@ -233,19 +210,22 @@ class _SearchResultsState extends State<SearchResults> {
                         ),
                         child: TextField(
                           controller: _searchController,
-                          autofocus: widget.initialQuery.isEmpty &&
-                              !_hasActiveFilter,
+                          onChanged: (value) {
+                            setState(() => _query = value);
+                          },
+                          autofocus:
+                              widget.initialQuery.isEmpty && !_hasActiveFilter,
                           autocorrect: false,
                           textInputAction: TextInputAction.search,
                           textAlignVertical: TextAlignVertical.center,
                           style: const TextStyle(
                             fontFamily: _font,
-                            fontSize: 15,
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
                             color: Color(0xFF0A0A0A),
                           ),
                           decoration: InputDecoration(
-                            hintText: 'Find your next favourite spot...',
+                            hintText: 'Find your next favourite spot',
                             hintStyle: TextStyle(
                               fontFamily: _font,
                               fontSize: 14,
@@ -271,18 +251,19 @@ class _SearchResultsState extends State<SearchResults> {
                                       setState(() => _query = '');
                                     },
                                     child: const Padding(
-                                      padding: EdgeInsets.all(14),
+                                      padding: EdgeInsets.all(12),
                                       child: Icon(
                                         Icons.close_rounded,
-                                        size: 16,
+                                        size: 18,
                                         color: Color(0xFF999999),
                                       ),
                                     ),
                                   )
                                 : null,
+                            isDense: true,
                             border: InputBorder.none,
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 0),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 0, vertical: 12),
                           ),
                         ),
                       ),
@@ -291,12 +272,12 @@ class _SearchResultsState extends State<SearchResults> {
                 ),
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
 
               // ── Active Filter Badges ─────────────────────────────
               if (_hasActiveFilter)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -327,14 +308,14 @@ class _SearchResultsState extends State<SearchResults> {
 
               // ── Result count ─────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Text(
                   results.isEmpty
                       ? 'No results'
                       : '${results.length} restaurant${results.length > 1 ? 's' : ''} found',
                   style: TextStyle(
                     fontFamily: _font,
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Colors.grey.shade500,
                   ),
@@ -346,11 +327,9 @@ class _SearchResultsState extends State<SearchResults> {
                 child: results.isEmpty
                     ? _EmptyState(query: _query)
                     : ListView.separated(
-                        padding:
-                            const EdgeInsets.fromLTRB(20, 0, 20, 110),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
                         itemCount: results.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 14),
+                        separatorBuilder: (_, __) => const SizedBox(height: 16),
                         itemBuilder: (_, i) => _ResultCard(
                           data: results[i],
                           query: _query,
@@ -378,10 +357,10 @@ class _FilterBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF1EC),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(50),
         border: Border.all(color: const Color(0xFFFF4F0F), width: 1),
       ),
       child: Row(
@@ -463,8 +442,8 @@ class _ResultCardState extends State<_ResultCard> {
                     borderRadius: BorderRadius.circular(16),
                     child: Image.asset(
                       d['image'] as String,
-                      width: 90,
-                      height: 90,
+                      width: 80,
+                      height: 80,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -473,19 +452,19 @@ class _ResultCardState extends State<_ResultCard> {
                     left: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 3),
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: isOpen
                             ? const Color(0xFF16A34A)
                             : const Color(0xFFD97706),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(50),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 5,
-                            height: 5,
+                            width: 4,
+                            height: 4,
                             decoration: const BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -496,7 +475,7 @@ class _ResultCardState extends State<_ResultCard> {
                             isOpen ? 'Open' : 'Closed',
                             style: const TextStyle(
                               fontFamily: _font,
-                              fontSize: 9,
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -528,14 +507,12 @@ class _ResultCardState extends State<_ResultCard> {
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF1A1A1A),
-                              letterSpacing: -0.4,
                             ),
                             highlightStyle: const TextStyle(
                               fontFamily: _font,
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
                               color: _orange,
-                              letterSpacing: -0.4,
                             ),
                           ),
                         ),
@@ -545,15 +522,13 @@ class _ResultCardState extends State<_ResultCard> {
                             _saved
                                 ? Icons.favorite_rounded
                                 : Icons.favorite_border_rounded,
-                            size: 22,
-                            color: _saved
-                                ? _orange
-                                : const Color(0xFFD1D1D1),
+                            size: 20,
+                            color: _saved ? _orange : const Color(0xFFD1D1D1),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     // Address
                     Row(
                       children: [
@@ -575,26 +550,29 @@ class _ResultCardState extends State<_ResultCard> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     // Chips
-                    Row(
-                      children: [
-                        _MiniChip(
-                          icon: Icons.star_rounded,
-                          label: d['rating'] as String,
-                          isHighlight: true,
-                        ),
-                        const SizedBox(width: 8),
-                        _MiniChip(
-                          icon: Icons.access_time_rounded,
-                          label: d['duration'] as String,
-                        ),
-                        const SizedBox(width: 8),
-                        _MiniChip(
-                          icon: Icons.restaurant_rounded,
-                          label: d['cuisine'] as String,
-                        ),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _MiniChip(
+                            icon: Icons.star_rounded,
+                            label: d['rating'] as String,
+                            isHighlight: true,
+                          ),
+                          const SizedBox(width: 8),
+                          _MiniChip(
+                            icon: Icons.access_time_rounded,
+                            label: d['duration'] as String,
+                          ),
+                          const SizedBox(width: 8),
+                          _MiniChip(
+                            icon: Icons.restaurant_rounded,
+                            label: d['cuisine'] as String,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -626,8 +604,8 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 88,
-              height: 88,
+              width: 80,
+              height: 80,
               decoration: const BoxDecoration(
                 color: Color(0xFFFFF0EB),
                 shape: BoxShape.circle,
@@ -638,7 +616,7 @@ class _EmptyState extends StatelessWidget {
                 color: _orange,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             const Text(
               'No results found',
               style: TextStyle(
@@ -646,10 +624,9 @@ class _EmptyState extends StatelessWidget {
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF1A1A1A),
-                letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
@@ -716,8 +693,7 @@ class _HighlightText extends StatelessWidget {
         break;
       }
       if (idx > start) {
-        spans.add(
-            TextSpan(text: text.substring(start, idx), style: baseStyle));
+        spans.add(TextSpan(text: text.substring(start, idx), style: baseStyle));
       }
       spans.add(TextSpan(
           text: text.substring(idx, idx + query.length),
@@ -754,22 +730,20 @@ class _MiniChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color:
-            isHighlight ? const Color(0xFFFFF3EE) : const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(7),
+        color: isHighlight ? const Color(0xFFFFF3EE) : const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: _orange),
+          Icon(icon, size: 14, color: _orange),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               fontFamily: _font,
-              fontSize: 11,
-              fontWeight:
-                  isHighlight ? FontWeight.w700 : FontWeight.w600,
+              fontSize: 12,
+              fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
               color: isHighlight ? _orange : const Color(0xFF3A3A3A),
             ),
           ),

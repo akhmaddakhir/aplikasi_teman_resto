@@ -14,7 +14,14 @@ class _SearchPageState extends State<SearchPage> {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
 
-  final TextEditingController _searchController = TextEditingController();
+  late final TextEditingController _searchController;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -86,6 +93,9 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                       child: TextField(
                         controller: _searchController,
+                        onChanged: (value) {
+                          setState(() => _query = value);
+                        },
                         autocorrect: false,
                         textInputAction: TextInputAction.search,
                         onSubmitted: _goToResults,
@@ -97,7 +107,7 @@ class _SearchPageState extends State<SearchPage> {
                           color: Color(0xFF0A0A0A),
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Your Favorite Restaurant',
+                          hintText: 'Find your favorite restaurant',
                           hintStyle: TextStyle(
                             fontFamily: _font,
                             fontSize: 14,
@@ -116,9 +126,26 @@ class _SearchPageState extends State<SearchPage> {
                               ),
                             ),
                           ),
+                          suffixIcon: _query.isNotEmpty
+                              ? GestureDetector(
+                                  onTap: () {
+                                    _searchController.clear();
+                                    setState(() => _query = '');
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 18,
+                                      color: Color(0xFF999999),
+                                    ),
+                                  ),
+                                )
+                              : null,
+                          isDense: true,
                           border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 0),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 0, vertical: 12),
                         ),
                       ),
                     ),
