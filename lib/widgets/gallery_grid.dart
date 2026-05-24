@@ -17,7 +17,7 @@ class GalleryGrid extends StatelessWidget {
     return SingleChildScrollView(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          const gap = 6.0;
+          const gap = 12.0;
           const columns = 2;
           final cellSize = (constraints.maxWidth - gap) / columns;
 

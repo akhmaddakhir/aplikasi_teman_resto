@@ -19,6 +19,13 @@ class RestaurantDetailState extends State<RestaurantDetail>
   String selectedFilter = 'Most relevant';
   String searchQuery = '';
 
+  final List<String> reviewFilters = [
+    'Most relevant',
+    'Newest',
+    'Highest',
+    'Lowest',
+  ];
+
   // ============ ORDER STATE ============
   final Map<String, int> _cart = {};
 
@@ -757,12 +764,14 @@ class RestaurantDetailState extends State<RestaurantDetail>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Menu (${menuItems.length} Items)',
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black),
+                Expanded(
+                  child: Text(
+                    'Menu (${menuItems.length} Items)',
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black),
+                  ),
                 ),
                 TextButton(
                   onPressed: () {},
@@ -836,9 +845,9 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.75,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 0.7,
                 ),
                 itemCount: filteredMenu.length,
                 itemBuilder: (context, index) {
@@ -870,159 +879,118 @@ class RestaurantDetailState extends State<RestaurantDetail>
   Widget _buildAboutTab() {
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 24, 18, 32),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 10),
-            RichText(
-              text: const TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'A journey through the\nheart of ',
-                    style: TextStyle(
-                      fontFamily: 'Georgia',
-                      fontSize: 26,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.black,
-                      height: 1.25,
-                    ),
-                  ),
-                  TextSpan(
-                    text: 'Java',
-                    style: TextStyle(
-                      fontFamily: 'Georgia',
-                      fontSize: 26,
-                      fontWeight: FontWeight.w300,
-                      fontStyle: FontStyle.italic,
-                      color: Color(0xFFFF4F0F),
-                      height: 1.25,
-                    ),
-                  ),
-                ],
+            const Text(
+              'Tentang Pawon Njawi',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 14),
-            const Text(
-              'Pawon Njawi has been serving authentic Javanese cuisine since 2003 in the heart of Malang. We believe cooking is a ritual, and every dish is a heritage worth preserving.',
-              style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.75),
-            ),
-            const SizedBox(height: 22),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final cardWidth = (constraints.maxWidth - 10) / 2;
-                return Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _infoCard('Location', 'Klojen, Malang', false, cardWidth),
-                    _infoCard('Hours', '10:00 – 22:00', true, cardWidth),
-                    _infoCard('Cuisine', 'Javanese', false, cardWidth),
-                    _infoCard('Ambience', 'Fine Dining', false, cardWidth),
-                  ],
-                );
-              },
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3F0),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Pawon Njawi adalah restoran masakan Jawa yang telah berdiri sejak tahun 2015 di jantung kota Malang. Kami berkomitmen untuk menyajikan hidangan tradisional Jawa dengan cita rasa autentik dan kualitas terbaik.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  height: 1.6,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Row(
-                  children: [
-                    _statItem('20+', 'Years Open'),
-                    Container(width: 1, height: 60, color: Colors.grey[300]!),
-                    _statItem('1.2k', 'Reviews'),
-                    Container(width: 1, height: 60, color: Colors.grey[300]!),
-                    _statItem('4.8', 'Rating'),
-                  ],
-                ),
+            const Text(
+              'Mengapa Memilih Kami?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 28),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => BookingData()));
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF4F0F),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                ),
-                child: const Text(
-                  'BOOK A TABLE',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 1.2,
-                  ),
-                ),
+            const SizedBox(height: 12),
+            _buildAboutPoint('Bahan baku segar dan berkualitas'),
+            _buildAboutPoint('Resep turun temurun yang otentik'),
+            _buildAboutPoint('Suasana nyaman dan bersih'),
+            _buildAboutPoint('Harga terjangkau'),
+            _buildAboutPoint('Pelayanan ramah dan profesional'),
+            const SizedBox(height: 20),
+            const Text(
+              'Jam Operasional',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
+            const SizedBox(height: 12),
+            _buildInfoChip(
+                Icons.access_time_rounded, 'Senin - Minggu: 10.00 - 22.00 WIB'),
           ],
         ),
       ),
     );
   }
 
-  Widget _infoCard(String label, String value, bool orange, double width) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
+  Widget _buildAboutPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label.toUpperCase(),
+          Container(
+            width: 6,
+            height: 6,
+            margin: const EdgeInsets.only(top: 8, right: 12),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFFF4F0F),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
               style: const TextStyle(
-                  fontSize: 9,
-                  letterSpacing: 2,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w500)),
-          const SizedBox(height: 5),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: orange ? const Color(0xFFFF4F0F) : Colors.black,
-                  fontWeight: FontWeight.w600)),
+                fontSize: 14,
+                color: Colors.black87,
+                height: 1.5,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _statItem(String num, String lbl) {
-    return Expanded(
-      child: Container(
-        color: const Color(0xFFF5F5F5),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-        child: Column(
-          children: [
-            Text(num,
-                style: const TextStyle(
-                    fontFamily: 'Georgia',
-                    fontSize: 26,
-                    color: Color(0xFFFF4F0F),
-                    height: 1)),
-            const SizedBox(height: 4),
-            Text(lbl, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-          ],
-        ),
+  Widget _buildInfoChip(IconData icon, String label) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFFFF4F0F)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF3A3A3A),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1031,7 +999,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
   Widget _buildGalleryTab() {
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 20, 18, 24),
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1039,14 +1007,13 @@ class RestaurantDetailState extends State<RestaurantDetail>
               images: galleryImages,
               onTap: _openGalleryPreview,
             ),
-            const SizedBox(height: 12),
-
+            const SizedBox(height: 16),
             Center(
               child: Text(
                 'SHOWING ${galleryImages.length} PHOTOS',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   color: Colors.grey,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 1.5,
@@ -1088,7 +1055,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                     Text(
                       avgRating.toStringAsFixed(1),
                       style: const TextStyle(
-                        fontSize: 52,
+                        fontSize: 48,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                         height: 1,
@@ -1111,11 +1078,11 @@ class RestaurantDetailState extends State<RestaurantDetail>
                     Text(
                       '${allReviews.length} Reviews',
                       style:
-                          const TextStyle(fontSize: 11, color: Colors.black54),
+                          const TextStyle(fontSize: 12, color: Colors.black54),
                     ),
                   ],
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     children: [5, 4, 3, 2, 1].map((star) {
@@ -1129,7 +1096,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                           children: [
                             Text('$star',
                                 style: const TextStyle(
-                                    fontSize: 11, color: Colors.black54)),
+                                    fontSize: 12, color: Colors.black54)),
                             const SizedBox(width: 6),
                             Expanded(
                               child: ClipRRect(
@@ -1144,7 +1111,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             Text('${(pct * 100).round()}%',
                                 style: const TextStyle(
                                     fontSize: 10, color: Colors.black38)),
@@ -1169,92 +1136,75 @@ class RestaurantDetailState extends State<RestaurantDetail>
                       fontWeight: FontWeight.bold,
                       color: Colors.black),
                 ),
-                const Text('Most Recent',
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ReviewPage()),
+                    );
+                  },
+                  icon: const Icon(Icons.edit, size: 16, color: Colors.black),
+                  label: const Text(
+                    'Add Review',
                     style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w500)),
+                      fontSize: 14,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 10),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterChip(
-                      'Most relevant', selectedFilter == 'Most relevant'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Newest', selectedFilter == 'Newest'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Highest', selectedFilter == 'Highest'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Lowest', selectedFilter == 'Lowest'),
-                ],
+            SizedBox(
+              height: 36,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: reviewFilters.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final filter = reviewFilters[index];
+                  final isSelected = selectedFilter == filter;
+                  return GestureDetector(
+                    onTap: () => setState(() => selectedFilter = filter),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFFFF4F0F)
+                            : const Color(0xFFF4F4F4),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Center(
+                        child: Text(
+                          filter,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF4A4A4A),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // ← pakai ReviewCard dari widgets/review_card.dart
             ...filteredReviews.map(
               (review) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 16),
                 child: ReviewCard(review: review),
               ),
             ),
 
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ReviewPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF4F0F),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'WRITE A REVIEW',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, bool selected) {
-    return GestureDetector(
-      onTap: () => setState(() => selectedFilter = label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFFF4F0F) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? const Color(0xFFFF4F0F) : Colors.grey[300]!,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-              color: selected ? Colors.white : Colors.black54, fontSize: 12),
         ),
       ),
     );

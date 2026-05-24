@@ -31,18 +31,18 @@ class _ReviewCardState extends State<ReviewCard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFEDEDED)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(review, rating),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _buildBody(review),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           const Divider(color: Color(0xFFEDEDED), height: 1, thickness: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           _buildActions(likes),
         ],
       ),
@@ -66,12 +66,12 @@ class _ReviewCardState extends State<ReviewCard> {
             _initials,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
 
         // Name + meta
         Expanded(
@@ -95,7 +95,7 @@ class _ReviewCardState extends State<ReviewCard> {
         // Time
         Text(
           review['timeAgo'] as String,
-          style: const TextStyle(fontSize: 11, color: Colors.black45),
+          style: const TextStyle(fontSize: 12, color: Colors.black45),
         ),
       ],
     );
@@ -120,7 +120,7 @@ class _ReviewCardState extends State<ReviewCard> {
         Text(
           rating.toString(),
           style: const TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               color: Colors.black45,
               fontWeight: FontWeight.w500),
         ),
@@ -132,7 +132,7 @@ class _ReviewCardState extends State<ReviewCard> {
     return Text(
       review['review'] as String,
       style: const TextStyle(
-        fontSize: 13,
+        fontSize: 14,
         color: Color(0xFF555555),
         height: 1.6,
       ),
@@ -161,25 +161,6 @@ class _ReviewCardState extends State<ReviewCard> {
                 style: TextStyle(
                   fontSize: 12,
                   color: _helpful ? const Color(0xFFFF4F0F) : Colors.black45,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 20),
-        GestureDetector(
-          onTap: () {},
-          child: const Row(
-            children: [
-              Icon(Icons.chat_bubble_outline_rounded,
-                  size: 15, color: Colors.black45),
-              SizedBox(width: 5),
-              Text(
-                'Reply',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black45,
                   fontWeight: FontWeight.w500,
                 ),
               ),
