@@ -173,7 +173,7 @@ class _FilterPageState extends State<FilterPage> with TickerProviderStateMixin {
         'Filter',
         style: TextStyle(
           fontFamily: 'Inter',
-          fontSize: 18,
+          fontSize: 20,
           fontWeight: FontWeight.w700,
           color: _ink,
         ),

@@ -156,8 +156,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 44,
-        height: 44,
+        width: 40,
+        height: 40,
         decoration: const BoxDecoration(
           color: Color(0xFFFF5C28),
           shape: BoxShape.circle,
@@ -187,7 +187,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
           color: _dateError != null ? Colors.red : const Color(0xFFEEEEEE),
           width: 1.5,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -210,9 +210,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
                       '${_getMonthName(_selectedDate.month)} ${_selectedDate.year}',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
                       ),
                     ),
                   ),
@@ -236,7 +235,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                               d,
                               style: TextStyle(
                                 fontFamily: 'Inter',
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFFAAAAAA),
                                 letterSpacing: 0.3,
@@ -295,24 +294,13 @@ class _BookingAddPageState extends State<BookingAddPage> {
                                 : isToday
                                     ? const Color(0xFFFF4F0F).withOpacity(0.1)
                                     : Colors.transparent,
-                            boxShadow: isSel
-                                ? [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFFFF4F0F,
-                                      ).withOpacity(0.3),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ]
-                                : null,
                           ),
                           child: Center(
                             child: Text(
                               '$dayNum',
                               style: TextStyle(
                                 fontFamily: 'Inter',
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: (isSel || isToday)
                                     ? FontWeight.w700
                                     : FontWeight.w400,
@@ -366,7 +354,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: const Color(0xFFF2F2F2),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: _availablePeriods
@@ -380,7 +368,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
             ),
           ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
         // ==== TIME GRID ====
         GridView.builder(
@@ -388,8 +376,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
             childAspectRatio: 2.4,
           ),
           itemCount: _currentSlots.length,
@@ -414,7 +402,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                       : isUnavailable
                           ? const Color(0xFFF5F5F5)
                           : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isSelected
                         ? const Color(0xFFFF4F0F)
@@ -423,21 +411,12 @@ class _BookingAddPageState extends State<BookingAddPage> {
                             : const Color(0xFFE5E5E5),
                     width: 1.5,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFFFF4F0F).withOpacity(0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
                 ),
                 child: Text(
                   time,
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: isSelected
                         ? Colors.white
@@ -454,16 +433,16 @@ class _BookingAddPageState extends State<BookingAddPage> {
         ),
 
         // ==== LEGEND ====
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         Row(
           children: [
             _legendDot(const Color(0xFFCCCCCC), strikethrough: true),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               'Tidak tersedia',
               style: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 11,
+                fontSize: 12,
                 color: const Color(0xFF999999),
               ),
             ),
@@ -475,8 +454,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
 
   Widget _legendDot(Color color, {bool strikethrough = false}) {
     return Container(
-      width: 28,
-      height: 20,
+      width: 32,
+      height: 24,
       decoration: BoxDecoration(
         color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(6),
@@ -487,7 +466,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
           '00',
           style: TextStyle(
             fontFamily: 'Inter',
-            fontSize: 9,
+            fontSize: 10,
             fontWeight: FontWeight.w600,
             color: color,
             decoration: strikethrough ? TextDecoration.lineThrough : null,
@@ -513,7 +492,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isActive ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             boxShadow: isActive
                 ? [
                     const BoxShadow(
@@ -550,14 +529,13 @@ class _BookingAddPageState extends State<BookingAddPage> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(25, 25, 25, 30),
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.arrow_back_ios),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        size: 20, color: Colors.black),
+                    onPressed: () => Navigator.maybePop(context),
                   ),
                   Expanded(
                     child: Text(
@@ -577,7 +555,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
 
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(25),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -587,7 +565,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -596,11 +574,11 @@ class _BookingAddPageState extends State<BookingAddPage> {
                         _circleButton(Icons.remove, _decrementGuests),
                         Expanded(
                           child: Container(
-                            height: 44,
+                            height: 40,
                             margin: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(22),
+                              borderRadius: BorderRadius.circular(50),
                             ),
                             alignment: Alignment.center,
                             child: Text(
@@ -617,7 +595,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                       ],
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 32),
 
                     // ── DATE ──
                     Text(
@@ -625,7 +603,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -645,7 +623,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                         ),
                       ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 32),
 
                     // ── TIME ──
                     Text(
@@ -653,7 +631,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -661,7 +639,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
 
                     if (_timeError != null)
                       Padding(
-                        padding: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           _timeError!,
                           style: TextStyle(
@@ -689,9 +667,9 @@ class _BookingAddPageState extends State<BookingAddPage> {
                   onPressed: _continueBooking,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF4F0F),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                   ),
                   child: const Text(

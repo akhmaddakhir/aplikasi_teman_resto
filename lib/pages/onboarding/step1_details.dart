@@ -28,7 +28,7 @@ class Step1Details extends StatefulWidget {
 
 class _Step1DetailsState extends State<Step1Details> {
   String selectedCountryCode = '+62';
-  
+
   final List<Map<String, String>> countryCodes = [
     {'code': '+62', 'country': 'ID'},
     {'code': '+1', 'country': 'US'},
@@ -55,21 +55,20 @@ class _Step1DetailsState extends State<Step1Details> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 24),
-            
+
             // Name Field
             const Text(
               'Name',
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111111),
-                letterSpacing: -0.2,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: const Color(0xFFF0F0F0),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
@@ -77,42 +76,35 @@ class _Step1DetailsState extends State<Step1Details> {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF111111),
-                  letterSpacing: -0.2,
+                  color: Colors.black,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Ex. Joshua Hong',
-                  hintStyle: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF111111).withOpacity(0.4),
-                    letterSpacing: -0.2,
-                  ),
+                  hintStyle: TextStyle(color: Colors.grey[400]),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 16,
+                    vertical: 14,
                   ),
                 ),
               ),
             ),
-            
-            const SizedBox(height: 20),
-            
+
+            const SizedBox(height: 24),
+
             // Email Field
             const Text(
               'Email',
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111111),
-                letterSpacing: -0.2,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: const Color(0xFFF0F0F0),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
@@ -121,42 +113,35 @@ class _Step1DetailsState extends State<Step1Details> {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF111111),
-                  letterSpacing: -0.2,
+                  color: Colors.black,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Enter Email',
-                  hintStyle: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF111111).withOpacity(0.4),
-                    letterSpacing: -0.2,
-                  ),
+                  hintStyle: TextStyle(color: Colors.grey[400]),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 16,
+                    vertical: 14,
                   ),
                 ),
               ),
             ),
-            
-            const SizedBox(height: 20),
-            
+
+            const SizedBox(height: 24),
+
             // Phone Number Field
             const Text(
               'Phone Number',
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111111),
-                letterSpacing: -0.2,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: const Color(0xFFF0F0F0),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -170,8 +155,8 @@ class _Step1DetailsState extends State<Step1Details> {
                     ),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                        horizontal: 14,
+                        vertical: 14,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -181,8 +166,7 @@ class _Step1DetailsState extends State<Step1Details> {
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF111111),
-                              letterSpacing: -0.2,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -195,14 +179,14 @@ class _Step1DetailsState extends State<Step1Details> {
                       ),
                     ),
                   ),
-                  
+
                   // Divider
                   Container(
                     width: 1,
                     height: 24,
                     color: const Color(0xFFE0E0E0),
                   ),
-                  
+
                   // Phone Input
                   Expanded(
                     child: TextField(
@@ -211,21 +195,15 @@ class _Step1DetailsState extends State<Step1Details> {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w400,
-                        color: Color(0xFF111111),
-                        letterSpacing: -0.2,
+                        color: Colors.black,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Enter Phone Number',
-                        hintStyle: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF111111).withOpacity(0.4),
-                          letterSpacing: -0.2,
-                        ),
+                        hintStyle: TextStyle(color: Colors.grey[400]),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 16,
+                          vertical: 14,
                         ),
                       ),
                     ),
@@ -233,30 +211,29 @@ class _Step1DetailsState extends State<Step1Details> {
                 ],
               ),
             ),
-            
-            const SizedBox(height: 20),
-            
+
+            const SizedBox(height: 24),
+
             // Occasion Field
             const Text(
               'Occasion',
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111111),
-                letterSpacing: -0.2,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             InkWell(
               onTap: () => _showOccasionPicker(),
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 16,
+                  vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -268,9 +245,8 @@ class _Step1DetailsState extends State<Step1Details> {
                         fontSize: 15,
                         fontWeight: FontWeight.w400,
                         color: widget.occasion == null
-                            ? const Color(0xFF111111).withOpacity(0.4)
-                            : const Color(0xFF111111),
-                        letterSpacing: -0.2,
+                            ? Colors.grey[400]
+                            : Colors.black,
                       ),
                     ),
                     const Icon(
@@ -282,7 +258,7 @@ class _Step1DetailsState extends State<Step1Details> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 100), // Extra space for bottom button
           ],
         ),
@@ -312,23 +288,23 @@ class _Step1DetailsState extends State<Step1Details> {
             ),
             const SizedBox(height: 16),
             ...countryCodes.map((country) => ListTile(
-              title: Text(
-                '${country['country']} ${country['code']}',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF111111),
-                ),
-              ),
-              selected: selectedCountryCode == country['code'],
-              selectedTileColor: const Color(0xFFFFF4F0),
-              onTap: () {
-                setState(() {
-                  selectedCountryCode = country['code']!;
-                });
-                Navigator.pop(context);
-              },
-            )),
+                  title: Text(
+                    '${country['country']} ${country['code']}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF111111),
+                    ),
+                  ),
+                  selected: selectedCountryCode == country['code'],
+                  selectedTileColor: const Color(0xFFFFF4F0),
+                  onTap: () {
+                    setState(() {
+                      selectedCountryCode = country['code']!;
+                    });
+                    Navigator.pop(context);
+                  },
+                )),
           ],
         ),
       ),
@@ -357,21 +333,21 @@ class _Step1DetailsState extends State<Step1Details> {
             ),
             const SizedBox(height: 16),
             ...occasions.map((occasion) => ListTile(
-              title: Text(
-                occasion,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF111111),
-                ),
-              ),
-              selected: widget.occasion == occasion,
-              selectedTileColor: const Color(0xFFFFF4F0),
-              onTap: () {
-                widget.onOccasionChanged(occasion);
-                Navigator.pop(context);
-              },
-            )),
+                  title: Text(
+                    occasion,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF111111),
+                    ),
+                  ),
+                  selected: widget.occasion == occasion,
+                  selectedTileColor: const Color(0xFFFFF4F0),
+                  onTap: () {
+                    widget.onOccasionChanged(occasion);
+                    Navigator.pop(context);
+                  },
+                )),
           ],
         ),
       ),

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import './booking_add.dart';
 
 class BookingData extends StatelessWidget {
-  const BookingData({Key? key, required Map<dynamic, dynamic> menuRequest}) : super(key: key);
+  const BookingData({Key? key, required Map<dynamic, dynamic> menuRequest})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -43,14 +44,13 @@ class _BookingFormPageState extends State<BookingFormPage> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(25, 25, 25, 30),
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.arrow_back_ios),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        size: 20, color: Colors.black),
+                    onPressed: () => Navigator.maybePop(context),
                   ),
                   Expanded(
                     child: Text(
@@ -71,18 +71,26 @@ class _BookingFormPageState extends State<BookingFormPage> {
             /// FORM
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Name'),
+                    const Text(
+                      'Name',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
                     const SizedBox(height: 8),
-                    _buildInput(_nameController, 'Ex. Joshua Hong'),
+                    _buildInput(_nameController, 'Ex. Om Gatot'),
 
                     const SizedBox(height: 20),
 
                     /// PHONE
-                    const Text('Phone Number'),
+                    const Text(
+                      'Phone Number',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
@@ -130,7 +138,11 @@ class _BookingFormPageState extends State<BookingFormPage> {
                     const SizedBox(height: 20),
 
                     /// OCCASION
-                    const Text('Occasion'),
+                    const Text(
+                      'Occasion',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
@@ -189,13 +201,14 @@ class _BookingFormPageState extends State<BookingFormPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF4F0F),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                   ),
                   child: const Text(
                     'Continue',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
                   ),
