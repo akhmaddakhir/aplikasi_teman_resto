@@ -315,9 +315,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
 
   // ============= BOTTOM SHEET: Menu Request Summary =============
   void _showMenuRequestSheet() {
-    final requestedItems = menuItems
-        .where((item) => (_cart[item['name']] ?? 0) > 0)
-        .toList();
+    final requestedItems =
+        menuItems.where((item) => (_cart[item['name']] ?? 0) > 0).toList();
 
     showModalBottomSheet(
       context: context,
@@ -548,7 +547,9 @@ class RestaurantDetailState extends State<RestaurantDetail>
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => BookingData(menuRequest: {},)),
+                            builder: (context) => BookingData(
+                                  menuRequest: {},
+                                )),
                       );
                     },
                     style: OutlinedButton.styleFrom(
@@ -668,8 +669,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                         _buildImageItem('assets/images/gambar_makanan_2.jfif'),
                         _buildImageItem('assets/images/gambar_resto_2.jpg'),
                         _buildImageItem('assets/images/gambar_makanan_2.jfif'),
-                        _buildImageItem(
-                            'assets/images/gambar_restoran_4.jfif'),
+                        _buildImageItem('assets/images/gambar_restoran_4.jfif'),
                       ],
                     ),
                   ),
@@ -698,30 +698,43 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   children: [
                     Row(
                       children: [
-                        _tagChip('assets/icons/clock_card.svg', '1 hour'),
+                        _tagChip(Icons.access_time_rounded, '1 hour'),
                         const SizedBox(width: 6),
-                        _tagChip('assets/icons/bowl_card.svg', 'Javanese'),
+                        _tagChip(Icons.restaurant_rounded, 'Javanese'),
                       ],
                     ),
-                    Row(
-                      children: [
-                        SvgPicture.asset('assets/icons/rating_card.svg',
-                            width: 16, height: 16),
-                        const SizedBox(width: 4),
-                        const Text('4.8  (26)',
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3EE),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star_rounded,
+                              size: 14, color: Color(0xFFFF4F0F)),
+                          const SizedBox(width: 4),
+                          const Text(
+                            '4.8 (26)',
                             style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.bold)),
-                      ],
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFFF4F0F),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    SvgPicture.asset('assets/icons/location_card.svg',
-                        width: 16, height: 16),
+                    const Icon(Icons.location_on_rounded,
+                        size: 16, color: Color(0xFFFF4F0F)),
                     const SizedBox(width: 6),
                     const Expanded(
                       child: Text(
@@ -771,34 +784,43 @@ class RestaurantDetailState extends State<RestaurantDetail>
           // ── BOTTOM BAR ──
           // Hanya tampil di tab Menu
           if (isMenuTab)
-            hasMenuRequest
-                // Ada menu yang dipilih → tampilkan Menu Request bar
-                ? _buildMenuRequestBar()
-                // Belum ada menu dipilih → tampilkan Book a Table bar
-                : _buildBookTableBar(),
+            Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: hasMenuRequest
+                  // Ada menu yang dipilih → tampilkan Menu Request bar
+                  ? _buildMenuRequestBar()
+                  // Belum ada menu dipilih → tampilkan Book a Table bar
+                  : _buildBookTableBar(),
+            ),
         ],
       ),
     );
   }
 
   // ---- Small helpers ----
-  Widget _tagChip(String svgAsset, String label) {
+  Widget _tagChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF3F0),
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset(svgAsset,
-              width: 14, height: 14, color: const Color(0xFFFF4F0F)),
+          Icon(icon, size: 14, color: const Color(0xFFFF4F0F)),
           const SizedBox(width: 6),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFFFF4F0F),
-                  fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF3A3A3A),
+            ),
+          ),
         ],
       ),
     );
@@ -810,8 +832,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(6),
-          image: DecorationImage(
-              image: AssetImage(imagePath), fit: BoxFit.cover),
+          image:
+              DecorationImage(image: AssetImage(imagePath), fit: BoxFit.cover),
         ),
       ),
     );
@@ -822,7 +844,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
     return Container(
       key: const ValueKey('book'),
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -839,7 +861,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   'Pilih menu di atas untuk pre-order saat booking',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 11.5,
+                    fontSize: 12,
                     color: Color(0xFFAAAAAA),
                   ),
                 ),
@@ -848,26 +870,30 @@ class RestaurantDetailState extends State<RestaurantDetail>
           ),
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 56,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => BookingData(menuRequest: {},)));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => BookingData(
+                              menuRequest: {},
+                            )));
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF4F0F),
                 elevation: 0,
+                padding: const EdgeInsets.only(top: 16, bottom: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(50),
                 ),
               ),
               child: const Text(
                 'Book a Table',
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                   color: Colors.white,
-                  letterSpacing: 1.2,
                 ),
               ),
             ),
@@ -1003,7 +1029,12 @@ class RestaurantDetailState extends State<RestaurantDetail>
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          100 + (MediaQuery.of(context).viewInsets.bottom * 1.2),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1032,13 +1063,11 @@ class RestaurantDetailState extends State<RestaurantDetail>
             // ── Info banner pre-order ──
             Container(
               margin: const EdgeInsets.only(bottom: 12),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFFF0F7FF),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: const Color(0xFFB3D4F5), width: 1),
+                border: Border.all(color: const Color(0xFFB3D4F5), width: 1),
               ),
               child: Row(
                 children: const [
@@ -1073,20 +1102,28 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
-                      onChanged: (value) =>
-                          setState(() => searchQuery = value),
+                      onChanged: (value) => setState(() => searchQuery = value),
                       decoration: const InputDecoration(
                         hintText: 'Find your favorite menu',
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.grey),
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
                   if (searchQuery.isNotEmpty)
-                    IconButton(
-                      icon: const Icon(Icons.clear,
-                          color: Colors.grey, size: 20),
-                      onPressed: () => setState(() => searchQuery = ''),
+                    SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => setState(() => searchQuery = ''),
+                          borderRadius: BorderRadius.circular(4),
+                          child: const Icon(Icons.clear,
+                              color: Colors.grey, size: 18),
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -1114,8 +1151,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
@@ -1130,8 +1166,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                     item: item,
                     qty: qty,
                     onAdd: () => setState(() => _cart[name] = 1),
-                    onIncrement: () =>
-                        setState(() => _cart[name] = qty + 1),
+                    onIncrement: () => setState(() => _cart[name] = qty + 1),
                     onDecrement: () => setState(() {
                       if (qty <= 1) {
                         _cart.remove(name);
@@ -1205,8 +1240,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ),
             ),
             const SizedBox(height: 12),
-            _buildInfoChip(Icons.access_time_rounded,
-                'Senin - Minggu: 10.00 - 22.00 WIB'),
+            _buildInfoChip(
+                Icons.access_time_rounded, 'Senin - Minggu: 10.00 - 22.00 WIB'),
           ],
         ),
       ),
@@ -1309,8 +1344,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
       ratingCount[key] = (ratingCount[key] ?? 0) + 1;
     }
     final double avgRating = allReviews.isNotEmpty
-        ? allReviews.fold(
-                0.0, (s, r) => s + (r['rating'] as double)) /
+        ? allReviews.fold(0.0, (s, r) => s + (r['rating'] as double)) /
             allReviews.length
         : 0;
 
@@ -1350,8 +1384,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
                     const SizedBox(height: 4),
                     Text(
                       '${allReviews.length} Reviews',
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black54),
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -1397,7 +1431,6 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ],
             ),
             const SizedBox(height: 16),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1466,14 +1499,12 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ),
             ),
             const SizedBox(height: 24),
-
             ...filteredReviews.map(
               (review) => Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: ReviewCard(review: review),
               ),
             ),
-
             const SizedBox(height: 32),
           ],
         ),
