@@ -19,42 +19,12 @@ class RestaurantDetailState extends State<RestaurantDetail>
   String selectedFilter = 'Most relevant';
   String searchQuery = '';
 
-  final List<String> reviewFilters = [
-    'Most relevant',
-    'Newest',
-    'Highest',
-    'Lowest',
-  ];
-
-  // ============ ORDER STATE ============
+  // ============ MENU REQUEST STATE ============
+  // Cart sekarang berfungsi sebagai "menu request" saat booking,
+  // bukan order berbayar langsung.
   final Map<String, int> _cart = {};
 
   int get _totalItems => _cart.values.fold(0, (a, b) => a + b);
-  int get _totalPrice {
-    int total = 0;
-    for (final item in menuItems) {
-      final qty = _cart[item['name']] ?? 0;
-      if (qty > 0) {
-        final priceStr = item['price']
-            .toString()
-            .replaceAll('Rp ', '')
-            .replaceAll('.', '')
-            .replaceAll(',', '');
-        total += (int.tryParse(priceStr) ?? 0) * qty;
-      }
-    }
-    return total;
-  }
-
-  String _formatPrice(int price) {
-    final s = price.toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return 'Rp ${buf.toString()}';
-  }
 
   // ================= DATA SOURCE =================
   final List<Map<String, dynamic>> menuItems = [
@@ -224,67 +194,12 @@ class RestaurantDetailState extends State<RestaurantDetail>
           'Makanannya enak sih, tapi pas kemarin datang pelayanannya agak lama. Mungkin karena lagi rame. Overall masih worth it.',
       'likes': 15,
     },
-    {
-      'name': 'Eko Prasetyo',
-      'date': DateTime(2024, 11, 10),
-      'timeAgo': '3 months ago',
-      'rating': 4.5,
-      'review':
-          'Gado-gadonya mantap! Bumbu kacangnya thick dan gurih. Porsi sayurnya generous. Cocok buat yang vegetarian.',
-      'likes': 31,
-    },
-    {
-      'name': 'Maya Kusuma',
-      'date': DateTime(2024, 10, 28),
-      'timeAgo': '3 months ago',
-      'rating': 5.0,
-      'review':
-          'Restoran keluarga favorit kami. Anak-anak suka banget sama soto ayamnya. Suasana tenang, cocok untuk ngobrol santai sambil makan.',
-      'likes': 41,
-    },
-    {
-      'name': 'Doni Setiawan',
-      'date': DateTime(2024, 10, 15),
-      'timeAgo': '4 months ago',
-      'rating': 3.0,
-      'review':
-          'Rasa standar, ga terlalu spesial. Harga agak mahal untuk porsi yang didapat. Tapi tempatnya bersih dan AC-nya dingin.',
-      'likes': 8,
-    },
-    {
-      'name': 'Putri Anggraini',
-      'date': DateTime(2024, 9, 30),
-      'timeAgo': '4 months ago',
-      'rating': 4.5,
-      'review':
-          'Wedang jahenya the best! Hangat dan pas banget buat musim hujan. Kopi tubruknya juga mantap, ga terlalu pahit. Cocok buat yang suka kopi tradisional.',
-      'likes': 28,
-    },
-    {
-      'name': 'Hendra Gunawan',
-      'date': DateTime(2024, 9, 10),
-      'timeAgo': '5 months ago',
-      'rating': 5.0,
-      'review':
-          'Sudah langganan di sini hampir setahun. Kualitas makanan selalu terjaga. Staff ramah dan helpful. Tempat favorit untuk acara keluarga!',
-      'likes': 73,
-    },
-    {
-      'name': 'Ratna Sari',
-      'date': DateTime(2024, 8, 20),
-      'timeAgo': '6 months ago',
-      'rating': 4.0,
-      'review':
-          'Tempatnya instagramable, cocok buat foto-foto. Makanannya juga ga mengecewakan. Tongseng ayamnya enak, bumbunya meresap sempurna.',
-      'likes': 35,
-    },
   ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    // Pakai animation listener supaya update realtime saat swipe gesture
     _tabController.animation!.addListener(() => setState(() {}));
   }
 
@@ -390,38 +305,6 @@ class RestaurantDetailState extends State<RestaurantDetail>
                     }),
                   ),
                 ),
-                if (currentIndex > 0)
-                  Positioned(
-                    left: 8,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: IconButton(
-                        icon: const Icon(Icons.chevron_left,
-                            color: Colors.white54, size: 32),
-                        onPressed: () => pageController.previousPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        ),
-                      ),
-                    ),
-                  ),
-                if (currentIndex < galleryImages.length - 1)
-                  Positioned(
-                    right: 8,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: IconButton(
-                        icon: const Icon(Icons.chevron_right,
-                            color: Colors.white54, size: 32),
-                        onPressed: () => pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             );
           },
@@ -430,10 +313,314 @@ class RestaurantDetailState extends State<RestaurantDetail>
     );
   }
 
+  // ============= BOTTOM SHEET: Menu Request Summary =============
+  void _showMenuRequestSheet() {
+    final requestedItems = menuItems
+        .where((item) => (_cart[item['name']] ?? 0) > 0)
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 16, bottom: 24),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3EE),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.bookmark_add_outlined,
+                      color: Color(0xFFFF4F0F), size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Menu Request',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      Text(
+                        'Restoran akan menyiapkan menu ini untuk Anda',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: Color(0xFF888888),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: Color(0xFFF0F0F0)),
+            const SizedBox(height: 16),
+
+            // Info banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFD966), width: 1),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.info_outline_rounded,
+                      size: 16, color: Color(0xFFB8860B)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Pembayaran dilakukan langsung di restoran. Ini hanya permintaan menu, bukan order berbayar.',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: Color(0xFF7A5C00),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Item list
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 240),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: requestedItems.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(height: 1, color: Color(0xFFF5F5F5)),
+                itemBuilder: (_, i) {
+                  final item = requestedItems[i];
+                  final qty = _cart[item['name']] ?? 0;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            item['image'] as String,
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 48,
+                              height: 48,
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.restaurant,
+                                  size: 20, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item['name'] as String,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1A1A1A),
+                                ),
+                              ),
+                              Text(
+                                item['price'] as String,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  color: Color(0xFF888888),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3EE),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '×$qty',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFFF4F0F),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            const Divider(height: 1, color: Color(0xFFF0F0F0)),
+            const SizedBox(height: 16),
+
+            // Summary row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$_totalItems item diminta',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: Color(0xFF888888),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() => _cart.clear());
+                  },
+                  child: const Text(
+                    'Hapus semua',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFE24B4A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // CTA Buttons
+            Row(
+              children: [
+                // Lanjut tanpa menu request
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => BookingData(menuRequest: {},)),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                          color: Color(0xFFE0E0E0), width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Lanjut dengan menu request
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BookingData(
+                            menuRequest: Map.from(_cart),
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF4F0F),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Lanjut Booking',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
-    final bool hasOrder = _totalItems > 0;
+    final bool hasMenuRequest = _totalItems > 0;
+    // Cek apakah tab Menu sedang aktif (animasi value < 0.5)
+    final bool isMenuTab = _tabController.animation!.value < 0.5;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -481,7 +668,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
                         _buildImageItem('assets/images/gambar_makanan_2.jfif'),
                         _buildImageItem('assets/images/gambar_resto_2.jpg'),
                         _buildImageItem('assets/images/gambar_makanan_2.jfif'),
-                        _buildImageItem('assets/images/gambar_restoran_4.jfif'),
+                        _buildImageItem(
+                            'assets/images/gambar_restoran_4.jfif'),
                       ],
                     ),
                   ),
@@ -580,10 +768,14 @@ class RestaurantDetailState extends State<RestaurantDetail>
             ),
           ),
 
-          // Bottom bar: selalu tampil di tab Menu
-          // Default: BOOK A TABLE. Kalau ada item di cart: ORDER bar
-          if (_tabController.animation!.value < 0.5)
-            hasOrder ? _buildOrderBar() : _buildBookTableBar(),
+          // ── BOTTOM BAR ──
+          // Hanya tampil di tab Menu
+          if (isMenuTab)
+            hasMenuRequest
+                // Ada menu yang dipilih → tampilkan Menu Request bar
+                ? _buildMenuRequestBar()
+                // Belum ada menu dipilih → tampilkan Book a Table bar
+                : _buildBookTableBar(),
         ],
       ),
     );
@@ -617,131 +809,185 @@ class RestaurantDetailState extends State<RestaurantDetail>
       child: Container(
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          image:
-              DecorationImage(image: AssetImage(imagePath), fit: BoxFit.cover),
+          borderRadius: BorderRadius.circular(6),
+          image: DecorationImage(
+              image: AssetImage(imagePath), fit: BoxFit.cover),
         ),
       ),
     );
   }
 
+  // ── Bottom bar: Book a Table (belum ada menu request) ──
   Widget _buildBookTableBar() {
     return Container(
       key: const ValueKey('book'),
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => BookingData()));
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF4F0F),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Hint text
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.restaurant_menu_outlined,
+                    size: 14, color: Color(0xFFAAAAAA)),
+                SizedBox(width: 6),
+                Text(
+                  'Pilih menu di atas untuk pre-order saat booking',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11.5,
+                    color: Color(0xFFAAAAAA),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: const Text(
-            'BOOK A TABLE',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: 1.2,
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => BookingData(menuRequest: {},)));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF4F0F),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+              child: const Text(
+                'Book a Table',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildOrderBar() {
+  // ── Bottom bar: Menu Request (ada item yang dipilih) ──
+  Widget _buildMenuRequestBar() {
     return Container(
-      key: const ValueKey('order'),
+      key: const ValueKey('menu_request'),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF4F0F),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF4F0F).withOpacity(0.35),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFF4F0F), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => BookingData()),
-            );
-          },
-          borderRadius: BorderRadius.circular(14),
-          splashColor: Colors.white.withOpacity(0.1),
+          onTap: _showMenuRequestSheet,
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               children: [
-                // Kiri: label + harga
+                // Icon dengan badge jumlah item
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3EE),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.bookmark_add_outlined,
+                          color: Color(0xFFFF4F0F), size: 18),
+                    ),
+                    Positioned(
+                      top: -6,
+                      right: -6,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF4F0F),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$_totalItems',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(width: 16),
+
+                // Label
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '$_totalItems ITEM${_totalItems > 1 ? 'S' : ''} SELECTED',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
+                      const Text(
+                        'Menu Request',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A1A1A),
                         ),
                       ),
-                      const SizedBox(height: 2),
                       Text(
-                        _formatPrice(_totalPrice),
+                        '$_totalItems item · Dibayar di restoran',
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: Color(0xFF888888),
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                // Divider vertikal
+                // Lanjut Booking CTA
                 Container(
-                  height: 36,
-                  width: 1,
-                  color: Colors.white.withOpacity(0.35),
-                  margin: const EdgeInsets.only(right: 20),
-                ),
-
-                // Kanan: tombol ORDER
-                const Row(
-                  children: [
-                    Text(
-                      'ORDER',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        letterSpacing: 1.0,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF4F0F),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Lihat',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_ios,
-                        color: Colors.white, size: 12),
-                  ],
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios_rounded,
+                          color: Colors.white, size: 11),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -782,7 +1028,37 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+
+            // ── Info banner pre-order ──
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F7FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: const Color(0xFFB3D4F5), width: 1),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.lightbulb_outline_rounded,
+                      size: 16, color: Color(0xFF1A73E8)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Pilih menu sekarang agar restoran bisa menyiapkan sebelum Anda datang.',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: Color(0xFF1A55A0),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             // Search bar
             Container(
@@ -797,9 +1073,10 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
-                      onChanged: (value) => setState(() => searchQuery = value),
+                      onChanged: (value) =>
+                          setState(() => searchQuery = value),
                       decoration: const InputDecoration(
-                        hintText: 'Search Items',
+                        hintText: 'Find your favorite menu',
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.grey),
                       ),
@@ -807,14 +1084,13 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   ),
                   if (searchQuery.isNotEmpty)
                     IconButton(
-                      icon:
-                          const Icon(Icons.clear, color: Colors.grey, size: 20),
+                      icon: const Icon(Icons.clear,
+                          color: Colors.grey, size: 20),
                       onPressed: () => setState(() => searchQuery = ''),
                     ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
 
             if (filteredMenu.isEmpty)
               Center(
@@ -830,20 +1106,16 @@ class RestaurantDetailState extends State<RestaurantDetail>
                               fontSize: 16,
                               color: Colors.grey,
                               fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 8),
-                      Text('Coba cari dengan kata kunci lain',
-                          style:
-                              TextStyle(fontSize: 14, color: Colors.grey[400])),
                     ],
                   ),
                 ),
               )
             else
-              // ← Grid 2 kolom pakai MenuCard
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
@@ -858,7 +1130,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
                     item: item,
                     qty: qty,
                     onAdd: () => setState(() => _cart[name] = 1),
-                    onIncrement: () => setState(() => _cart[name] = qty + 1),
+                    onIncrement: () =>
+                        setState(() => _cart[name] = qty + 1),
                     onDecrement: () => setState(() {
                       if (qty <= 1) {
                         _cart.remove(name);
@@ -932,8 +1205,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ),
             ),
             const SizedBox(height: 12),
-            _buildInfoChip(
-                Icons.access_time_rounded, 'Senin - Minggu: 10.00 - 22.00 WIB'),
+            _buildInfoChip(Icons.access_time_rounded,
+                'Senin - Minggu: 10.00 - 22.00 WIB'),
           ],
         ),
       ),
@@ -1036,7 +1309,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
       ratingCount[key] = (ratingCount[key] ?? 0) + 1;
     }
     final double avgRating = allReviews.isNotEmpty
-        ? allReviews.fold(0.0, (s, r) => s + (r['rating'] as double)) /
+        ? allReviews.fold(
+                0.0, (s, r) => s + (r['rating'] as double)) /
             allReviews.length
         : 0;
 
@@ -1046,7 +1320,6 @@ class RestaurantDetailState extends State<RestaurantDetail>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Rating summary
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -1077,8 +1350,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
                     const SizedBox(height: 4),
                     Text(
                       '${allReviews.length} Reviews',
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.black54),
+                      style: const TextStyle(
+                          fontSize: 12, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -1125,7 +1398,6 @@ class RestaurantDetailState extends State<RestaurantDetail>
             ),
             const SizedBox(height: 16),
 
-            // Filter chips
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1195,7 +1467,6 @@ class RestaurantDetailState extends State<RestaurantDetail>
             ),
             const SizedBox(height: 24),
 
-            // ← pakai ReviewCard dari widgets/review_card.dart
             ...filteredReviews.map(
               (review) => Padding(
                 padding: const EdgeInsets.only(bottom: 16),
@@ -1209,4 +1480,12 @@ class RestaurantDetailState extends State<RestaurantDetail>
       ),
     );
   }
+
+  // Review filters list
+  final List<String> reviewFilters = [
+    'Most relevant',
+    'Newest',
+    'Highest',
+    'Lowest',
+  ];
 }

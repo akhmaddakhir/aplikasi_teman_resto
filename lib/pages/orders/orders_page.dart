@@ -216,7 +216,7 @@ class OrdersPageState extends State<OrdersPage>
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BookingData()),
+                  MaterialPageRoute(builder: (context) => const BookingData(menuRequest: {},)),
                 );
               },
               style: TextButton.styleFrom(
@@ -281,7 +281,7 @@ class OrdersPageState extends State<OrdersPage>
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BookingData()),
+                  MaterialPageRoute(builder: (context) => const BookingData(menuRequest: {},)),
                 );
               },
               style: ElevatedButton.styleFrom(

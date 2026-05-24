@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import './booking_add.dart';
 
 class BookingData extends StatelessWidget {
-  const BookingData({Key? key}) : super(key: key);
+  const BookingData({Key? key, required Map<dynamic, dynamic> menuRequest}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

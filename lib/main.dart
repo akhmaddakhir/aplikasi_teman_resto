@@ -93,7 +93,7 @@ class MyApp extends StatelessWidget {
         '/search': (context) => const SearchPage(),
         '/search-results': (context) => const SearchResults(),
         '/filter': (context) => const FilterPage(),
-        '/booking-data': (context) => const BookingData(),
+        '/booking-data': (context) => const BookingData(menuRequest: {},),
         '/booking-add': (context) => BookingAddPage(),
         '/booking-detail': (context) => const BookingDetail(),
         '/booking-cancelled': (context) => const BookingCancelled(),

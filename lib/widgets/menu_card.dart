@@ -21,7 +21,7 @@ class MenuCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.07),
@@ -36,19 +36,19 @@ class MenuCard extends StatelessWidget {
           // Food image — top section
           ClipRRect(
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
             ),
             child: Stack(
               children: [
                 Image.asset(
                   item['image'] as String,
                   width: double.infinity,
-                  height: 110,
+                  height: 120,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     width: double.infinity,
-                    height: 110,
+                    height: 120,
                     color: Colors.grey[200],
                     child: const Icon(Icons.restaurant,
                         color: Colors.grey, size: 32),
@@ -60,15 +60,15 @@ class MenuCard extends StatelessWidget {
                   left: 8,
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                     child: Text(
                       item['category'] as String,
                       style: const TextStyle(
-                        fontSize: 9,
+                        fontSize: 10,
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.8,
@@ -82,21 +82,21 @@ class MenuCard extends StatelessWidget {
 
           // Info — bottom section
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item['name'] as String,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   item['description'] as String,
                   style: const TextStyle(
@@ -115,7 +115,7 @@ class MenuCard extends StatelessWidget {
                     Text(
                       item['price'] as String,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFFFF4F0F),
                       ),
@@ -125,11 +125,11 @@ class MenuCard extends StatelessWidget {
                         ? GestureDetector(
                             onTap: onAdd,
                             child: Container(
-                              width: 30,
-                              height: 30,
+                              width: 28,
+                              height: 28,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFF4F0F),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Icon(Icons.add,
                                   color: Colors.white, size: 18),
@@ -141,11 +141,11 @@ class MenuCard extends StatelessWidget {
                               GestureDetector(
                                 onTap: onDecrement,
                                 child: Container(
-                                  width: 26,
-                                  height: 26,
+                                  width: 24,
+                                  height: 24,
                                   decoration: BoxDecoration(
                                     color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(7),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(Icons.remove,
                                       size: 14, color: Colors.black54),
@@ -153,22 +153,22 @@ class MenuCard extends StatelessWidget {
                               ),
                               Padding(
                                 padding:
-                                    const EdgeInsets.symmetric(horizontal: 5),
+                                    const EdgeInsets.symmetric(horizontal: 4),
                                 child: Text(
                                   '$qty',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 13),
+                                      fontSize: 14),
                                 ),
                               ),
                               GestureDetector(
                                 onTap: onIncrement,
                                 child: Container(
-                                  width: 26,
-                                  height: 26,
+                                  width: 24,
+                                  height: 24,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFF4F0F),
-                                    borderRadius: BorderRadius.circular(7),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(Icons.add,
                                       size: 14, color: Colors.white),
