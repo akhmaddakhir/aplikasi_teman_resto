@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class BookingCancelled extends StatefulWidget {
   const BookingCancelled({super.key});
@@ -19,36 +18,38 @@ class _BookingCancelledState extends State<BookingCancelled> {
       body: SafeArea(
         child: Column(
           children: [
+            // ── Header ──────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        size: 20, color: Colors.black),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Cancel Booking',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
+
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
-                            child: SvgPicture.asset(
-                              'assets/icons/back.svg',
-                              width: 16,
-                              height: 16,
-                            ),
-                          ),
-                          Text(
-                            "Cancel Booking",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Container(width: 20),
-                        ],
-                      ),
-                    ),
-
                     // Content
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -98,20 +99,34 @@ class _BookingCancelledState extends State<BookingCancelled> {
 
                           TextField(
                             controller: otherReasonController,
-                            maxLines: 5,
+                            maxLines: 6,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              color: Color(0xFF1A1A1A),
+                            ),
                             decoration: InputDecoration(
-                              hintText: 'Enter your Reason',
+                              hintText: 'Share your reason for cancellation...',
                               hintStyle: TextStyle(
-                                color: Colors.grey.shade400,
+                                fontFamily: 'Inter',
+                                color: Color(0xFFB0B0B0),
                                 fontSize: 14,
+                                height: 1.5,
                               ),
                               filled: true,
-                              fillColor: Color(0xFFF5F5F5),
+                              fillColor: Color(0xFFF7F7F7),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
-                              contentPadding: EdgeInsets.all(16),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFFF4F0F),
+                                  width: 1.5,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.all(16),
                             ),
                           ),
 
@@ -143,9 +158,9 @@ class _BookingCancelledState extends State<BookingCancelled> {
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFFF4F0F),
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                        padding: EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                       ),
                       child: Text(
