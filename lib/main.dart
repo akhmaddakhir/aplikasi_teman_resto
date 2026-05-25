@@ -68,7 +68,6 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         primarySwatch: Colors.orange,
-        // ← tambahkan ini
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -86,20 +85,19 @@ class MyApp extends StatelessWidget {
         '/location-permission': (context) => const LocationPermissionPage(),
         '/choose-location': (context) => const ChooseLocationPage(),
         '/home': (context) => const MainPage(),
-        '/see-all': (context) => const SeeAllPage(
-              title: '',
-            ),
+        '/see-all': (context) => const SeeAllPage(title: ''),
         '/restaurant-detail': (context) => const RestaurantDetail(),
         '/search': (context) => const SearchPage(),
         '/search-results': (context) => const SearchResults(),
         '/filter': (context) => const FilterPage(),
-        '/booking-data': (context) => const BookingData(menuRequest: {},),
+        '/booking-data': (context) => const BookingData(menuRequest: {}),
         '/booking-add': (context) => BookingAddPage(),
         '/booking-detail': (context) => const BookingDetail(),
         '/booking-cancelled': (context) => const BookingCancelled(),
         '/table-booking': (context) => TableBooking(),
         '/payment': (context) => const PaymentPage(),
         '/payment-success': (context) => const PaymentSuccess(),
+        // '/orders' didaftarkan sebagai named route agar popUntil bisa menemukannya
         '/orders': (context) => const OrdersPage(),
         '/review': (context) => const ReviewPage(),
         '/wishlist': (context) => const WishlistPage(),

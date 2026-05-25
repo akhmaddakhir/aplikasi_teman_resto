@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class ReviewPage extends StatefulWidget {
-  const ReviewPage({super.key});
+  /// [returnRoute] — nama route tujuan setelah submit.
+  /// Jika null, cukup pop satu level (default).
+  /// Contoh: '/orders', '/home'
+  final String? returnRoute;
+
+  const ReviewPage({super.key, this.returnRoute});
 
   @override
   State<ReviewPage> createState() => _ReviewPageState();
@@ -18,7 +22,6 @@ class _ReviewPageState extends State<ReviewPage> {
   static const _bg = Color(0xFFFFFFFF);
   static const _cardBg = Colors.white;
   static const _textDark = Color(0xFF1A1A1A);
-  static const _textMid = Color(0xFF6B6B6B);
   static const _textLight = Color(0xFFB0B0B0);
 
   final List<String> _ratingLabels = [
@@ -30,6 +33,16 @@ class _ReviewPageState extends State<ReviewPage> {
     'Excellent'
   ];
 
+  void _submitReview() {
+    if (widget.returnRoute != null) {
+      // Kembali ke route spesifik yang diberikan pemanggil
+      Navigator.of(context).popUntil(ModalRoute.withName(widget.returnRoute!));
+    } else {
+      // Default: kembali satu level ke halaman sebelumnya
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +50,7 @@ class _ReviewPageState extends State<ReviewPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ────────────────────────────────────────────────────
+            // ── Header ──────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
               child: Row(
@@ -64,14 +77,14 @@ class _ReviewPageState extends State<ReviewPage> {
               ),
             ),
 
-            // ── Scrollable Body ────────────────────────────────────────────
+            // ── Scrollable Body ─────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Restaurant Card ──────────────────────────────────
+                    // ── Restaurant Card ────────────────────────────────
                     Container(
                       decoration: BoxDecoration(
                         color: _cardBg,
@@ -185,7 +198,7 @@ class _ReviewPageState extends State<ReviewPage> {
 
                     const SizedBox(height: 24),
 
-                    // ── Rating Section ───────────────────────────────────
+                    // ── Rating Section ─────────────────────────────────
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -223,8 +236,6 @@ class _ReviewPageState extends State<ReviewPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
-
-                          // Stars
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(5, (i) {
@@ -241,7 +252,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                     filled
                                         ? Icons.star_rounded
                                         : Icons.star_outline_rounded,
-                                    size: filled ? 48 : 48,
+                                    size: 48,
                                     color: filled
                                         ? _starActive
                                         : const Color(0xFFDDDDDD),
@@ -250,10 +261,7 @@ class _ReviewPageState extends State<ReviewPage> {
                               );
                             }),
                           ),
-
                           const SizedBox(height: 16),
-
-                          // Rating label
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: selectedRating > 0
@@ -275,10 +283,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                       ),
                                     ),
                                   )
-                                : SizedBox(
-                                    key: const ValueKey(0),
-                                    height: 30,
-                                  ),
+                                : SizedBox(key: const ValueKey(0), height: 30),
                           ),
                         ],
                       ),
@@ -286,7 +291,7 @@ class _ReviewPageState extends State<ReviewPage> {
 
                     const SizedBox(height: 24),
 
-                    // ── Review Text Section ──────────────────────────────
+                    // ── Review Text Section ────────────────────────────
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -364,7 +369,7 @@ class _ReviewPageState extends State<ReviewPage> {
               ),
             ),
 
-            // ── Bottom CTA ─────────────────────────────────────────────────
+            // ── Bottom CTA ───────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: BoxDecoration(
@@ -381,11 +386,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: selectedRating > 0
-                      ? () {
-                          Navigator.pop(context);
-                        }
-                      : null,
+                  onPressed: selectedRating > 0 ? _submitReview : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _orange,
                     disabledBackgroundColor: const Color(0xFFFFCDBD),
@@ -394,7 +395,7 @@ class _ReviewPageState extends State<ReviewPage> {
                       borderRadius: BorderRadius.circular(50),
                     ),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Submit Review',
                     style: TextStyle(
                       fontFamily: 'Inter',

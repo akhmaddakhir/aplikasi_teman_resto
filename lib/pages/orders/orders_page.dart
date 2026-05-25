@@ -40,9 +40,7 @@ class OrdersPageState extends State<OrdersPage>
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    onPressed: () => Navigator.pop(context),
                     icon:
                         const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
                     color: const Color(0xFF0D0D0D),
@@ -63,8 +61,6 @@ class OrdersPageState extends State<OrdersPage>
                 ],
               ),
             ),
-
-            // TabBar dengan animasi
             TabBar(
               controller: _tabController,
               indicatorColor: Color(0xFFFF4F0F),
@@ -84,10 +80,7 @@ class OrdersPageState extends State<OrdersPage>
                 Tab(text: 'Cancelled'),
               ],
             ),
-
             SizedBox(height: 20),
-
-            // TabBarView
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -104,7 +97,6 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  // Active Orders
   Widget _buildActiveOrders() {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: 16),
@@ -114,7 +106,6 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  // Completed Orders
   Widget _buildCompletedOrders() {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: 16),
@@ -124,7 +115,6 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  // Cancelled Orders
   Widget _buildCancelledOrders() {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: 16),
@@ -134,7 +124,6 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  // Active Order Card
   Widget _buildActiveOrderCard() {
     return _OrderCard(
       title: 'Marina Kitchen',
@@ -151,7 +140,8 @@ class OrdersPageState extends State<OrdersPage>
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BookingCancelled()),
+                  MaterialPageRoute(
+                      builder: (context) => const BookingCancelled()),
                 );
               },
               style: TextButton.styleFrom(
@@ -199,7 +189,6 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  // Completed Order Card
   Widget _buildCompletedOrderCard() {
     return _OrderCard(
       title: 'Marina Kitchen',
@@ -216,7 +205,8 @@ class OrdersPageState extends State<OrdersPage>
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BookingData(menuRequest: {},)),
+                  MaterialPageRoute(
+                      builder: (context) => const BookingData(menuRequest: {})),
                 );
               },
               style: TextButton.styleFrom(
@@ -237,9 +227,14 @@ class OrdersPageState extends State<OrdersPage>
             flex: 2,
             child: ElevatedButton(
               onPressed: () {
+                // Pass returnRoute '/orders' agar setelah submit
+                // kembali ke OrdersPage, bukan ke home
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ReviewPage()),
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const ReviewPage(returnRoute: '/orders'),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -264,7 +259,6 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  // Cancelled Order Card
   Widget _buildCancelledOrderCard() {
     return _OrderCard(
       title: 'Marina Kitchen',
@@ -281,7 +275,8 @@ class OrdersPageState extends State<OrdersPage>
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BookingData(menuRequest: {},)),
+                  MaterialPageRoute(
+                      builder: (context) => const BookingData(menuRequest: {})),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -435,11 +430,7 @@ class _OrderCardState extends State<_OrderCard> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _saved = !_saved;
-                                });
-                              },
+                              onTap: () => setState(() => _saved = !_saved),
                               child: Icon(
                                 _saved
                                     ? Icons.favorite_rounded
