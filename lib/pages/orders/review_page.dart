@@ -10,6 +10,7 @@ class ReviewPage extends StatefulWidget {
 
 class _ReviewPageState extends State<ReviewPage> {
   int selectedRating = 0;
+  bool _saved = false;
   final TextEditingController reviewController = TextEditingController();
 
   static const _orange = Color(0xFFFF4F0F);
@@ -38,31 +39,13 @@ class _ReviewPageState extends State<ReviewPage> {
           children: [
             // ── Header ────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _cardBg,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 16,
-                        color: _textDark,
-                      ),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        size: 20, color: Colors.black),
+                    onPressed: () => Navigator.maybePop(context),
                   ),
                   Expanded(
                     child: Text(
@@ -70,14 +53,13 @@ class _ReviewPageState extends State<ReviewPage> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
                         color: _textDark,
-                        letterSpacing: -0.3,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 40),
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
@@ -85,7 +67,7 @@ class _ReviewPageState extends State<ReviewPage> {
             // ── Scrollable Body ────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -94,11 +76,13 @@ class _ReviewPageState extends State<ReviewPage> {
                       decoration: BoxDecoration(
                         color: _cardBg,
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.28), width: 1),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withOpacity(0.07),
                             blurRadius: 16,
-                            offset: const Offset(0, 4),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
@@ -106,15 +90,15 @@ class _ReviewPageState extends State<ReviewPage> {
                       child: Row(
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                             child: Image.asset(
                               'assets/images/melati_restaurant.png',
-                              width: 80,
-                              height: 80,
+                              width: 90,
+                              height: 90,
                               fit: BoxFit.cover,
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,56 +107,74 @@ class _ReviewPageState extends State<ReviewPage> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Marina Kitchen',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: _textDark,
+                                    Expanded(
+                                      child: Text(
+                                        'Marina Kitchen',
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF1A1A1A),
+                                          letterSpacing: -0.4,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF3EE),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          SvgPicture.asset(
-                                            'assets/icons/rating_card.svg',
-                                            width: 12,
-                                            height: 12,
-                                            colorFilter: const ColorFilter.mode(
-                                                _orange, BlendMode.srcIn),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '4.8',
-                                            style: TextStyle(
-                                              fontFamily: 'Inter',
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                              color: _orange,
-                                            ),
-                                          ),
-                                        ],
+                                    GestureDetector(
+                                      onTap: () =>
+                                          setState(() => _saved = !_saved),
+                                      child: Icon(
+                                        _saved
+                                            ? Icons.favorite_rounded
+                                            : Icons.favorite_border_rounded,
+                                        size: 22,
+                                        color: _saved
+                                            ? _orange
+                                            : const Color(0xFFD1D1D1),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                _metaRow(
-                                    'assets/icons/clock_card.svg', '20 min'),
-                                const SizedBox(height: 4),
-                                _metaRow(
-                                    'assets/icons/bowl_card.svg', 'Javanese'),
-                                const SizedBox(height: 4),
-                                _metaRowFull(
-                                  'assets/icons/location_card.svg',
-                                  'Jl Mangan III 216 Psr II Mabar...',
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on_rounded,
+                                        size: 14, color: _orange),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'Jl Mangan III 216 Psr II Mabar...',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      _MiniChip(
+                                          icon: Icons.star_rounded,
+                                          label: '4.8',
+                                          isHighlight: true),
+                                      const SizedBox(width: 8),
+                                      _MiniChip(
+                                          icon: Icons.access_time_rounded,
+                                          label: '20 min'),
+                                      const SizedBox(width: 8),
+                                      _MiniChip(
+                                          icon: Icons.restaurant_rounded,
+                                          label: 'Javanese'),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -188,7 +190,7 @@ class _ReviewPageState extends State<ReviewPage> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: _cardBg,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.06),
@@ -198,25 +200,24 @@ class _ReviewPageState extends State<ReviewPage> {
                         ],
                       ),
                       padding: const EdgeInsets.symmetric(
-                          vertical: 28, horizontal: 20),
+                          vertical: 24, horizontal: 20),
                       child: Column(
                         children: [
                           Text(
                             'How was your experience?',
                             style: TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
                               color: _textDark,
-                              letterSpacing: -0.2,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             'Tap a star to rate your visit',
                             style: TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 13,
+                              fontSize: 14,
                               color: _textLight,
                               fontWeight: FontWeight.w400,
                             ),
@@ -235,12 +236,12 @@ class _ReviewPageState extends State<ReviewPage> {
                                   duration: const Duration(milliseconds: 150),
                                   curve: Curves.easeOut,
                                   margin:
-                                      const EdgeInsets.symmetric(horizontal: 6),
+                                      const EdgeInsets.symmetric(horizontal: 4),
                                   child: Icon(
                                     filled
                                         ? Icons.star_rounded
                                         : Icons.star_outline_rounded,
-                                    size: filled ? 44 : 40,
+                                    size: filled ? 48 : 48,
                                     color: filled
                                         ? _starActive
                                         : const Color(0xFFDDDDDD),
@@ -259,16 +260,16 @@ class _ReviewPageState extends State<ReviewPage> {
                                 ? Container(
                                     key: ValueKey(selectedRating),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 6),
+                                        horizontal: 16, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFFF3EE),
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(50),
                                     ),
                                     child: Text(
                                       _ratingLabels[selectedRating],
                                       style: TextStyle(
                                         fontFamily: 'Inter',
-                                        fontSize: 13,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                         color: _orange,
                                       ),
@@ -283,14 +284,14 @@ class _ReviewPageState extends State<ReviewPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
                     // ── Review Text Section ──────────────────────────────
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: _cardBg,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.06),
@@ -299,7 +300,7 @@ class _ReviewPageState extends State<ReviewPage> {
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -307,8 +308,8 @@ class _ReviewPageState extends State<ReviewPage> {
                             'Add a detailed review',
                             style: TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                               color: _textDark,
                             ),
                           ),
@@ -321,7 +322,7 @@ class _ReviewPageState extends State<ReviewPage> {
                               color: _textLight,
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 16),
                           TextField(
                             controller: reviewController,
                             maxLines: 6,
@@ -332,21 +333,21 @@ class _ReviewPageState extends State<ReviewPage> {
                             ),
                             decoration: InputDecoration(
                               hintText:
-                                  'Share your thoughts about the food, service, atmosphere...',
+                                  'Share your thoughts about the food, service, atmosphere',
                               hintStyle: TextStyle(
                                 fontFamily: 'Inter',
                                 color: _textLight,
-                                fontSize: 13,
+                                fontSize: 14,
                                 height: 1.5,
                               ),
                               filled: true,
                               fillColor: const Color(0xFFF7F7F7),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(
                                   color: Color(0xFFFF4F0F),
                                   width: 1.5,
@@ -378,15 +379,11 @@ class _ReviewPageState extends State<ReviewPage> {
               ),
               child: SizedBox(
                 width: double.infinity,
-                height: 52,
+                height: 56,
                 child: ElevatedButton(
                   onPressed: selectedRating > 0
                       ? () {
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            '/home',
-                            (route) => false,
-                          );
+                          Navigator.pop(context);
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
@@ -394,17 +391,16 @@ class _ReviewPageState extends State<ReviewPage> {
                     disabledBackgroundColor: const Color(0xFFFFCDBD),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                   ),
                   child: Text(
                     'Submit Review',
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
-                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
@@ -416,61 +412,48 @@ class _ReviewPageState extends State<ReviewPage> {
     );
   }
 
-  Widget _metaRow(String icon, String label) {
-    return Row(
-      children: [
-        SvgPicture.asset(
-          icon,
-          width: 13,
-          height: 13,
-          colorFilter:
-              const ColorFilter.mode(Color(0xFFAAAAAA), BlendMode.srcIn),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 12,
-            color: const Color(0xFF9E9E9E),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _metaRowFull(String icon, String label) {
-    return Row(
-      children: [
-        SvgPicture.asset(
-          icon,
-          width: 13,
-          height: 13,
-          colorFilter:
-              const ColorFilter.mode(Color(0xFFAAAAAA), BlendMode.srcIn),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              color: const Color(0xFF9E9E9E),
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   void dispose() {
     reviewController.dispose();
     super.dispose();
+  }
+}
+
+class _MiniChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isHighlight;
+
+  const _MiniChip({
+    required this.icon,
+    required this.label,
+    this.isHighlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isHighlight ? const Color(0xFFFFF3EE) : const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(50),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFFFF4F0F)),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
+              color: const Color(0xFF3A3A3A),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
