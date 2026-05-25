@@ -26,24 +26,22 @@ class _BookingDetailState extends State<BookingDetail> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(25, 25, 25, 30),
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
                       child: Row(
                         children: [
                           IconButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            icon: const Icon(Icons.arrow_back_ios),
+                            icon: const Icon(Icons.arrow_back_ios_new,
+                                size: 20, color: Colors.black),
+                            onPressed: () => Navigator.maybePop(context),
                           ),
                           const Expanded(
                             child: Text(
                               'Booking Detail',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize:18, 
+                                fontSize: 20,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF111111),
-                                letterSpacing: -0.2,
                               ),
                             ),
                           ),
@@ -61,10 +59,9 @@ class _BookingDetailState extends State<BookingDetail> {
                           const Text(
                             'Oct 10, 2025 · 06:00 PM',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF111111),
-                              letterSpacing: -0.3,
                             ),
                           ),
                           Row(
@@ -72,12 +69,11 @@ class _BookingDetailState extends State<BookingDetail> {
                               Text(
                                 'Remind',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.grey.shade400,
                                 ),
                               ),
-                              const SizedBox(width: 6),
                               Transform.scale(
                                 scale: 0.75,
                                 child: Switch(
@@ -99,9 +95,8 @@ class _BookingDetailState extends State<BookingDetail> {
                       ),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
 
-                    // Hero Image with overlay chips
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: ClipRRect(
@@ -111,7 +106,7 @@ class _BookingDetailState extends State<BookingDetail> {
                             Image.asset(
                               'assets/images/melati_restaurant.png',
                               width: double.infinity,
-                              height: 185,
+                              height: 168,
                               fit: BoxFit.cover,
                             ),
                             // Gradient overlay
@@ -130,17 +125,16 @@ class _BookingDetailState extends State<BookingDetail> {
                                 ),
                               ),
                             ),
-                            // Chips bottom left
                             Positioned(
-                              bottom: 14,
-                              left: 14,
+                              bottom: 12,
+                              left: 12,
                               child: Row(
                                 children: [
-                                  _buildHeroChip('1 hour'),
-                                  const SizedBox(width: 7),
-                                  _buildHeroChip('8 person'),
-                                  const SizedBox(width: 7),
-                                  _buildHeroChip('1st Floor'),
+                                  _buildHeroChip(Icons.schedule, '1 hour'),
+                                  const SizedBox(width: 8),
+                                  _buildHeroChip(Icons.group, '8 person'),
+                                  const SizedBox(width: 8),
+                                  _buildHeroChip(Icons.layers, '1st Floor'),
                                 ],
                               ),
                             ),
@@ -149,7 +143,7 @@ class _BookingDetailState extends State<BookingDetail> {
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
 
                     // Restaurant name & address
                     Padding(
@@ -163,14 +157,13 @@ class _BookingDetailState extends State<BookingDetail> {
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF111111),
-                              letterSpacing: -0.4,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Jl. Raya Kandangan No.29e, Ngebrak, Wungu, Kec. Wungu, Kabupaten Madiun, Jawa Timur',
                             style: TextStyle(
-                              fontSize: 12.5,
+                              fontSize: 14,
                               color: Colors.grey.shade400,
                               height: 1.55,
                               fontWeight: FontWeight.w400,
@@ -180,15 +173,13 @@ class _BookingDetailState extends State<BookingDetail> {
                       ),
                     ),
 
-                    const SizedBox(height: 4),
-
                     // Section label
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                       child: Text(
                         'SUMMARY OF CHANGES',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Colors
                               .grey.shade400, // Adjusted contrast slightly
@@ -203,7 +194,7 @@ class _BookingDetailState extends State<BookingDetail> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFFAFAFA),
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0xFFF0F0F0)),
                         ),
                         child: Column(
@@ -252,13 +243,12 @@ class _BookingDetailState extends State<BookingDetail> {
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xFF111111),
-                                  letterSpacing: -0.3,
                                 ),
                               ),
                               Text(
                                 'inc. service fee',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   color: Colors.grey.shade400,
                                 ),
                               ),
@@ -273,13 +263,12 @@ class _BookingDetailState extends State<BookingDetail> {
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF111111),
-                                  letterSpacing: -0.5,
                                 ),
                               ),
                               Text(
                                 'IDR',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   color: Colors.grey.shade400,
                                 ),
                               ),
@@ -305,7 +294,7 @@ class _BookingDetailState extends State<BookingDetail> {
               ),
               child: SizedBox(
                 width: double.infinity,
-                height: 55,
+                height: 56,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
@@ -321,16 +310,15 @@ class _BookingDetailState extends State<BookingDetail> {
                     elevation: 0,
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                   ),
                   child: const Text(
                     'Pay Now',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
-                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
@@ -342,21 +330,28 @@ class _BookingDetailState extends State<BookingDetail> {
     );
   }
 
-  Widget _buildHeroChip(String label) {
+  Widget _buildHeroChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(50),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -377,7 +372,7 @@ class _BookingDetailState extends State<BookingDetail> {
     bool isHighlight = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,21 +380,20 @@ class _BookingDetailState extends State<BookingDetail> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 14,
               color: Colors.grey.shade400,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(width: 16),
           isHighlight
               ? Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFF4F0F),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     value,
@@ -416,7 +410,7 @@ class _BookingDetailState extends State<BookingDetail> {
                     value,
                     textAlign: TextAlign.right,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF111111),
                     ),

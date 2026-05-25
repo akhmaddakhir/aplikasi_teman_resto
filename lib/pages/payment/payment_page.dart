@@ -76,13 +76,13 @@ class _PaymentPageState extends State<PaymentPage> {
   Widget _buildTopBar(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(8, 16, 20, 16),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            color: const Color(0xFF1A1A1A),
+            icon: const Icon(Icons.arrow_back_ios_new,
+                size: 20, color: Colors.black),
+            onPressed: () => Navigator.maybePop(context),
           ),
           Expanded(
             child: Text(
@@ -90,14 +90,13 @@ class _PaymentPageState extends State<PaymentPage> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
                 color: const Color(0xFF1A1A1A),
-                letterSpacing: -0.3,
               ),
             ),
           ),
-          const SizedBox(width: 44),
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -110,9 +109,9 @@ class _PaymentPageState extends State<PaymentPage> {
 
     return Container(
       width: double.infinity,
-      height: 178,
+      height: 168,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -128,8 +127,8 @@ class _PaymentPageState extends State<PaymentPage> {
       child: Stack(
         children: [
           Positioned(
-            top: -30,
-            right: -30,
+            top: -32,
+            right: -32,
             child: Container(
               width: 130,
               height: 130,
@@ -194,7 +193,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             style: TextStyle(
                               fontFamily: 'Inter',
                               color: Colors.white.withOpacity(0.6),
-                              fontSize: 9,
+                              fontSize: 10,
                               letterSpacing: 1.2,
                               fontWeight: FontWeight.w600,
                             ),
@@ -205,7 +204,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             style: TextStyle(
                               fontFamily: 'Inter',
                               color: Colors.white,
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -219,7 +218,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             style: TextStyle(
                               fontFamily: 'Inter',
                               color: Colors.white.withOpacity(0.6),
-                              fontSize: 9,
+                              fontSize: 10,
                               letterSpacing: 1.2,
                               fontWeight: FontWeight.w600,
                             ),
@@ -230,7 +229,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             style: TextStyle(
                               fontFamily: 'Inter',
                               color: Colors.white,
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -336,7 +335,7 @@ class _PaymentPageState extends State<PaymentPage> {
       label.toUpperCase(),
       style: TextStyle(
         fontFamily: 'Inter',
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: FontWeight.w800,
         color: const Color(0xFFBBBAB5),
         letterSpacing: 1.2,
@@ -351,22 +350,22 @@ class _PaymentPageState extends State<PaymentPage> {
       onTap: () => setState(() => _selectedIndex = index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? const Color(0xFFFF4F0F)
                 : Colors.black.withOpacity(0.06),
-            width: isSelected ? 1.5 : 0.5,
+            width: isSelected ? 1.5 : 1.5,
           ),
         ),
         child: Row(
           children: [
             _buildMethodIcon(method.type),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,7 +379,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       color: const Color(0xFF1A1A1A),
                     ),
                   ),
-                  const SizedBox(height: 1),
+                  const SizedBox(height: 2),
                   Text(
                     method.detail,
                     style: TextStyle(
@@ -393,8 +392,8 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
             ),
             Container(
-              width: 22,
-              height: 22,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color:
@@ -408,7 +407,7 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
               child: isSelected
                   ? const Icon(Icons.check_rounded,
-                      color: Colors.white, size: 13)
+                      color: Colors.white, size: 16)
                   : null,
             ),
           ],
@@ -509,7 +508,7 @@ class _PaymentPageState extends State<PaymentPage> {
             style: TextStyle(
               fontFamily: 'Inter',
               color: Colors.white,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -527,7 +526,7 @@ class _PaymentPageState extends State<PaymentPage> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF1EC),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: const Color(0xFFFF4F0F).withOpacity(0.25),
             width: 1.5,
@@ -583,7 +582,7 @@ class _PaymentPageState extends State<PaymentPage> {
             'Continue',
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Colors.white,
             ),

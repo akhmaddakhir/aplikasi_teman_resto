@@ -67,14 +67,14 @@ Widget tableLegend(Color color, String text) {
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
-        width: 14,
-        height: 14,
+        width: 12,
+        height: 12,
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
       const SizedBox(width: 6),
       Text(
         text,
-        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500),
+        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
       ),
     ],
   );
@@ -127,7 +127,7 @@ class RectangleTableWithChairs extends StatelessWidget {
             child: Text(
               id,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: textColor(reserved, isSelected),
               ),
@@ -184,7 +184,7 @@ class SquareTable extends StatelessWidget {
             child: Text(
               id,
               style: GoogleFonts.inter(
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: textColor(reserved, isSelected),
               ),

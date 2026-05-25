@@ -126,20 +126,21 @@ class TableBookingState extends State<TableBooking>
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(25, 25, 25, 30),
+              padding: const EdgeInsets.fromLTRB(16, 24 , 16, 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        size: 20, color: Colors.black),
+                    onPressed: () => Navigator.maybePop(context),
                   ),
                   const Expanded(
                     child: Text(
                       'Select Table',
                       textAlign: TextAlign.center,
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(width: 48),
@@ -204,9 +205,9 @@ class TableBookingState extends State<TableBooking>
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF4F0F),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                   ),
                   child: const Text(
@@ -279,52 +280,70 @@ class TableBookingState extends State<TableBooking>
   // ─── FLOOR 2 ───
   Widget _floor2() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
+      scrollDirection: Axis.vertical,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+          child: Column(
             children: [
-              _lv("F2-T-03-L"),
-              Expanded(
-                  child: Column(children: [
-                _c("F2-T-01", 50),
-                const SizedBox(height: 24),
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [_c("F2-T-02", 42), _c("F2-T-03", 42)]),
-              ])),
-              _lv("F2-T-03-R"),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _lv("F2-T-03-L"),
+                  const SizedBox(width: 24),
+                  Column(children: [
+                    _c("F2-T-01", 50),
+                    const SizedBox(height: 24),
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _c("F2-T-02", 42),
+                          const SizedBox(width: 24),
+                          _c("F2-T-03", 42)
+                        ]),
+                  ]),
+                  const SizedBox(width: 24),
+                  _lv("F2-T-03-R"),
+                ],
+              ),
+              const SizedBox(height: 40),
+              Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _lv("F2-T-04-L"),
+                    const SizedBox(width: 24),
+                    _c("F2-T-04", 95),
+                    const SizedBox(width: 24),
+                    _lv("F2-T-04-R")
+                  ]),
+              const SizedBox(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _lv("F2-T-05-L"),
+                  const SizedBox(width: 24),
+                  Column(children: [
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _c("F2-T-06", 42),
+                          const SizedBox(width: 24),
+                          _c("F2-T-07", 42)
+                        ]),
+                    const SizedBox(height: 28),
+                    _c("F2-T-05", 50),
+                  ]),
+                  const SizedBox(width: 24),
+                  _lv("F2-T-05-R"),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 40),
-          Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _lv("F2-T-04-L"),
-                _c("F2-T-04", 95),
-                _lv("F2-T-04-R")
-              ]),
-          const SizedBox(height: 40),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _lv("F2-T-05-L"),
-              Expanded(
-                  child: Column(children: [
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [_c("F2-T-06", 42), _c("F2-T-07", 42)]),
-                const SizedBox(height: 28),
-                _c("F2-T-05", 50),
-              ])),
-              _lv("F2-T-05-R"),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -59,8 +59,8 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                           ),
                           child: Center(
                             child: Container(
-                              width: 90,
-                              height: 90,
+                              width: 88,
+                              height: 88,
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Color(0xFFFF4F0F),
@@ -68,14 +68,14 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                               child: const Icon(
                                 Icons.check_rounded,
                                 color: Colors.white,
-                                size: 48,
+                                size: 56,
                               ),
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 36),
+                      const SizedBox(height: 32),
 
                       FadeTransition(
                         opacity: _fadeAnim,
@@ -85,13 +85,12 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                               'Booking Confirmed!',
                               style: TextStyle(
                                 fontFamily: 'Inter',
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
                                 color: const Color(0xFF1A1A1A),
-                                letterSpacing: -0.5,
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 8),
                             Text(
                               'Your table has been reserved.\nSee you at the restaurant!',
                               textAlign: TextAlign.center,
@@ -106,7 +105,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                         ),
                       ),
 
-                      const SizedBox(height: 36),
+                      const SizedBox(height: 24),
 
                       // ── Info card ──
                       FadeTransition(
@@ -115,7 +114,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF7F7F7),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
                             children: [
@@ -148,7 +147,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                         ),
                       ),
 
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 32),
 
                       // ── Booking ID badge ──
                       FadeTransition(
@@ -158,7 +157,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                               horizontal: 20, vertical: 12),
                           decoration: BoxDecoration(
                             color: const Color(0xFF1A1A1A),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -170,7 +169,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                                 'Booking ID: ',
                                 style: TextStyle(
                                   fontFamily: 'Inter',
-                                  fontSize: 13,
+                                  fontSize: 14,
                                   color: Colors.white.withOpacity(0.6),
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -179,7 +178,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                                 '#BK20251010',
                                 style: TextStyle(
                                   fontFamily: 'Inter',
-                                  fontSize: 13,
+                                  fontSize: 14,
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -189,7 +188,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -230,43 +229,37 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                         backgroundColor: const Color(0xFFFF4F0F),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                       ),
                       child: Text(
                         'Back to Home',
                         style: TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: TextButton(
                       onPressed: () {
-                        // Simpan referensi navigator SEBELUM widget di-dispose,
-                        // supaya .then() tetap bisa push /bookings walau
-                        // PaymentSuccess sudah keluar dari tree.
-                        final nav = Navigator.of(context);
-                        nav
-                            .pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (_) => const MainPage(),
-                              ),
-                              (route) => false,
-                            )
-                            .then((_) => nav.pushNamed('/bookings'));
+                        // Push ke home terlebih dahulu, kemudian ke orders
+                        // Sehingga ketika user klik back di orders, kembali ke home
+                        Navigator.pushNamed(context, '/home');
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          Navigator.pushNamed(context, '/orders');
+                        });
                       },
                       style: TextButton.styleFrom(
                         backgroundColor: const Color(0xFFF5F5F5),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                       ),
                       child: Text(
@@ -301,9 +294,9 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                 height: 36,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, size: 17, color: const Color(0xFF666666)),
+                child: Icon(icon, size: 18, color: const Color(0xFF666666)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -311,7 +304,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                   label,
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 13,
+                    fontSize: 14,
                     color: const Color(0xFF888888),
                     fontWeight: FontWeight.w500,
                   ),
@@ -321,7 +314,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                 value,
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A1A1A),
                 ),
