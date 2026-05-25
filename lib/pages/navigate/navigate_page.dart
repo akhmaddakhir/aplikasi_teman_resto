@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class NavigatePage extends StatefulWidget {
   const NavigatePage({super.key});
@@ -9,57 +12,103 @@ class NavigatePage extends StatefulWidget {
 
 class _NavigatePageState extends State<NavigatePage>
     with TickerProviderStateMixin {
+  // ── Controllers ───────────────────────────────────────────────────────────
   late AnimationController _pulseController;
   late AnimationController _slideController;
   late Animation<double> _slideAnim;
-
-  // ── Navigation mode state ──────────────────────────────────────────────────
-  bool _isNavigating = false;
-  bool _showDropdown = false;
-  final TextEditingController _searchCtrl = TextEditingController();
-  final List<Map<String, String>> _allRestaurants = [
-    {'name': 'Marina Kitchen', 'address': 'Jl. Mangan III 216, Surabaya'},
-    {'name': 'Warung Batu Sari', 'address': 'Jl. Diponegoro 12, Batu'},
-    {'name': 'Rumah Makan Padang Jaya', 'address': 'Jl. Sudirman 45, Malang'},
-    {'name': 'Cafe de Roos', 'address': 'Jl. Raya Batu No.7, Batu'},
-    {'name': 'Sate Kambing Pak Budi', 'address': 'Jl. Kartika No.3, Batu'},
-    {'name': 'Rawon Nguling', 'address': 'Jl. Semeru 88, Malang'},
-  ];
-  List<Map<String, String>> _filteredRestaurants = [];
   late AnimationController _zoomController;
   late Animation<double> _zoomAnim;
   late Animation<double> _fadeBottomSheet;
+
+  final MapController _mapController = MapController();
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  bool _isNavigating = false;
+  bool _showDropdown = false;
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  // ── Koordinat (Malang area simulasi) ──────────────────────────────────────
+  // Posisi user saat ini (simulasi)
+  final LatLng _userLocation = const LatLng(-7.9666, 112.6326);
+
+  // Destinasi terpilih saat ini
+  late _RestaurantData _selectedDestination;
+
+  final List<_RestaurantData> _allRestaurants = [
+    _RestaurantData(
+      name: 'Panon Njawi',
+      address: 'Jl. Kahuripan No.3, Klojen, Malang',
+      latLng: LatLng(-7.9797, 112.6304),
+    ),
+    _RestaurantData(
+      name: 'Melati Restaurant',
+      address: 'Jl. Semeru No.7, Klojen, Malang',
+      latLng: LatLng(-7.9740, 112.6250),
+    ),
+    _RestaurantData(
+      name: 'Lakana Restaurant',
+      address: 'Jl. Veteran No.12, Kota Malang',
+      latLng: LatLng(-7.9822, 112.6188),
+    ),
+    _RestaurantData(
+      name: 'Kinan Dapur',
+      address: 'Jl. Kawi No.5, Kota Malang',
+      latLng: LatLng(-7.9855, 112.6170),
+    ),
+    _RestaurantData(
+      name: 'Warung Sari',
+      address: 'Jl. Kertanegara No.1, Malang',
+      latLng: LatLng(-7.9700, 112.6360),
+    ),
+    _RestaurantData(
+      name: 'Rawon Nguling',
+      address: 'Jl. Semeru 88, Malang',
+      latLng: LatLng(-7.9760, 112.6230),
+    ),
+  ];
+
+  List<_RestaurantData> _filteredRestaurants = [];
 
   @override
   void initState() {
     super.initState();
 
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
+    _selectedDestination = _allRestaurants.first;
+    _filteredRestaurants = List.from(_allRestaurants);
 
-    _slideController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _slideAnim = CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    );
-    _slideController.forward();
+    try {
+      _pulseController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 1600),
+      )..repeat(reverse: true);
 
-    _zoomController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _zoomAnim = CurvedAnimation(
-      parent: _zoomController,
-      curve: Curves.easeInOut,
-    );
-    _fadeBottomSheet = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _zoomController, curve: const Interval(0.0, 0.5)),
-    );
+      _slideController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 600),
+      );
+      _slideAnim = CurvedAnimation(
+        parent: _slideController,
+        curve: Curves.easeOutCubic,
+      );
+      _slideController.forward();
+
+      _zoomController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 800),
+      );
+      _zoomAnim = CurvedAnimation(
+        parent: _zoomController,
+        curve: Curves.easeInOut,
+      );
+      _fadeBottomSheet = Tween<double>(begin: 1.0, end: 0.0).animate(
+        CurvedAnimation(
+          parent: _zoomController,
+          curve: const Interval(0.0, 0.5),
+        ),
+      );
+    } catch (e) {
+      print('Error initializing controllers: $e');
+    }
   }
 
   @override
@@ -68,9 +117,11 @@ class _NavigatePageState extends State<NavigatePage>
     _slideController.dispose();
     _zoomController.dispose();
     _searchCtrl.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   void _toggleSearchDropdown() {
     setState(() {
       _showDropdown = !_showDropdown;
@@ -87,365 +138,98 @@ class _NavigatePageState extends State<NavigatePage>
           ? List.from(_allRestaurants)
           : _allRestaurants
               .where((r) =>
-                  r['name']!.toLowerCase().contains(q.toLowerCase()) ||
-                  r['address']!.toLowerCase().contains(q.toLowerCase()))
+                  r.name.toLowerCase().contains(q.toLowerCase()) ||
+                  r.address.toLowerCase().contains(q.toLowerCase()))
               .toList();
     });
+  }
+
+  void _selectRestaurant(_RestaurantData r) {
+    setState(() {
+      _selectedDestination = r;
+      _showDropdown = false;
+      _searchCtrl.clear();
+    });
+    // Fit map ke user & destinasi
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds(_userLocation, r.latLng),
+        padding: const EdgeInsets.all(80),
+      ),
+    );
   }
 
   void _startNavigation() {
     setState(() => _isNavigating = true);
     _zoomController.forward();
+    // Zoom ke destinasi
+    _mapController.move(_selectedDestination.latLng, 16);
   }
 
   void _endNavigation() {
-    // Balik ke MainPage (dengan bottom navbar)
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
   }
 
+  // ── Route polyline (lurus simulasi, tanpa routing API) ───────────────────
+  List<LatLng> get _routePoints => [_userLocation, _selectedDestination.latLng];
+
+  // ── Distance sederhana (Haversine via latlong2) ───────────────────────────
+  String get _distanceText {
+    final dist = const Distance()
+        .as(LengthUnit.Kilometer, _userLocation, _selectedDestination.latLng);
+    return dist < 1
+        ? '${(dist * 1000).round()} m'
+        : '${dist.toStringAsFixed(1)} km';
+  }
+
+  String get _etaText {
+    final dist = const Distance()
+        .as(LengthUnit.Kilometer, _userLocation, _selectedDestination.latLng);
+    final minutes = (dist / 30 * 60).round().clamp(1, 999);
+    return '$minutes min';
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // ── Map background ─────────────────────────────────────────────
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _zoomAnim,
-              builder: (_, child) {
-                // Zoom in to route area saat navigasi dimulai
-                final scale = 1.0 + _zoomAnim.value * 0.55;
-                // Geser ke titik tengah rute
-                final offsetY = _zoomAnim.value * -60.0;
-                return Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..translate(0.0, offsetY)
-                    ..scale(scale),
-                  child: child,
-                );
-              },
-              child: CustomPaint(painter: _MapPainter()),
-            ),
-          ),
+          // ── Real Map ───────────────────────────────────────────────────
+          _buildMap(),
 
-          // ── Route line overlay ─────────────────────────────────────────
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _zoomAnim,
-              builder: (_, child) {
-                final scale = 1.0 + _zoomAnim.value * 0.55;
-                final offsetY = _zoomAnim.value * -60.0;
-                return Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..translate(0.0, offsetY)
-                    ..scale(scale),
-                  child: child,
-                );
-              },
-              child: CustomPaint(painter: _RoutePainter()),
-            ),
-          ),
-
-          // ── Current location pulse ─────────────────────────────────────
-          AnimatedBuilder(
-            animation: _zoomAnim,
-            builder: (_, child) {
-              final scale = 1.0 + _zoomAnim.value * 0.55;
-              final size = MediaQuery.of(context).size;
-              // Original position
-              final origTop = size.height * 0.3;
-              final origRight = size.width * 0.12;
-              // Saat zoom, geser sedikit agar tetap di peta
-              final top = origTop + _zoomAnim.value * -80;
-              final right = origRight + _zoomAnim.value * -10;
-              return Positioned(
-                top: top,
-                right: right,
-                child: Transform.scale(scale: 1 / scale * 1.0, child: child),
-              );
-            },
-            child: _buildPulseMarker(),
-          ),
-
-          // ── Destination marker ─────────────────────────────────────────
-          AnimatedBuilder(
-            animation: _zoomAnim,
-            builder: (_, child) {
-              final scale = 1.0 + _zoomAnim.value * 0.55;
-              final size = MediaQuery.of(context).size;
-              final origBottom = size.height * 0.37;
-              final origLeft = size.width * 0.28;
-              final bottom = origBottom + _zoomAnim.value * 80;
-              final left = origLeft + _zoomAnim.value * 10;
-              return Positioned(
-                bottom: bottom,
-                left: left,
-                child: Transform.scale(scale: 1 / scale * 1.0, child: child),
-              );
-            },
-            child: _buildDestinationMarker(),
-          ),
-
-          // ── Floating header + attached dropdown ────────────────────────
+          // ── Floating header + search dropdown ─────────────────────────
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.fromLTRB(0, 16, 16, 0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back button — hilang saat search mode
                     if (!_showDropdown) ...[
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.10),
-                                blurRadius: 12,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.arrow_back_ios_new_rounded,
-                              size: 16, color: Color(0xFF1A1A1A)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
+                      _backButton(),
                     ],
-                    // Search bar + dropdown as one unit
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.10),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // ── Search bar row ──
-                              if (!_showDropdown)
-                                GestureDetector(
-                                  onTap: _toggleSearchDropdown,
-                                  child: Container(
-                                    color: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 12),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFFF4F0F),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        const Text(
-                                          'Search for a restaurant...',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Color(0xFFAAAAAA),
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        const Icon(Icons.search_rounded,
-                                            size: 18, color: Color(0xFFAAAAAA)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              // ── Search mode (full, no back button) ──
-                              if (_showDropdown) ...[
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _searchCtrl,
-                                          autofocus: true,
-                                          onChanged: _onSearchChanged,
-                                          decoration: InputDecoration(
-                                            hintText: 'Search for a restaurant...',
-                                            hintStyle: const TextStyle(
-                                                color: Color(0xFFBBBBBB),
-                                                fontSize: 13),
-                                            prefixIcon: const Icon(
-                                                Icons.search_rounded,
-                                                color: Color(0xFFFF4F0F),
-                                                size: 18),
-                                            isDense: true,
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              borderSide: BorderSide.none,
-                                            ),
-                                            filled: true,
-                                            fillColor: const Color(0xFFF5F5F5),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                    vertical: 10),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      GestureDetector(
-                                        onTap: () => setState(() {
-                                          _showDropdown = false;
-                                          _searchCtrl.clear();
-                                        }),
-                                        child: const Text(
-                                          'Cancel',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFFFF4F0F),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Divider(height: 1, color: Color(0xFFF0F0F0)),
-                                // Results list
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(maxHeight: 220),
-                                  child: _filteredRestaurants.isEmpty
-                                      ? const Padding(
-                                          padding: EdgeInsets.all(18),
-                                          child: Text(
-                                            'Restaurant not found',
-                                            style: TextStyle(
-                                                color: Color(0xFFAAAAAA),
-                                                fontSize: 13),
-                                          ),
-                                        )
-                                      : ListView.separated(
-                                          shrinkWrap: true,
-                                          padding: EdgeInsets.zero,
-                                          itemCount: _filteredRestaurants.length,
-                                          separatorBuilder: (_, __) =>
-                                              const Divider(
-                                                  height: 1,
-                                                  color: Color(0xFFF5F5F5)),
-                                          itemBuilder: (_, i) {
-                                            final r = _filteredRestaurants[i];
-                                            return InkWell(
-                                              onTap: () => setState(
-                                                  () => _showDropdown = false),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 14,
-                                                        vertical: 10),
-                                                child: Row(
-                                                  children: [
-                                                    Container(
-                                                      width: 34,
-                                                      height: 34,
-                                                      decoration: BoxDecoration(
-                                                        color: const Color(
-                                                            0xFFFFF3EE),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                                9),
-                                                      ),
-                                                      child: const Icon(
-                                                          Icons.restaurant_rounded,
-                                                          color:
-                                                              Color(0xFFFF4F0F),
-                                                          size: 16),
-                                                    ),
-                                                    const SizedBox(width: 10),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            r['name']!,
-                                                            style:
-                                                                const TextStyle(
-                                                              fontSize: 13,
-                                                              fontWeight:
-                                                                  FontWeight.w700,
-                                                              color: Color(
-                                                                  0xFF1A1A1A),
-                                                            ),
-                                                          ),
-                                                          Text(
-                                                            r['address']!,
-                                                            style: const TextStyle(
-                                                                fontSize: 11,
-                                                                color: Color(
-                                                                    0xFF9E9E9E)),
-                                                            maxLines: 1,
-                                                            overflow: TextOverflow
-                                                                .ellipsis,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const Icon(
-                                                        Icons
-                                                            .arrow_forward_ios_rounded,
-                                                        size: 12,
-                                                        color:
-                                                            Color(0xFFCCCCCC)),
-                                                  ],
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    Expanded(child: _searchBar()),
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── Navigating HUD (muncul setelah start navigation) ──────────
+          // ── Navigating HUD ─────────────────────────────────────────────
           if (_isNavigating)
             AnimatedBuilder(
               animation: _zoomAnim,
-              builder: (_, __) {
-                return Opacity(
-                  opacity: _zoomAnim.value,
-                  child: _buildNavigatingHUD(context),
-                );
-              },
+              builder: (_, __) => Opacity(
+                opacity: _zoomAnim.value,
+                child: _buildNavigatingHUD(),
+              ),
             ),
 
-          // ── Bottom sheet (sembunyi saat navigasi dimulai) ──────────────
+          // ── Bottom sheet ───────────────────────────────────────────────
           Positioned(
             left: 0,
             right: 0,
@@ -459,7 +243,7 @@ class _NavigatePageState extends State<NavigatePage>
                 ).animate(_slideAnim),
                 child: _isNavigating
                     ? const SizedBox.shrink()
-                    : _buildBottomSheet(context),
+                    : _buildBottomSheet(),
               ),
             ),
           ),
@@ -468,8 +252,344 @@ class _NavigatePageState extends State<NavigatePage>
     );
   }
 
-  // ── HUD saat sedang navigasi ───────────────────────────────────────────────
-  Widget _buildNavigatingHUD(BuildContext context) {
+  // ── Map Widget ────────────────────────────────────────────────────────────
+  Widget _buildMap() {
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: LatLng(
+          (_userLocation.latitude + _selectedDestination.latLng.latitude) / 2,
+          (_userLocation.longitude + _selectedDestination.latLng.longitude) / 2,
+        ),
+        initialZoom: 14,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all,
+        ),
+      ),
+      children: [
+        // MAPTILER
+        TileLayer(
+          urlTemplate:
+              'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=zXLv2UJENN51Ss9xxDAM',
+          userAgentPackageName: 'com.example.teman_resto',
+          maxZoom: 20,
+          backgroundColor: Colors.white,
+        ),
+
+        // Route polyline
+        PolylineLayer(
+          polylines: [
+            Polyline(
+              points: _routePoints,
+              color: const Color(0xFFFF4F0F),
+              strokeWidth: 5,
+              isDotted: false,
+            ),
+          ],
+        ),
+
+        // Markers dengan RepaintBoundary untuk isolate animation
+        MarkerLayer(
+          rotate: false,
+          markers: [
+            // USER LOCATION
+            Marker(
+              point: _userLocation,
+              width: 48,
+              height: 48,
+              child: RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _pulseController,
+                  builder: (_, __) => Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 40 + _pulseController.value * 10,
+                        height: 40 + _pulseController.value * 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF4285F4)
+                              .withOpacity(0.15 * (1 - _pulseController.value)),
+                        ),
+                      ),
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF4285F4),
+                            width: 4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4285F4).withOpacity(0.3),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // DESTINATION
+            Marker(
+              point: _selectedDestination.latLng,
+              width: 160,
+              height: 80,
+              alignment: Alignment.bottomCenter,
+              child: RepaintBoundary(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _selectedDestination.name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    CustomPaint(
+                      size: const Size(12, 6),
+                      painter: _BubbleTailPainter(),
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF4F0F),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.restaurant,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Back button ───────────────────────────────────────────────────────────
+  Widget _backButton() {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black),
+      onPressed: () => Navigator.pop(context),
+    );
+  }
+
+  // ── Search bar + dropdown ─────────────────────────────────────────────────
+  Widget _searchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.10),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Collapsed bar
+            if (!_showDropdown)
+              GestureDetector(
+                onTap: _toggleSearchDropdown,
+                child: Container(
+                  color: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF4F0F),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _selectedDestination.name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Icon(Icons.search_rounded,
+                          size: 18, color: Color(0xFFAAAAAA)),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Expanded search mode
+            if (_showDropdown) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchCtrl,
+                        autofocus: true,
+                        onChanged: _onSearchChanged,
+                        decoration: InputDecoration(
+                          hintText: 'Cari restoran favorit anda',
+                          hintStyle: const TextStyle(
+                              color: Color(0xFFBBBBBB), fontSize: 14),
+                          prefixIcon: const Icon(Icons.search_rounded,
+                              color: Color(0xFFFF4F0F), size: 18),
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF5F5F5),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _showDropdown = false;
+                        _searchCtrl.clear();
+                      }),
+                      child: const Text(
+                        'Batal',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF4F0F),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFF0F0F0)),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 240),
+                child: _filteredRestaurants.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(18),
+                        child: Text(
+                          'Restoran tidak ditemukan',
+                          style:
+                              TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        itemCount: _filteredRestaurants.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1, color: Color(0xFFF5F5F5)),
+                        itemBuilder: (_, i) {
+                          final r = _filteredRestaurants[i];
+                          final isActive = r.name == _selectedDestination.name;
+                          return InkWell(
+                            onTap: () => _selectRestaurant(r),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: isActive
+                                          ? const Color(0xFFFF4F0F)
+                                          : const Color(0xFFFFF3EE),
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                    child: Icon(Icons.restaurant_rounded,
+                                        color: isActive
+                                            ? Colors.white
+                                            : const Color(0xFFFF4F0F),
+                                        size: 16),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          r.name,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: isActive
+                                                ? const Color(0xFFFF4F0F)
+                                                : const Color(0xFF1A1A1A),
+                                          ),
+                                        ),
+                                        Text(
+                                          r.address,
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF9E9E9E)),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_forward_ios_rounded,
+                                      size: 12, color: Color(0xFFCCCCCC)),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── HUD saat navigasi aktif ───────────────────────────────────────────────
+  Widget _buildNavigatingHUD() {
     return Stack(
       children: [
         // Top instruction banner
@@ -478,8 +598,7 @@ class _NavigatePageState extends State<NavigatePage>
           left: 16,
           right: 16,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
               color: const Color(0xFFFF4F0F),
               borderRadius: BorderRadius.circular(16),
@@ -503,46 +622,42 @@ class _NavigatePageState extends State<NavigatePage>
                       color: Colors.white, size: 24),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Turn right at',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
+                      const Text(
+                        'Menuju ke',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        'Jl. Mangan III',
-                        style: TextStyle(
+                        _selectedDestination.name,
+                        style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '120 m',
-                      style: TextStyle(
+                      _distanceText,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     Text(
-                      '~2 min',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                      ),
+                      '~$_etaText',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 11),
                     ),
                   ],
                 ),
@@ -551,7 +666,7 @@ class _NavigatePageState extends State<NavigatePage>
           ),
         ),
 
-        // Bottom "End Navigation" panel
+        // Bottom End Navigation panel
         Positioned(
           bottom: 0,
           left: 0,
@@ -562,10 +677,9 @@ class _NavigatePageState extends State<NavigatePage>
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 20,
-                  offset: Offset(0, -4),
-                ),
+                    color: Colors.black12,
+                    blurRadius: 20,
+                    offset: Offset(0, -4)),
               ],
             ),
             child: SafeArea(
@@ -575,40 +689,35 @@ class _NavigatePageState extends State<NavigatePage>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Progress bar
                     Row(
                       children: [
                         const Text(
-                          'On the way',
+                          'Sedang dalam perjalanan',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A1A),
-                          ),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1A1A)),
                         ),
                         const Spacer(),
-                        const Text(
-                          '2.4 km · 12 min',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF9E9E9E),
-                          ),
+                        Text(
+                          '$_distanceText · $_etaText',
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF9E9E9E)),
                         ),
                       ],
                     ),
                     const SizedBox(height: 10),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
+                      child: const LinearProgressIndicator(
                         value: 0.15,
-                        backgroundColor: const Color(0xFFFFE8E0),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFFFF4F0F)),
+                        backgroundColor: Color(0xFFFFE8E0),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFFFF4F0F)),
                         minHeight: 6,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // End Navigation button
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -617,7 +726,7 @@ class _NavigatePageState extends State<NavigatePage>
                         icon: const Icon(Icons.close_rounded,
                             color: Colors.white, size: 20),
                         label: const Text(
-                          'End Navigation',
+                          'Akhiri Navigasi',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -628,8 +737,7 @@ class _NavigatePageState extends State<NavigatePage>
                           backgroundColor: const Color(0xFF333333),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                              borderRadius: BorderRadius.circular(14)),
                         ),
                       ),
                     ),
@@ -643,119 +751,15 @@ class _NavigatePageState extends State<NavigatePage>
     );
   }
 
-  // ── Pulse marker (current position) ──────────────────────────────────────
-  Widget _buildPulseMarker() {
-    return SizedBox(
-      width: 60,
-      height: 60,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedBuilder(
-            animation: _pulseController,
-            builder: (_, __) => Transform.scale(
-              scale: 1 + _pulseController.value * 0.5,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF4285F4)
-                      .withOpacity(0.15 * (1 - _pulseController.value)),
-                ),
-              ),
-            ),
-          ),
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF4285F4), width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF4285F4).withOpacity(0.3),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Destination pin ───────────────────────────────────────────────────────
-  Widget _buildDestinationMarker() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: const Text(
-            'Marina Kitchen',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        CustomPaint(
-          size: const Size(12, 6),
-          painter: _BubbleTailPainter(),
-        ),
-        Container(
-          width: 16,
-          height: 16,
-          decoration: const BoxDecoration(
-            color: Color(0xFFFF4F0F),
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: Icon(Icons.restaurant, color: Colors.white, size: 10),
-          ),
-        ),
-        Container(
-          width: 2,
-          height: 18,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFFF4F0F), Colors.transparent],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Bottom sheet (sebelum navigasi dimulai) ───────────────────────────────
-  Widget _buildBottomSheet(BuildContext context) {
+  // ── Bottom sheet (sebelum navigasi) ──────────────────────────────────────
+  Widget _buildBottomSheet() {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 20,
-            offset: Offset(0, -4),
-          ),
+              color: Colors.black12, blurRadius: 20, offset: Offset(0, -4)),
         ],
       ),
       child: SafeArea(
@@ -774,34 +778,21 @@ class _NavigatePageState extends State<NavigatePage>
               ),
             ),
 
-            // Info row
+            // Info chips
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
                 children: [
                   _infoChip(
-                    Icons.directions_walk_rounded,
-                    '2.4 km',
-                    'Distance',
-                  ),
+                      Icons.directions_walk_rounded, _distanceText, 'Jarak'),
                   const SizedBox(width: 12),
-                  _infoChip(
-                    Icons.access_time_rounded,
-                    '12 min',
-                    'Est. Time',
-                  ),
+                  _infoChip(Icons.access_time_rounded, _etaText, 'Est. Waktu'),
                   const SizedBox(width: 12),
-                  _infoChip(
-                    Icons.route_rounded,
-                    'Fastest',
-                    'Route',
-                  ),
+                  _infoChip(Icons.route_rounded, 'Tercepat', 'Rute'),
                 ],
               ),
             ),
 
-            // Divider
             const Divider(height: 1, color: Color(0xFFF0F0F0)),
 
             // Restaurant info
@@ -824,47 +815,24 @@ class _NavigatePageState extends State<NavigatePage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Marina Kitchen',
-                          style: TextStyle(
+                        Text(
+                          _selectedDestination.name,
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF1A1A1A),
                           ),
                         ),
                         const SizedBox(height: 3),
-                        const Text(
-                          'Jl. Mangan III 216, Surabaya, Jawa Timur',
-                          style: TextStyle(
+                        Text(
+                          _selectedDestination.address,
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF9E9E9E),
                             height: 1.4,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3EE),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.star_rounded,
-                            size: 13, color: Color(0xFFFF4F0F)),
-                        SizedBox(width: 3),
-                        Text(
-                          '4.8',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFFF4F0F),
-                          ),
                         ),
                       ],
                     ),
@@ -884,7 +852,7 @@ class _NavigatePageState extends State<NavigatePage>
                   icon: const Icon(Icons.navigation_rounded,
                       color: Colors.white, size: 20),
                   label: const Text(
-                    'Start Navigation',
+                    'Mulai Navigasi',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -895,8 +863,7 @@ class _NavigatePageState extends State<NavigatePage>
                     backgroundColor: const Color(0xFFFF4F0F),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
               ),
@@ -922,10 +889,9 @@ class _NavigatePageState extends State<NavigatePage>
             Text(
               value,
               style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
-              ),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1A1A1A)),
             ),
             Text(
               label,
@@ -938,173 +904,24 @@ class _NavigatePageState extends State<NavigatePage>
   }
 }
 
+// ── Data model ────────────────────────────────────────────────────────────────
+class _RestaurantData {
+  final String name;
+  final String address;
+  final LatLng latLng;
 
-// ── Map Painter ──────────────────────────────────────────────────────────────
-class _MapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    canvas.drawRect(
-        Rect.fromLTWH(0, 0, w, h), Paint()..color = const Color(0xFFEAE6DF));
-
-    final park = Paint()..color = const Color(0xFFC8DDAD);
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(
-            Rect.fromLTWH(w * 0.04, h * 0.08, w * 0.3, h * 0.22),
-            const Radius.circular(14)),
-        park);
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(
-            Rect.fromLTWH(w * 0.62, h * 0.52, w * 0.32, h * 0.22),
-            const Radius.circular(14)),
-        park);
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(
-            Rect.fromLTWH(w * 0.15, h * 0.72, w * 0.18, h * 0.14),
-            const Radius.circular(10)),
-        park);
-
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(
-            Rect.fromLTWH(w * 0.55, h * 0.04, w * 0.22, h * 0.1),
-            const Radius.circular(10)),
-        Paint()..color = const Color(0xFFA8D5E8));
-
-    final blockFill = Paint()..color = const Color(0xFFDDD8CE);
-    final blockStroke = Paint()
-      ..color = const Color(0xFFC9C5BB)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
-
-    final blocks = [
-      Rect.fromLTWH(w * 0.08, h * 0.38, w * 0.22, h * 0.16),
-      Rect.fromLTWH(w * 0.42, h * 0.14, w * 0.16, h * 0.18),
-      Rect.fromLTWH(w * 0.68, h * 0.22, w * 0.14, h * 0.13),
-      Rect.fromLTWH(w * 0.32, h * 0.58, w * 0.2, h * 0.16),
-      Rect.fromLTWH(w * 0.05, h * 0.72, w * 0.16, h * 0.1),
-      Rect.fromLTWH(w * 0.6, h * 0.38, w * 0.12, h * 0.1),
-    ];
-    for (final b in blocks) {
-      final rr = RRect.fromRectAndRadius(b, const Radius.circular(4));
-      canvas.drawRRect(rr, blockFill);
-      canvas.drawRRect(rr, blockStroke);
-    }
-
-    void drawRoad(Offset a, Offset b, {double width = 14, Color? color}) {
-      canvas.drawLine(
-          a,
-          b,
-          Paint()
-            ..color = const Color(0xFFC8BDAF)
-            ..strokeWidth = width + 3
-            ..strokeCap = StrokeCap.round);
-      canvas.drawLine(
-          a,
-          b,
-          Paint()
-            ..color = color ?? Colors.white
-            ..strokeWidth = width
-            ..strokeCap = StrokeCap.round);
-    }
-
-    drawRoad(Offset(0, h * 0.28), Offset(w, h * 0.28));
-    drawRoad(Offset(0, h * 0.55), Offset(w, h * 0.55));
-    drawRoad(Offset(0, h * 0.78), Offset(w, h * 0.78));
-    drawRoad(Offset(w * 0.22, 0), Offset(w * 0.22, h));
-    drawRoad(Offset(w * 0.52, 0), Offset(w * 0.52, h));
-    drawRoad(Offset(w * 0.78, 0), Offset(w * 0.78, h));
-    drawRoad(Offset(w * 0.08, h * 0.15), Offset(w * 0.72, h * 0.82),
-        width: 10);
-
-    void drawMinor(Offset a, Offset b) {
-      canvas.drawLine(
-          a,
-          b,
-          Paint()
-            ..color = const Color(0xFFCFC9BE)
-            ..strokeWidth = 6
-            ..strokeCap = StrokeCap.round);
-      canvas.drawLine(
-          a,
-          b,
-          Paint()
-            ..color = Colors.white
-            ..strokeWidth = 4
-            ..strokeCap = StrokeCap.round);
-    }
-
-    drawMinor(Offset(w * 0.22, h * 0.28), Offset(w * 0.52, h * 0.55));
-    drawMinor(Offset(w * 0.52, h * 0.28), Offset(w * 0.78, h * 0.55));
-    drawMinor(Offset(w * 0.08, h * 0.55), Offset(w * 0.22, h * 0.78));
-    drawMinor(Offset(w * 0.35, h * 0.55), Offset(w * 0.35, h * 0.78));
-
-    final dash = Paint()
-      ..color = const Color(0xFFD6CFCA)
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round;
-    for (double x = 0; x < w; x += 18) {
-      canvas.drawLine(Offset(x, h * 0.55), Offset(x + 9, h * 0.55), dash);
-    }
-    for (double y = 0; y < h; y += 18) {
-      canvas.drawLine(Offset(w * 0.52, y), Offset(w * 0.52, y + 9), dash);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
-// ── Route Painter ────────────────────────────────────────────────────────────
-class _RoutePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final from = Offset(w * 0.82, h * 0.33);
-    final to = Offset(w * 0.35, h * 0.60);
-    final mid = Offset(w * 0.52, h * 0.28);
-
-    final path = Path()
-      ..moveTo(from.dx, from.dy)
-      ..quadraticBezierTo(mid.dx, mid.dy, to.dx, to.dy);
-
-    canvas.drawPath(
-        path,
-        Paint()
-          ..color = Colors.black.withOpacity(0.12)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 7
-          ..strokeCap = StrokeCap.round);
-
-    final routePaint = Paint()
-      ..color = const Color(0xFFFF4F0F)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-
-    final pathMetrics = path.computeMetrics();
-    for (final metric in pathMetrics) {
-      double dist = 0;
-      while (dist < metric.length) {
-        final seg = metric.extractPath(dist, dist + 10);
-        canvas.drawPath(seg, routePaint);
-        dist += 16;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
+  const _RestaurantData({
+    required this.name,
+    required this.address,
+    required this.latLng,
+  });
 }
 
 // ── Bubble tail painter ───────────────────────────────────────────────────────
 class _BubbleTailPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final path = Path()
+    final path = ui.Path()
       ..moveTo(0, 0)
       ..lineTo(size.width / 2, size.height)
       ..lineTo(size.width, 0)

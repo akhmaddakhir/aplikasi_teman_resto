@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../payment/payment_page.dart';
 
 class BookingDetail extends StatefulWidget {

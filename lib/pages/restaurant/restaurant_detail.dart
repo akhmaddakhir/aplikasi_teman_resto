@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:teman_resto/widgets/gallery_grid.dart';
 import 'package:teman_resto/widgets/menu_card.dart';
 import 'package:teman_resto/widgets/review_card.dart';

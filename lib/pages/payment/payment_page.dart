@@ -555,8 +555,6 @@ class _PaymentPageState extends State<PaymentPage> {
 
   // WIDGET BARU: Tombol Continue di bagian bawah
   Widget _buildContinueButton(BuildContext context) {
-    final selectedMethod = _methods[_selectedIndex];
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: SizedBox(

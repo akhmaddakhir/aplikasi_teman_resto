@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 import './login_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -18,6 +20,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isLoading = false;
+
+  final _authService = AuthService();
+  final _sessionService = SessionService();
 
   @override
   void dispose() {
@@ -26,6 +32,42 @@ class _RegisterPageState extends State<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
+      try {
+        // Register dengan Firebase
+        var user = await _authService.register(
+          fullName: _fullNameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+
+        if (user != null && mounted) {
+          // Simpan session
+          await _sessionService.saveUserSession(user);
+
+          // Navigate ke complete profile
+          Navigator.pushReplacementNamed(context, '/complete-profile');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
   }
 
   void _handleSocialLogin(String provider) {
@@ -256,11 +298,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 // Register Button
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      Navigator.pushNamed(context, '/complete-profile');
-                    }
-                  },
+                  onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5722),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -269,14 +307,25 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Register',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Register',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
 
                 const SizedBox(height: 32),

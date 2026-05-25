@@ -26,7 +26,6 @@ class SearchResults extends StatefulWidget {
 }
 
 class _SearchResultsState extends State<SearchResults> {
-  static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
 
   late final TextEditingController _searchController;

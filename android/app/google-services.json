@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "749004572344",
+    "project_id": "teman-resto",
+    "storage_bucket": "teman-resto.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:749004572344:android:630ad1759844a7c97c564d",
+        "android_client_info": {
+          "package_name": "com.example.teman_resto_pjbl"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYHQ8oAqYZVK284ALfO6tTNkQB9T60ZV0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../services/session_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -16,12 +17,8 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _logoScale;
   late Animation<double> _titleFade;
   late Animation<Offset> _titleSlide;
-  late Animation<double> _taglineFade;
-  late Animation<Offset> _taglineSlide;
-  late Animation<double> _barFade;
 
-  static const Color _primary      = Color(0xFFFF5722);
-  static const Color _primaryLight = Color(0xFFFF8A65);
+  static const Color _primary = Color(0xFFFF5722);
 
   @override
   void initState() {
@@ -66,33 +63,19 @@ class _SplashScreenState extends State<SplashScreen>
         curve: const Interval(0.35, 0.68, curve: Curves.easeOutCubic),
       ),
     );
-    _taglineFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.52, 0.80, curve: Curves.easeOut),
-      ),
-    );
-    _taglineSlide = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.52, 0.82, curve: Curves.easeOutCubic),
-      ),
-    );
-    _barFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.72, 1.0, curve: Curves.easeOut),
-      ),
-    );
-
     _mainController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 3500), () {
-        if (mounted) Navigator.pushReplacementNamed(context, '/welcome');
+      Future.delayed(const Duration(milliseconds: 3500), () async {
+        if (mounted) {
+          // Check apakah ada active session
+          final sessionService = SessionService();
+          bool hasSession = await sessionService.hasActiveSession();
+
+          // Navigate ke home jika ada session, atau ke welcome jika tidak
+          String route = hasSession ? '/home' : '/welcome';
+          Navigator.pushReplacementNamed(context, route);
+        }
       });
     });
   }

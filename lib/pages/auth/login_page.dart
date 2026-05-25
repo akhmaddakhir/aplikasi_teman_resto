@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 import './register_page.dart';
 import './forgot_password_page.dart';
 
@@ -15,6 +17,10 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+
+  final _authService = AuthService();
+  final _sessionService = SessionService();
 
   @override
   void dispose() {
@@ -23,9 +29,38 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacementNamed(context, '/home');
+      setState(() => _isLoading = true);
+
+      try {
+        // Login dengan Firebase
+        var user = await _authService.login(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+
+        if (user != null && mounted) {
+          // Simpan session
+          await _sessionService.saveUserSession(user);
+
+          // Navigate ke home
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -222,7 +257,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     // Sign In Button
                     ElevatedButton(
-                      onPressed: _handleLogin,
+                      onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF5722),
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -231,14 +266,25 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Sign In',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Sign In',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
 
                     const SizedBox(height: 32),
