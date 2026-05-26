@@ -18,7 +18,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String selectedLocation = '';
   bool _isInitialized = false;
   int _locationRequestId = 0;
@@ -29,6 +29,12 @@ class _HomePageState extends State<HomePage> {
 
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
   void didChangeDependencies() {
@@ -58,6 +64,13 @@ class _HomePageState extends State<HomePage> {
         _detectCurrentLocation();
       }
       _isInitialized = true;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _detectCurrentLocation();
     }
   }
 
@@ -101,17 +114,6 @@ class _HomePageState extends State<HomePage> {
     _saveSelectedLocation(city);
   }
 
-  Future<void> _loadSavedLocation() async {
-    try {
-      final savedLocation = await _sessionService.getSelectedLocation();
-      if (!mounted || savedLocation == null) return;
-
-      setState(() {
-        selectedLocation = savedLocation;
-      });
-    } catch (_) {}
-  }
-
   Future<void> _saveSelectedLocation(String location) async {
     final selectedLocation = location.trim();
     if (selectedLocation.isEmpty) return;
@@ -135,6 +137,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _locationSubscription?.cancel();
     super.dispose();
   }
