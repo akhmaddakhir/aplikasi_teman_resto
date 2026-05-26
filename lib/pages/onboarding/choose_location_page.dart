@@ -11,8 +11,9 @@ class ChooseLocationPage extends StatefulWidget {
 }
 
 class _ChooseLocationPageState extends State<ChooseLocationPage> {
-  static String currentActiveCity = "Jakarta";
+  late String currentActiveCity;
   bool _isLoadingLocation = false;
+  bool _isInitialized = false;
 
   List<Map<String, dynamic>> locations = [
     {'name': 'Jakarta', 'isCurrent': false},
@@ -55,8 +56,24 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
   @override
   void initState() {
     super.initState();
-    _updateCurrentStatus();
-    _detectUserLocation();
+    currentActiveCity = "Jakarta";
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInitialized) return;
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is String && args.trim().isNotEmpty) {
+      currentActiveCity = args.trim();
+      _updateCurrentStatus();
+    } else {
+      _updateCurrentStatus();
+      _detectUserLocation();
+    }
+
+    _isInitialized = true;
   }
 
   /// Detect user location dan update current active city

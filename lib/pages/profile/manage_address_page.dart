@@ -21,16 +21,6 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
       city: 'Jakarta Pusat, DKI Jakarta 10220',
       isDefault: true,
     ),
-    _AddressData(
-      id: '2',
-      label: 'Office',
-      icon: Icons.business_rounded,
-      name: 'Floyd Miles',
-      phone: '+62 812-3456-7890',
-      address: 'Gedung Sampoerna Strategic, Jl. Jend. Sudirman Kav. 45',
-      city: 'Jakarta Selatan, DKI Jakarta 12930',
-      isDefault: false,
-    ),
   ];
 
   @override

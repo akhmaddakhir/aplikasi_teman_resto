@@ -240,6 +240,7 @@ class AuthService {
   Future<void> updateUserProfile({
     required String uid,
     String? fullName,
+    String? email,
     String? phoneNumber,
     String? profileImage,
     String? gender,
@@ -263,6 +264,10 @@ class AuthService {
       if (fullName != null) {
         updates['fullName'] = fullName;
         print('[AuthService] Updating fullName: $fullName');
+      }
+      if (email != null) {
+        updates['email'] = email;
+        print('[AuthService] Updating email: $email');
       }
       if (phoneNumber != null) {
         updates['phoneNumber'] = phoneNumber;

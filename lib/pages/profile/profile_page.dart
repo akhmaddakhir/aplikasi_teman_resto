@@ -197,7 +197,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     _MenuItemData(
                       icon: Icons.settings_outlined,
                       title: 'Settings',
-                      onTap: () => Navigator.pushNamed(context, '/settings'),
+                      onTap: () async {
+                        final updated =
+                            await Navigator.pushNamed(context, '/settings');
+                        if (updated == true) {
+                          _loadUserData();
+                        }
+                      },
                     ),
                     _MenuItemData(
                       icon: Icons.help_outline_rounded,

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
 
@@ -17,8 +20,56 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _locationAccess = true;
 
   // Profile data
-  String _profileName = 'Floyd Miles';
-  String _profileEmail = 'tanya.hill@example.com';
+  final _authService = AuthService();
+  final _sessionService = SessionService();
+  String _profileName = 'User';
+  String _profileEmail = 'user@example.com';
+  String? _profileImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    try {
+      final sessionUser = await _sessionService.getUserSession();
+      if (sessionUser != null && mounted) {
+        setState(() {
+          _profileName = sessionUser.fullName.trim().isNotEmpty
+              ? sessionUser.fullName.trim()
+              : 'User';
+          _profileEmail = sessionUser.email.trim().isNotEmpty
+              ? sessionUser.email.trim()
+              : 'user@example.com';
+          _profileImageUrl = sessionUser.profileImage?.trim().isNotEmpty == true
+              ? sessionUser.profileImage!.trim()
+              : null;
+        });
+      }
+
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) return;
+
+      final userData = await _authService.getUserData(currentUser.uid);
+      if (userData == null || !mounted) return;
+
+      setState(() {
+        _profileName = userData.fullName.trim().isNotEmpty
+            ? userData.fullName.trim()
+            : 'User';
+        _profileEmail = userData.email.trim().isNotEmpty
+            ? userData.email.trim()
+            : currentUser.email ?? 'user@example.com';
+        _profileImageUrl = userData.profileImage?.trim().isNotEmpty == true
+            ? userData.profileImage!.trim()
+            : null;
+      });
+    } catch (e) {
+      print('[SettingsPage] Error loading profile data: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,17 +176,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     const SizedBox(height: 32),
 
-                    // App version
-                    Center(
-                      child: Text(
-                        'FoodApp v1.0.0',
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          color: Color(0xFFCCCAC4),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -186,12 +226,15 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Row(
         children: [
           ClipOval(
-            child: Image.network(
-              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-              width: 56,
-              height: 56,
-              fit: BoxFit.cover,
-            ),
+            child: _profileImageUrl != null
+                ? Image.network(
+                    _profileImageUrl!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildProfilePlaceholder(),
+                  )
+                : _buildProfilePlaceholder(),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -240,6 +283,19 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProfilePlaceholder() {
+    return Container(
+      width: 56,
+      height: 56,
+      color: const Color(0xFFF0F0F0),
+      child: const Icon(
+        Icons.person,
+        color: Color(0xFF888888),
+        size: 30,
       ),
     );
   }
@@ -425,160 +481,206 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showEditProfileSheet(BuildContext context) {
-    // Create text controllers with current values
     final nameController = TextEditingController(text: _profileName);
     final emailController = TextEditingController(text: _profileEmail);
+    bool isSaving = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(2),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              Text(
-                'Edit Profile',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                Text(
+                  'Edit Profile',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              // Name field label
-              const Text(
-                'Name',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A1A1A),
+                const SizedBox(height: 16),
+                const Text(
+                  'Name',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: nameController,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  color: Color(0xFF1A1A1A),
-                ),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: const Color(0xFFF0F0F0),
+                const SizedBox(height: 8),
+                _buildEditField(
+                  controller: nameController,
                   hintText: 'Enter your name',
-                  hintStyle: const TextStyle(
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Email',
+                  style: TextStyle(
                     fontFamily: 'Inter',
-                    color: Colors.black38,
-                    fontSize: 16,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1A1A1A),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              // Email field label
-              const Text(
-                'Email',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  color: Color(0xFF1A1A1A),
-                ),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: const Color(0xFFF0F0F0),
+                const SizedBox(height: 8),
+                _buildEditField(
+                  controller: emailController,
                   hintText: 'Enter your email',
-                  hintStyle: const TextStyle(
-                    fontFamily: 'Inter',
-                    color: Colors.black38,
-                    fontSize: 16,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isSaving
+                        ? null
+                        : () async {
+                            final name = nameController.text.trim();
+                            final email = emailController.text.trim();
+                            if (name.isEmpty || email.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Name and email are required'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            setModalState(() => isSaving = true);
+                            await _saveProfileChanges(name, email);
+                            if (context.mounted) {
+                              setModalState(() => isSaving = false);
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF4F0F),
+                      disabledBackgroundColor:
+                          const Color(0xFFFF4F0F).withOpacity(0.6),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Save Changes',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _profileName = nameController.text;
-                      _profileEmail = emailController.text;
-                    });
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF4F0F),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    'Save Changes',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildEditField({
+    required TextEditingController controller,
+    required String hintText,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 16,
+        color: Color(0xFF1A1A1A),
+      ),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFFF0F0F0),
+        hintText: hintText,
+        hintStyle: const TextStyle(
+          fontFamily: 'Inter',
+          color: Colors.black38,
+          fontSize: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveProfileChanges(String name, String email) async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser != null) {
+        await _authService.updateUserProfile(
+          uid: currentUser.uid,
+          fullName: name,
+          email: email,
+        );
+
+        final updatedUser = await _authService.getUserData(currentUser.uid);
+        if (updatedUser != null) {
+          await _sessionService.saveUserSession(updatedUser);
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _profileName = name;
+        _profileEmail = email;
+      });
+
+      Navigator.pop(context);
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile: $e')),
+      );
+    }
   }
 
   void _showChangePasswordSheet(BuildContext context) {

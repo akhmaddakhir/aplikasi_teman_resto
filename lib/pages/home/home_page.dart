@@ -19,7 +19,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String selectedLocation = 'Jakarta';
+  String selectedLocation = '';
   bool _isInitialized = false;
   int _locationRequestId = 0;
   String? _lastSavedLocation;
@@ -54,9 +54,39 @@ class _HomePageState extends State<HomePage> {
         selectedLocation = args;
         _saveSelectedLocation(args);
       } else {
-        _loadSavedLocation();
+        // Always auto-detect location saat home dibuka
+        _detectCurrentLocation();
       }
       _isInitialized = true;
+    }
+  }
+
+  /// Auto-detect lokasi user terkini dari GPS
+  Future<void> _detectCurrentLocation() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      late LocationPermission permissionStatus;
+
+      if (permission == LocationPermission.denied) {
+        permissionStatus = await Geolocator.requestPermission();
+      } else {
+        permissionStatus = permission;
+      }
+
+      if (permissionStatus == LocationPermission.whileInUse ||
+          permissionStatus == LocationPermission.always) {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        ).catchError((_) async {
+          return await Geolocator.getLastKnownPosition() ??
+              await Geolocator.getCurrentPosition();
+        });
+
+        await _setLocationFromPosition(position);
+      }
+    } catch (e) {
+      print('Error detecting location: $e');
     }
   }
 
@@ -127,6 +157,7 @@ class _HomePageState extends State<HomePage> {
                       final result = await Navigator.pushNamed(
                         context,
                         '/choose-location',
+                        arguments: selectedLocation,
                       );
                       if (result != null && result is String) {
                         setState(() => selectedLocation = result);
@@ -818,7 +849,7 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical:4),
+                            horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF3EE),
                           borderRadius: BorderRadius.circular(50),
