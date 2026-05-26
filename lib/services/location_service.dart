@@ -15,10 +15,40 @@ class LocationService {
   StreamSubscription<Position>? _positionSubscription;
   Position? _latestPosition;
   String? _latestCity;
+  String? _activeCity;
+  bool _hasManualCity = false;
 
   Stream<Position> get positionStream => _positionController.stream;
   Position? get latestPosition => _latestPosition;
   String? get latestCity => _latestCity;
+  String? get activeCity => _activeCity;
+  bool get hasManualCity => _hasManualCity;
+
+  void setManualCity(String city) {
+    final selectedCity = city.trim();
+    if (selectedCity.isEmpty) return;
+
+    _activeCity = selectedCity;
+    _latestCity = selectedCity;
+    _hasManualCity = true;
+  }
+
+  void setDetectedCity(String city) {
+    final detectedCity = city.trim();
+    if (detectedCity.isEmpty) return;
+
+    _activeCity = detectedCity;
+    _latestCity = detectedCity;
+    _hasManualCity = false;
+  }
+
+  void clearManualCity() {
+    if (_hasManualCity) {
+      _activeCity = null;
+      _latestCity = null;
+    }
+    _hasManualCity = false;
+  }
 
   Future<Position> startRealtimeTracking() async {
     if (_positionSubscription != null && _latestPosition != null) {
@@ -78,7 +108,7 @@ class LocationService {
       for (final placemark in placemarks) {
         final city = _cityFromPlacemark(placemark);
         if (city != null) {
-          _latestCity = city;
+          setDetectedCity(city);
           return city;
         }
       }

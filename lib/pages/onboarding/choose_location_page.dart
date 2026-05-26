@@ -10,7 +10,8 @@ class ChooseLocationPage extends StatefulWidget {
   State<ChooseLocationPage> createState() => _ChooseLocationPageState();
 }
 
-class _ChooseLocationPageState extends State<ChooseLocationPage> {
+class _ChooseLocationPageState extends State<ChooseLocationPage>
+    with WidgetsBindingObserver {
   late String currentActiveCity;
   bool _isLoadingLocation = false;
   bool _isInitialized = false;
@@ -56,7 +57,14 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     currentActiveCity = "Jakarta";
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -74,6 +82,13 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
     }
 
     _isInitialized = true;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _detectUserLocation();
+    }
   }
 
   /// Detect user location dan update current active city

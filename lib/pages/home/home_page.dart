@@ -41,7 +41,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.didChangeDependencies();
     if (!_isInitialized) {
       final args = ModalRoute.of(context)?.settings.arguments;
-      if (args == LocationService.liveLocationArgument) {
+      if (LocationService.instance.hasManualCity &&
+          LocationService.instance.activeCity != null) {
+        selectedLocation = LocationService.instance.activeCity!;
+      } else if (args == LocationService.liveLocationArgument) {
+        LocationService.instance.clearManualCity();
         final latestPosition = LocationService.instance.latestPosition;
         if (latestPosition != null) {
           final latestCity = LocationService.instance.latestCity;
@@ -58,7 +62,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
       } else if (args != null && args is String) {
         selectedLocation = args;
+        LocationService.instance.setManualCity(args);
         _saveSelectedLocation(args);
+      } else if (LocationService.instance.activeCity != null) {
+        selectedLocation = LocationService.instance.activeCity!;
       } else {
         // Always auto-detect location saat home dibuka
         _detectCurrentLocation();
@@ -70,13 +77,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _detectCurrentLocation();
+      _detectCurrentLocation(resetManualLocation: true);
     }
   }
 
   /// Auto-detect lokasi user terkini dari GPS
-  Future<void> _detectCurrentLocation() async {
+  Future<void> _detectCurrentLocation({bool resetManualLocation = false}) async {
     try {
+      if (resetManualLocation) {
+        LocationService.instance.clearManualCity();
+      }
+
       final permission = await Geolocator.checkPermission();
       late LocationPermission permissionStatus;
 
@@ -104,6 +115,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _setLocationFromPosition(Position position) async {
+    if (LocationService.instance.hasManualCity) return;
+
     final requestId = ++_locationRequestId;
     final city = await LocationService.instance.getCityFromPosition(position);
 
@@ -163,7 +176,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         arguments: selectedLocation,
                       );
                       if (result != null && result is String) {
-                        setState(() => selectedLocation = result);
+                        LocationService.instance.setManualCity(result);
+                        setState(() {
+                          selectedLocation = result;
+                        });
                         _saveSelectedLocation(result);
                       }
                     },

@@ -51,6 +51,7 @@ import 'pages/profile/setting_page.dart';
 
 // Navigate
 import 'pages/navigate/navigate_page.dart';
+import 'services/location_service.dart';
 
 // Widgets
 import 'widgets/bottom_navbar.dart';
@@ -123,7 +124,7 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
@@ -132,6 +133,25 @@ class _MainPageState extends State<MainPage> {
     WishlistPage(),
     ProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      LocationService.instance.clearManualCity();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

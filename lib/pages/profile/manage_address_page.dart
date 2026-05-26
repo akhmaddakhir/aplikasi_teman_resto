@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 
 class ManageAddressPage extends StatefulWidget {
   const ManageAddressPage({Key? key}) : super(key: key);
@@ -10,18 +16,165 @@ class ManageAddressPage extends StatefulWidget {
 class _ManageAddressPageState extends State<ManageAddressPage> {
   static const Color _orange = Color(0xFFFF4F0F);
 
-  final List<_AddressData> _addresses = [
-    _AddressData(
-      id: '1',
-      label: 'Home',
-      icon: Icons.home_rounded,
-      name: 'Floyd Miles',
-      phone: '+62 812-3456-7890',
-      address: 'Jl. Sudirman No.12, Kel. Karet Tengsin, Kec. Tanah Abang',
-      city: 'Jakarta Pusat, DKI Jakarta 10220',
-      isDefault: true,
-    ),
-  ];
+  final _authService = AuthService();
+  final _sessionService = SessionService();
+
+  final List<_AddressData> _addresses = [];
+  String _profileName = 'User';
+  String _profilePhone = '-';
+  String _currentAddress = 'Mengambil lokasi saat ini...';
+  String _currentCity = '';
+  bool _isLoadingAddress = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileAndCurrentAddress();
+  }
+
+  Future<void> _loadProfileAndCurrentAddress() async {
+    try {
+      await _loadProfileData();
+      await _loadCurrentAddress();
+      if (!mounted) return;
+
+      setState(() {
+        _addresses
+          ..clear()
+          ..add(
+            _AddressData(
+              id: '1',
+              label: 'Home',
+              icon: Icons.home_rounded,
+              name: _profileName,
+              phone: _profilePhone,
+              address: _currentAddress,
+              city: _currentCity,
+              isDefault: true,
+            ),
+          );
+        _isLoadingAddress = false;
+      });
+    } catch (e) {
+      print('[ManageAddressPage] Error loading address: $e');
+      if (!mounted) return;
+      setState(() {
+        _addresses
+          ..clear()
+          ..add(
+            _AddressData(
+              id: '1',
+              label: 'Home',
+              icon: Icons.home_rounded,
+              name: _profileName,
+              phone: _profilePhone,
+              address: _currentAddress,
+              city: _currentCity,
+              isDefault: true,
+            ),
+          );
+        _isLoadingAddress = false;
+      });
+    }
+  }
+
+  Future<void> _loadProfileData() async {
+    UserModel? user = await _sessionService.getUserSession();
+
+    final currentUser = _authService.currentUser;
+    if (currentUser != null) {
+      user = await _authService.getUserData(currentUser.uid) ?? user;
+    }
+
+    final name = user?.fullName.trim();
+    final phone = user?.phoneNumber?.trim();
+    _profileName = name?.isNotEmpty == true ? name! : 'User';
+    _profilePhone = phone?.isNotEmpty == true ? phone! : '-';
+  }
+
+  Future<void> _loadCurrentAddress() async {
+    try {
+      final permission = await _ensureLocationPermission();
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        _currentAddress = 'Lokasi belum diizinkan';
+        _currentCity = '';
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      ).catchError((_) async {
+        return await Geolocator.getLastKnownPosition() ??
+            await Geolocator.getCurrentPosition();
+      });
+
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isEmpty) {
+        _currentAddress = 'Lokasi saat ini tidak ditemukan';
+        _currentCity = '';
+        return;
+      }
+
+      final formatted = _formatPlacemark(placemarks.first);
+      _currentAddress = formatted.address;
+      _currentCity = formatted.city;
+    } catch (e) {
+      print('[ManageAddressPage] Error detecting full address: $e');
+      _currentAddress = 'Lokasi saat ini tidak ditemukan';
+      _currentCity = '';
+    }
+  }
+
+  Future<LocationPermission> _ensureLocationPermission() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      return LocationPermission.denied;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    return permission;
+  }
+
+  _FormattedAddress _formatPlacemark(Placemark placemark) {
+    final street = _cleanPart(placemark.street);
+    final subLocality = _cleanPart(placemark.subLocality);
+    final locality = _cleanPart(placemark.locality);
+    final city = _cleanPart(placemark.subAdministrativeArea);
+    final province = _cleanPart(placemark.administrativeArea);
+    final postalCode = _cleanPart(placemark.postalCode);
+
+    final addressParts = <String>[
+      if (street != null) street,
+      if (subLocality != null) 'Kel. $subLocality',
+      if (locality != null && locality != city) 'Kec. $locality',
+    ];
+
+    final cityParts = <String>[
+      if (city != null) city,
+      if (province != null)
+        postalCode != null ? '$province $postalCode' : province,
+    ];
+
+    return _FormattedAddress(
+      address: addressParts.isNotEmpty
+          ? addressParts.join(', ')
+          : 'Alamat lengkap tidak tersedia',
+      city: cityParts.join(', '),
+    );
+  }
+
+  String? _cleanPart(String? value) {
+    final part = value?.trim();
+    return part?.isNotEmpty == true ? part : null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +185,13 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
           children: [
             _buildTopBar(context),
             Expanded(
-              child: _addresses.isEmpty
+              child: _isLoadingAddress
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: _orange,
+                      ),
+                    )
+                  : _addresses.isEmpty
                   ? _buildEmptyState()
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
@@ -247,7 +406,9 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        '${data.address},\n${data.city}',
+                        data.city.trim().isEmpty
+                            ? data.address
+                            : '${data.address},\n${data.city}',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 14,
@@ -312,7 +473,7 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          onPressed: () => _showAddressSheet(context),
+          onPressed: _isLoadingAddress ? null : () => _showAddressSheet(context),
           icon: const Icon(Icons.add_rounded, size: 24),
           label: Text(
             'Add New Address',
@@ -446,11 +607,12 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
 
   void _showAddressSheet(BuildContext context, {_AddressData? existing}) {
     final labelController = TextEditingController(text: existing?.label ?? '');
-    final nameController = TextEditingController(text: existing?.name ?? '');
-    final phoneController = TextEditingController(text: existing?.phone ?? '');
+    final nameController = TextEditingController(text: _profileName);
+    final phoneController = TextEditingController(text: _profilePhone);
     final addressController =
-        TextEditingController(text: existing?.address ?? '');
-    final cityController = TextEditingController(text: existing?.city ?? '');
+        TextEditingController(text: existing?.address ?? _currentAddress);
+    final cityController =
+        TextEditingController(text: existing?.city ?? _currentCity);
 
     showModalBottomSheet(
       context: context,
@@ -460,99 +622,102 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Text(
-                existing == null ? 'Add New Address' : 'Edit Address',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A1A1A),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildField('Label (e.g. Home, Office)', labelController),
-              const SizedBox(height: 12),
-              _buildField('Full Name', nameController),
-              const SizedBox(height: 12),
-              _buildField('Phone Number', phoneController,
-                  keyboardType: TextInputType.phone),
-              const SizedBox(height: 12),
-              _buildField('Street Address', addressController, maxLines: 2),
-              const SizedBox(height: 12),
-              _buildField('City & Postal Code', cityController),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (existing == null) {
-                      setState(() {
-                        _addresses.add(_AddressData(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          label: labelController.text.isEmpty
-                              ? 'Address'
-                              : labelController.text,
-                          icon: Icons.location_on_rounded,
-                          name: nameController.text,
-                          phone: phoneController.text,
-                          address: addressController.text,
-                          city: cityController.text,
-                          isDefault: _addresses.isEmpty,
-                        ));
-                      });
-                    } else {
-                      setState(() {
-                        existing.label = labelController.text;
-                        existing.name = nameController.text;
-                        existing.phone = phoneController.text;
-                        existing.address = addressController.text;
-                        existing.city = cityController.text;
-                      });
-                    }
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _orange,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    existing == null ? 'Save Address' : 'Update Address',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+        child: SingleChildScrollView(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-              ),
-            ],
+                Text(
+                  existing == null ? 'Add New Address' : 'Edit Address',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF1A1A1A),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildField('Label (e.g. Home, Office)', labelController),
+                const SizedBox(height: 12),
+                _buildDisabledField('Full Name', nameController),
+                const SizedBox(height: 12),
+                _buildDisabledField('Phone Number', phoneController),
+                const SizedBox(height: 12),
+                _buildField('Street Address', addressController, maxLines: 2),
+                const SizedBox(height: 12),
+                _buildField('City & Postal Code', cityController),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (existing == null) {
+                        setState(() {
+                          _addresses.add(_AddressData(
+                            id: DateTime.now()
+                                .millisecondsSinceEpoch
+                                .toString(),
+                            label: labelController.text.isEmpty
+                                ? 'Address'
+                                : labelController.text,
+                            icon: Icons.location_on_rounded,
+                            name: _profileName,
+                            phone: _profilePhone,
+                            address: addressController.text,
+                            city: cityController.text,
+                            isDefault: _addresses.isEmpty,
+                          ));
+                        });
+                      } else {
+                        setState(() {
+                          existing.label = labelController.text;
+                          existing.name = _profileName;
+                          existing.phone = _profilePhone;
+                          existing.address = addressController.text;
+                          existing.city = cityController.text;
+                        });
+                      }
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _orange,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      existing == null ? 'Save Address' : 'Update Address',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -589,6 +754,37 @@ class _ManageAddressPageState extends State<ManageAddressPage> {
       ),
     );
   }
+
+  Widget _buildDisabledField(
+    String hint,
+    TextEditingController controller,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEDECE8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: TextField(
+        controller: controller,
+        enabled: false,
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          color: const Color(0xFF777777),
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            fontFamily: 'Inter',
+            color: const Color(0xFFBBBAB5),
+            fontSize: 14,
+          ),
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -611,5 +807,15 @@ class _AddressData {
     required this.address,
     required this.city,
     required this.isDefault,
+  });
+}
+
+class _FormattedAddress {
+  final String address;
+  final String city;
+
+  const _FormattedAddress({
+    required this.address,
+    required this.city,
   });
 }
