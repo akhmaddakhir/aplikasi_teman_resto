@@ -1,8 +1,12 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:ui';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:teman_resto/pages/home/notification_page.dart';
 import 'package:teman_resto/pages/home/see_all.dart';
+import 'package:teman_resto/services/location_service.dart';
 import '../restaurant/restaurant_detail.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,6 +19,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String selectedLocation = 'Jakarta';
   bool _isInitialized = false;
+  StreamSubscription<Position>? _locationSubscription;
 
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
@@ -24,9 +29,30 @@ class _HomePageState extends State<HomePage> {
     super.didChangeDependencies();
     if (!_isInitialized) {
       final args = ModalRoute.of(context)?.settings.arguments;
-      if (args != null && args is String) selectedLocation = args;
+      if (args == LocationService.liveLocationArgument) {
+        final latestPosition = LocationService.instance.latestPosition;
+        if (latestPosition != null) {
+          selectedLocation = LocationService.formatPosition(latestPosition);
+        }
+
+        _locationSubscription =
+            LocationService.instance.positionStream.listen((position) {
+          if (!mounted) return;
+          setState(() {
+            selectedLocation = LocationService.formatPosition(position);
+          });
+        });
+      } else if (args != null && args is String) {
+        selectedLocation = args;
+      }
       _isInitialized = true;
     }
+  }
+
+  @override
+  void dispose() {
+    _locationSubscription?.cancel();
+    super.dispose();
   }
 
   @override

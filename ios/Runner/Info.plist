@@ -51,5 +51,7 @@
 	<string>Kami memerlukan akses ke kamera Anda untuk mengambil foto profil</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Kami memerlukan akses untuk menyimpan foto ke galeri Anda</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Kami memerlukan akses lokasi Anda untuk menampilkan restoran terdekat secara real time</string>
 </dict>
 </plist>

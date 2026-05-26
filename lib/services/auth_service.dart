@@ -246,15 +246,15 @@ class AuthService {
     String? location,
   }) async {
     try {
-      print('[AuthService] 📝 Updating user profile for UID: $uid');
+      print('[AuthService] Updating user profile for UID: $uid');
 
       final docId = await _resolveUserDocId(uid);
       if (docId == null) {
-        print('[AuthService] ❌ User document tidak ditemukan!');
+        print('[AuthService] User document tidak ditemukan!');
         throw Exception('User tidak ditemukan');
       }
 
-      print('[AuthService] ✅ User document ditemukan: $docId');
+      print('[AuthService] User document ditemukan: $docId');
 
       final updates = <String, dynamic>{
         'updatedAt': DateTime.now().toIso8601String(),
@@ -281,22 +281,22 @@ class AuthService {
         print('[AuthService] Updating location: $location');
       }
 
-      print('[AuthService] 💾 Saving updates ke Firestore...');
+      print('[AuthService] Saving updates ke Firestore...');
       print('[AuthService] Updates: $updates');
 
       await _firestore.collection('users').doc(docId).update(updates);
 
-      print('[AuthService] ✅ Profile update berhasil!');
+      print('[AuthService] Profile update berhasil!');
 
       if (fullName != null && _auth.currentUser != null) {
         await _auth.currentUser!.updateDisplayName(fullName);
       }
     } on FirebaseException catch (e) {
-      print('[AuthService] ❌ Firestore error: ${e.code} - ${e.message}');
-      print('[AuthService] 🔴 Periksa Firestore Security Rules!');
+      print('[AuthService] Firestore error: ${e.code} - ${e.message}');
+      print('[AuthService] Periksa Firestore Security Rules!');
       throw Exception('Gagal update profil: ${e.message}');
     } catch (e) {
-      print('[AuthService] ❌ Error: $e');
+      print('[AuthService] Error: $e');
       throw Exception('Gagal update profil: $e');
     }
   }

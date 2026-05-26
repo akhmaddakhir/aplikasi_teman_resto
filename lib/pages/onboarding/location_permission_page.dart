@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:teman_resto/services/location_service.dart';
 
 class LocationPermissionPage extends StatefulWidget {
   const LocationPermissionPage({Key? key}) : super(key: key);
@@ -9,6 +11,8 @@ class LocationPermissionPage extends StatefulWidget {
 }
 
 class _LocationPermissionPageState extends State<LocationPermissionPage> {
+  bool _isRequestingLocation = false;
+
   /// buka halaman pilih lokasi
   /// tunggu hasil
   /// lalu LANGSUNG ke home dengan lokasi tsb
@@ -25,6 +29,63 @@ class _LocationPermissionPageState extends State<LocationPermissionPage> {
         arguments: result,
       );
     }
+  }
+
+  Future<void> allowLocationAccess() async {
+    if (_isRequestingLocation) return;
+
+    setState(() => _isRequestingLocation = true);
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
+        _showLocationMessage('Aktifkan GPS terlebih dahulu.');
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied) {
+        _showLocationMessage('Izin lokasi ditolak.');
+        return;
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        await Geolocator.openAppSettings();
+        _showLocationMessage(
+          'Izin lokasi diblokir permanen. Aktifkan lewat pengaturan aplikasi.',
+        );
+        return;
+      }
+
+      await LocationService.instance.startRealtimeTracking();
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(
+        context,
+        '/home',
+        arguments: LocationService.liveLocationArgument,
+      );
+    } catch (_) {
+      _showLocationMessage('Gagal mengambil lokasi. Coba lagi.');
+    } finally {
+      if (mounted) {
+        setState(() => _isRequestingLocation = false);
+      }
+    }
+  }
+
+  void _showLocationMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -104,14 +165,7 @@ class _LocationPermissionPageState extends State<LocationPermissionPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // contoh: auto-detect = Jakarta
-                    Navigator.pushReplacementNamed(
-                      context,
-                      '/home',
-                      arguments: 'Jakarta',
-                    );
-                  },
+                  onPressed: _isRequestingLocation ? null : allowLocationAccess,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5722),
                     foregroundColor: Colors.white,
@@ -121,13 +175,23 @@ class _LocationPermissionPageState extends State<LocationPermissionPage> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Allow Location Access',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _isRequestingLocation
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Allow Location Access',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
 
