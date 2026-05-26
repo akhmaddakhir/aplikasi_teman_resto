@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import '../../services/image_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   const CompleteProfilePage({Key? key}) : super(key: key);
@@ -15,11 +19,89 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   String selectedGender = 'Select';
   String selectedCountryCode = '+62';
 
+  File? _selectedImage;
+  bool _isLoading = false;
+
+  final _imageService = ImageService();
+  final _authService = AuthService();
+  final _sessionService = SessionService();
+
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final file = await _imageService.pickImageFromGallery();
+    if (file != null) {
+      setState(() => _selectedImage = file);
+    }
+  }
+
+  Future<void> _handleCompleteProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('User tidak ditemukan');
+      }
+
+      // Upload image jika ada
+      String? profileImageUrl;
+      if (_selectedImage != null) {
+        print('[CompleteProfile] Uploading image...');
+        profileImageUrl = await _imageService.uploadProfileImage(
+          uid: currentUser.uid,
+          imageFile: _selectedImage!,
+        );
+        if (profileImageUrl == null) {
+          throw Exception('Gagal upload gambar');
+        }
+      }
+
+      // Update profile di Firestore
+      await _authService.updateUserProfile(
+        uid: currentUser.uid,
+        fullName: _nameController.text.trim(),
+        phoneNumber: selectedCountryCode + _phoneController.text.trim(),
+        gender: selectedGender != 'Select' ? selectedGender : null,
+        profileImage: profileImageUrl,
+      );
+
+      // Update session dengan data terbaru
+      final updatedUser = await _authService.getUserData(currentUser.uid);
+      if (updatedUser != null) {
+        await _sessionService.saveUserSession(updatedUser);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil berhasil diperbarui! 🎉'),
+            backgroundColor: Color(0xFF16A34A),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, '/notification-permission');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -73,39 +155,47 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
                     // Profile Picture
                     Center(
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 144,
-                            height: 144,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              shape: BoxShape.circle,
-                            ),
-                            child: ClipOval(
-                              child: SvgPicture.asset(
-                                'assets/icons/person.svg',
-                                fit: BoxFit.scaleDown,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 4,
-                            right: 4,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Colors.black,
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 144,
+                              height: 144,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.edit,
-                                color: Colors.white,
-                                size: 18,
+                              child: ClipOval(
+                                child: _selectedImage != null
+                                    ? Image.file(
+                                        _selectedImage!,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : SvgPicture.asset(
+                                        'assets/icons/person.svg',
+                                        fit: BoxFit.scaleDown,
+                                      ),
                               ),
                             ),
-                          ),
-                        ],
+                            Positioned(
+                              bottom: 4,
+                              right: 4,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 
@@ -252,12 +342,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
                     // Complete Profile Button
                     ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          Navigator.pushNamed(
-                              context, '/notification-permission');
-                        }
-                      },
+                      onPressed: _isLoading ? null : _handleCompleteProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF5722),
                         foregroundColor: Colors.white,
@@ -266,14 +351,25 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                           borderRadius: BorderRadius.circular(50),
                         ),
                         elevation: 0,
+                        disabledBackgroundColor: Colors.grey[300],
                       ),
-                      child: const Text(
-                        'Complete Profile',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'Complete Profile',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
 
                     const SizedBox(height: 48),

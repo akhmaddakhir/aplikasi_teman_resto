@@ -55,7 +55,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registrasi berhasil! Selamat datang 🎉'),
+            content: Text('Registrasi berhasil! Selamat datang'),
             backgroundColor: Color(0xFF16A34A),
           ),
         );

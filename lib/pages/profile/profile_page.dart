@@ -1,10 +1,111 @@
 import 'package:flutter/material.dart';
+import '../../services/image_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
 
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
+
+  final _imageService = ImageService();
+  final _authService = AuthService();
+  final _sessionService = SessionService();
+
+  String? _profileImageUrl;
+  String _userName = 'User';
+  String _userEmail = 'user@example.com';
+  bool _isLoadingImage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser != null) {
+        final userData = await _authService.getUserData(currentUser.uid);
+        if (userData != null) {
+          setState(() {
+            _userName = userData.fullName;
+            _userEmail = userData.email;
+            _profileImageUrl = userData.profileImage;
+          });
+        }
+      }
+    } catch (e) {
+      print('[ProfilePage] Error loading user data: $e');
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final file = await _imageService.pickImageFromGallery();
+    if (file == null) return;
+
+    setState(() => _isLoadingImage = true);
+
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('User tidak ditemukan');
+      }
+
+      print('[ProfilePage] Uploading profile image...');
+      final downloadUrl = await _imageService.uploadProfileImage(
+        uid: currentUser.uid,
+        imageFile: file,
+      );
+
+      if (downloadUrl == null) {
+        throw Exception('Gagal upload gambar');
+      }
+
+      // Update profile di Firestore
+      await _authService.updateUserProfile(
+        uid: currentUser.uid,
+        profileImage: downloadUrl,
+      );
+
+      // Update session
+      final updatedUser = await _authService.getUserData(currentUser.uid);
+      if (updatedUser != null) {
+        await _sessionService.saveUserSession(updatedUser);
+      }
+
+      setState(() => _profileImageUrl = downloadUrl);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto profil berhasil diperbarui! 📸'),
+            backgroundColor: Color(0xFF16A34A),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingImage = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +113,7 @@ class ProfilePage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 136),
@@ -73,7 +174,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(color: _orange),
       child: SafeArea(
@@ -82,44 +183,69 @@ class ProfilePage extends StatelessWidget {
           children: [
             const SizedBox(height: 24),
             // Avatar
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.4), width: 1),
-                  ),
-                  child: ClipOval(
-                    child: Image.network(
-                      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 6,
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+            GestureDetector(
+              onTap: _isLoadingImage ? null : _pickAndUploadImage,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      border: Border.all(
+                          color: Colors.white.withOpacity(0.4), width: 1),
                     ),
-                    child: const Icon(Icons.edit_outlined,
-                        size: 16, color: _orange),
+                    child: ClipOval(
+                      child: _profileImageUrl != null
+                          ? Image.network(
+                              _profileImageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.person,
+                                    color: Colors.grey, size: 60),
+                              ),
+                            )
+                          : Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.person,
+                                  color: Colors.grey, size: 60),
+                            ),
+                    ),
                   ),
-                ),
-              ],
+                  if (_isLoadingImage)
+                    const SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  if (!_isLoadingImage)
+                    Positioned(
+                      bottom: 0,
+                      right: 6,
+                      child: Container(
+                        width: 26,
+                        height: 26,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt,
+                            size: 16, color: _orange),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Floyd Miles',
-              style: TextStyle(
+            Text(
+              _userName,
+              style: const TextStyle(
                 fontFamily: _font,
                 color: Colors.white,
                 fontSize: 22,
@@ -128,7 +254,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'tanya.hill@example.com',
+              _userEmail,
               style: TextStyle(
                 fontFamily: _font,
                 color: Colors.white.withOpacity(0.75),
@@ -351,7 +477,7 @@ class ProfilePage extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _LogoutBottomSheet(),
+      builder: (_) => _LogoutBottomSheet(),
     );
   }
 }
@@ -377,7 +503,7 @@ class _MenuItemData {
 
 // ─────────────────────────────────────────────────────────────
 class _LogoutBottomSheet extends StatelessWidget {
-  const _LogoutBottomSheet();
+  _LogoutBottomSheet();
 
   static const String _font = 'Inter';
 
