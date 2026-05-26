@@ -246,26 +246,57 @@ class AuthService {
     String? location,
   }) async {
     try {
+      print('[AuthService] 📝 Updating user profile for UID: $uid');
+
       final docId = await _resolveUserDocId(uid);
       if (docId == null) {
+        print('[AuthService] ❌ User document tidak ditemukan!');
         throw Exception('User tidak ditemukan');
       }
+
+      print('[AuthService] ✅ User document ditemukan: $docId');
 
       final updates = <String, dynamic>{
         'updatedAt': DateTime.now().toIso8601String(),
       };
-      if (fullName != null) updates['fullName'] = fullName;
-      if (phoneNumber != null) updates['phoneNumber'] = phoneNumber;
-      if (profileImage != null) updates['profileImage'] = profileImage;
-      if (gender != null) updates['gender'] = gender;
-      if (location != null) updates['location'] = location;
+
+      if (fullName != null) {
+        updates['fullName'] = fullName;
+        print('[AuthService] Updating fullName: $fullName');
+      }
+      if (phoneNumber != null) {
+        updates['phoneNumber'] = phoneNumber;
+        print('[AuthService] Updating phoneNumber: $phoneNumber');
+      }
+      if (profileImage != null) {
+        updates['profileImage'] = profileImage;
+        print('[AuthService] Updating profileImage: $profileImage');
+      }
+      if (gender != null) {
+        updates['gender'] = gender;
+        print('[AuthService] Updating gender: $gender');
+      }
+      if (location != null) {
+        updates['location'] = location;
+        print('[AuthService] Updating location: $location');
+      }
+
+      print('[AuthService] 💾 Saving updates ke Firestore...');
+      print('[AuthService] Updates: $updates');
 
       await _firestore.collection('users').doc(docId).update(updates);
+
+      print('[AuthService] ✅ Profile update berhasil!');
 
       if (fullName != null && _auth.currentUser != null) {
         await _auth.currentUser!.updateDisplayName(fullName);
       }
+    } on FirebaseException catch (e) {
+      print('[AuthService] ❌ Firestore error: ${e.code} - ${e.message}');
+      print('[AuthService] 🔴 Periksa Firestore Security Rules!');
+      throw Exception('Gagal update profil: ${e.message}');
     } catch (e) {
+      print('[AuthService] ❌ Error: $e');
       throw Exception('Gagal update profil: $e');
     }
   }
@@ -277,10 +308,8 @@ class AuthService {
       return uidOrFirebaseUid;
     }
 
-    final mappingDoc = await _firestore
-        .collection('uid_mapping')
-        .doc(uidOrFirebaseUid)
-        .get();
+    final mappingDoc =
+        await _firestore.collection('uid_mapping').doc(uidOrFirebaseUid).get();
     if (mappingDoc.exists && mappingDoc.data()?['userId'] is String) {
       return mappingDoc.data()!['userId'] as String;
     }

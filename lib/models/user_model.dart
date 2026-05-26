@@ -51,7 +51,8 @@ class UserModel {
         fullName: (data['fullName'] as String?) ?? '',
         email: (data['email'] as String?) ?? '',
         phoneNumber: data['phoneNumber'] as String?,
-        profileImage: data['profileImage'] as String?,
+        profileImage:
+            (data['profileImage'] ?? data['imageProfile']) as String?,
         gender: data['gender'] as String?,
         location: data['location'] as String?,
         createdAt: _parseDate(data['createdAt']) ?? DateTime.now(),
@@ -94,7 +95,8 @@ class UserModel {
         fullName: (json['fullName'] as String?) ?? '',
         email: (json['email'] as String?) ?? '',
         phoneNumber: json['phoneNumber'] as String?,
-        profileImage: json['profileImage'] as String?,
+        profileImage:
+            (json['profileImage'] ?? json['imageProfile']) as String?,
         gender: json['gender'] as String?,
         location: json['location'] as String?,
         createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),

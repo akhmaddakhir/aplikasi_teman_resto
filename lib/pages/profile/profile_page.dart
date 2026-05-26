@@ -21,6 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _profileImageUrl;
   String _userName = 'User';
   String _userEmail = 'user@example.com';
+  String _userLocation = 'Lokasi belum diatur';
   bool _isLoadingImage = false;
 
   @override
@@ -34,11 +35,20 @@ class _ProfilePageState extends State<ProfilePage> {
       final currentUser = _authService.currentUser;
       if (currentUser != null) {
         final userData = await _authService.getUserData(currentUser.uid);
-        if (userData != null) {
+        if (userData != null && mounted) {
           setState(() {
-            _userName = userData.fullName;
-            _userEmail = userData.email;
-            _profileImageUrl = userData.profileImage;
+            _userName = userData.fullName.trim().isNotEmpty
+                ? userData.fullName
+                : 'User';
+            _userEmail = userData.email.trim().isNotEmpty
+                ? userData.email
+                : currentUser.email ?? 'user@example.com';
+            _userLocation = userData.location?.trim().isNotEmpty == true
+                ? userData.location!.trim()
+                : 'Lokasi belum diatur';
+            _profileImageUrl = userData.profileImage?.trim().isNotEmpty == true
+                ? userData.profileImage!.trim()
+                : null;
           });
         }
       }
@@ -59,17 +69,24 @@ class _ProfilePageState extends State<ProfilePage> {
         throw Exception('User tidak ditemukan');
       }
 
-      print('[ProfilePage] Uploading profile image...');
+      print(
+          '[ProfilePage] 📤 Uploading profile image for ${currentUser.uid}...');
       final downloadUrl = await _imageService.uploadProfileImage(
         uid: currentUser.uid,
         imageFile: file,
       );
 
       if (downloadUrl == null) {
-        throw Exception('Gagal upload gambar');
+        print('[ProfilePage] ❌ uploadProfileImage returned null');
+        throw Exception(
+          'Gagal upload gambar ke Cloudinary. Periksa konfigurasi Cloudinary.',
+        );
       }
 
+      print('[ProfilePage] ✅ Upload berhasil, URL: $downloadUrl');
+
       // Update profile di Firestore
+      print('[ProfilePage] 💾 Updating Firestore...');
       await _authService.updateUserProfile(
         uid: currentUser.uid,
         profileImage: downloadUrl,
@@ -84,19 +101,34 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _profileImageUrl = downloadUrl);
 
       if (mounted) {
+        print('[ProfilePage] ✅ Showing success message');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Foto profil berhasil diperbarui! 📸'),
             backgroundColor: Color(0xFF16A34A),
+            duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
+      print('[ProfilePage] ❌ Error: $e');
       if (mounted) {
+        String errorMessage = e.toString().replaceAll('Exception: ', '');
+
+        // Better error messages
+        if (errorMessage.contains('permission-denied')) {
+          errorMessage = 'Akses ditolak. Periksa Firestore Rules!';
+        } else if (errorMessage.contains('Cloudinary')) {
+          errorMessage = 'Error Cloudinary. Periksa cloud name dan upload preset.';
+        } else if (errorMessage.contains('network')) {
+          errorMessage = 'Koneksi internet bermasalah.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -126,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     _MenuItemData(
                       icon: Icons.home_outlined,
                       title: 'Manage Address',
-                      subtitle: 'Jl. Sudirman No.12, Jakarta',
+                      subtitle: _userLocation,
                       onTap: () =>
                           Navigator.pushNamed(context, '/manage-address'),
                     ),
@@ -269,7 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     color: Colors.white.withOpacity(0.75), size: 14),
                 const SizedBox(width: 2),
                 Text(
-                  'Jakarta, Indonesia',
+                  _userLocation,
                   style: TextStyle(
                     fontFamily: _font,
                     color: Colors.white.withOpacity(0.75),

@@ -60,11 +60,16 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           imageFile: _selectedImage!,
         );
         if (profileImageUrl == null) {
-          throw Exception('Gagal upload gambar');
+          print('[CompleteProfile] uploadProfileImage returned null');
+          throw Exception(
+            'Gagal upload gambar ke Cloudinary. Periksa konfigurasi Cloudinary.',
+          );
         }
+        print('[CompleteProfile] Upload gambar berhasil');
       }
 
       // Update profile di Firestore
+      print('[CompleteProfile] Updating Firestore with profile data...');
       await _authService.updateUserProfile(
         uid: currentUser.uid,
         fullName: _nameController.text.trim(),
@@ -74,26 +79,42 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       );
 
       // Update session dengan data terbaru
+      print('[CompleteProfile] Updating session...');
       final updatedUser = await _authService.getUserData(currentUser.uid);
       if (updatedUser != null) {
         await _sessionService.saveUserSession(updatedUser);
       }
 
       if (mounted) {
+        print('[CompleteProfile] Success! Navigating...');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Profil berhasil diperbarui! 🎉'),
             backgroundColor: Color(0xFF16A34A),
+            duration: Duration(seconds: 2),
           ),
         );
         Navigator.pushReplacementNamed(context, '/notification-permission');
       }
     } catch (e) {
+      print('[CompleteProfile] Error: $e');
       if (mounted) {
+        String errorMessage = e.toString().replaceAll('Exception: ', '');
+
+        // Better error messages
+        if (errorMessage.contains('permission-denied')) {
+          errorMessage = 'Akses ditolak. Periksa Firestore Rules!';
+        } else if (errorMessage.contains('Cloudinary')) {
+          errorMessage = 'Error Cloudinary. Periksa cloud name dan upload preset.';
+        } else if (errorMessage.contains('network')) {
+          errorMessage = 'Koneksi internet bermasalah.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

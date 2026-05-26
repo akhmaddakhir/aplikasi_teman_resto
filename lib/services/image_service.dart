@@ -1,11 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import '../config/cloudinary_config.dart';
 
 class ImageService {
   static final ImageService _instance = ImageService._internal();
   final _picker = ImagePicker();
-  final _storage = FirebaseStorage.instance;
 
   factory ImageService() => _instance;
   ImageService._internal();
@@ -48,48 +48,121 @@ class ImageService {
     }
   }
 
-  /// Upload image ke Firebase Storage
+  /// Upload image ke Cloudinary dan return secure URL.
   Future<String?> uploadProfileImage({
     required String uid,
     required File imageFile,
   }) async {
     try {
-      final fileName = 'profile_$uid.jpg';
-      final ref = _storage.ref().child('profile_images/$fileName');
+      if (!CloudinaryConfig.isConfigured) {
+        throw Exception(
+          'Cloudinary belum dikonfigurasi. Isi lib/config/cloudinary_config.dart.',
+        );
+      }
 
-      print('[ImageService] Uploading profile image: $fileName');
+      if (!await imageFile.exists()) {
+        throw Exception('File tidak ditemukan');
+      }
 
-      final uploadTask = ref.putFile(imageFile);
-      final snapshot = await uploadTask;
+      final fileBytes = await imageFile.readAsBytes();
+      final timestamp = DateTime.now().microsecondsSinceEpoch;
+      final boundary = 'teman_resto_$timestamp';
+      final uri = Uri.https(
+        'api.cloudinary.com',
+        '/v1_1/${CloudinaryConfig.cloudName}/image/upload',
+      );
 
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      print('[ImageService] Upload successful: $downloadUrl');
+      print('[ImageService] Starting Cloudinary upload...');
+      print('[ImageService] User ID: $uid');
+      print('[ImageService] File path: ${imageFile.path}');
+      print('[ImageService] File size: ${fileBytes.length} bytes');
 
-      return downloadUrl;
+      final body = <int>[
+        ..._fieldPart(boundary, 'upload_preset', CloudinaryConfig.uploadPreset),
+        ..._fieldPart(boundary, 'folder', CloudinaryConfig.folder),
+        ..._fieldPart(boundary, 'public_id', 'profile_${uid}_$timestamp'),
+        ..._filePart(
+          boundary: boundary,
+          fieldName: 'file',
+          fileName: 'profile_$uid.jpg',
+          contentType: 'image/jpeg',
+          bytes: fileBytes,
+        ),
+        ...utf8.encode('--$boundary--\r\n'),
+      ];
+
+      final client = HttpClient();
+      try {
+        final request = await client.postUrl(uri);
+        request.headers.contentType = ContentType(
+          'multipart',
+          'form-data',
+          parameters: {'boundary': boundary},
+        );
+        request.contentLength = body.length;
+        request.add(body);
+
+        final response = await request.close();
+        final responseBody = await response.transform(utf8.decoder).join();
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          print('[ImageService] Cloudinary error: $responseBody');
+          throw Exception('Upload Cloudinary gagal (${response.statusCode})');
+        }
+
+        final data = jsonDecode(responseBody) as Map<String, dynamic>;
+        final secureUrl = data['secure_url'] as String?;
+        if (secureUrl == null || secureUrl.trim().isEmpty) {
+          throw Exception('Cloudinary tidak mengembalikan secure_url');
+        }
+
+        print('[ImageService] Cloudinary upload berhasil: $secureUrl');
+        return secureUrl;
+      } finally {
+        client.close(force: true);
+      }
     } catch (e) {
       print('[ImageService] Upload error: $e');
       return null;
     }
   }
 
-  /// Delete image dari Firebase Storage
-  Future<bool> deleteProfileImage(String uid) async {
-    try {
-      final fileName = 'profile_$uid.jpg';
-      final ref = _storage.ref().child('profile_images/$fileName');
+  List<int> _fieldPart(String boundary, String name, String value) {
+    return utf8.encode(
+      '--$boundary\r\n'
+      'Content-Disposition: form-data; name="$name"\r\n\r\n'
+      '$value\r\n',
+    );
+  }
 
-      await ref.delete();
-      print('[ImageService] Image deleted: $fileName');
-      return true;
-    } catch (e) {
-      print('[ImageService] Delete error: $e');
-      return false;
-    }
+  List<int> _filePart({
+    required String boundary,
+    required String fieldName,
+    required String fileName,
+    required String contentType,
+    required List<int> bytes,
+  }) {
+    return [
+      ...utf8.encode(
+        '--$boundary\r\n'
+        'Content-Disposition: form-data; name="$fieldName"; filename="$fileName"\r\n'
+        'Content-Type: $contentType\r\n\r\n',
+      ),
+      ...bytes,
+      ...utf8.encode('\r\n'),
+    ];
+  }
+
+  /// Delete image dari Cloudinary perlu signed request dari backend.
+  Future<bool> deleteProfileImage(String uid) async {
+    print(
+      '[ImageService] Delete skipped for profile_$uid. Cloudinary delete needs backend signature.',
+    );
+    return false;
   }
 
   /// Pilih gambar dengan dialog (gallery atau camera)
   Future<File?> pickImage() async {
-    // Bisa diganti dengan showModalBottomSheet jika diperlukan dialog yang lebih custom
     final file = await pickImageFromGallery();
     return file;
   }
