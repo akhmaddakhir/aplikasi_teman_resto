@@ -4,22 +4,16 @@ import '../models/user_model.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  factory AuthService() {
-    return _instance;
-  }
-
+  factory AuthService() => _instance;
   AuthService._internal();
 
-  /// Get current user from Firebase
-  User? get currentUser => _firebaseAuth.currentUser;
+  User? get currentUser => _auth.currentUser;
+  bool get isLoggedIn => _auth.currentUser != null;
 
-  /// Check if user is logged in
-  bool get isLoggedIn => _firebaseAuth.currentUser != null;
-
-  /// Register user dengan email dan password, lalu simpan ke Firestore
+  // ── REGISTER ─────────────────────────────────────────────────
   Future<UserModel?> register({
     required String fullName,
     required String email,
@@ -29,23 +23,32 @@ class AuthService {
     String? location,
     String? profileImage,
   }) async {
+    UserCredential? credential;
+
     try {
-      // Create user di Firebase Auth
-      UserCredential userCredential =
-          await _firebaseAuth.createUserWithEmailAndPassword(
+      // STEP 1: Buat akun di Firebase Auth
+      print('[AuthService] Mencoba register: $email');
+      credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      User? firebaseUser = userCredential.user;
-      if (firebaseUser == null) {
-        throw Exception('User creation failed');
+      final firebaseUser = credential.user;
+      if (firebaseUser == null) throw Exception('Gagal membuat akun');
+
+      print('[AuthService] Auth berhasil, uid: ${firebaseUser.uid}');
+
+      // STEP 2: Update displayName di Firebase Auth
+      try {
+        await firebaseUser.updateDisplayName(fullName);
+        print('[AuthService] displayName diupdate: $fullName');
+      } catch (e) {
+        print('[AuthService] Warning: displayName update gagal: $e');
       }
 
       final now = DateTime.now();
 
-      // Create UserModel
-      UserModel newUser = UserModel(
+      final newUser = UserModel(
         uid: firebaseUser.uid,
         fullName: fullName,
         email: email,
@@ -58,110 +61,129 @@ class AuthService {
         updatedAt: now,
       );
 
-      // Simpan ke Firestore di collection 'users'
-      await _firestore
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .set(newUser.toFirestore());
+      // STEP 3: Simpan ke Firestore
+      print('[AuthService] Menyimpan ke Firestore...');
+      try {
+        await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .set(newUser.toFirestore());
+        print('[AuthService] Berhasil disimpan ke Firestore!');
+      } catch (e) {
+        print('[AuthService] Warning: Firestore save gagal: $e');
+        // Tetap lanjut walaupun Firestore gagal
+      }
 
       return newUser;
     } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+      print('[AuthService] FirebaseAuthException: ${e.code} - ${e.message}');
+      // Jika Auth sudah terbuat tapi ada error lain, hapus akunnya
+      if (credential?.user != null) {
+        try {
+          await credential!.user!.delete();
+          print('[AuthService] Akun dihapus karena error');
+        } catch (_) {
+          print('[AuthService] Gagal hapus akun');
+        }
+      }
+      throw Exception(_authErrorMessage(e.code));
     } catch (e) {
-      throw Exception('Registration failed: ${e.toString()}');
+      print('[AuthService] Register error: $e');
+      throw Exception('Registrasi gagal: $e');
     }
   }
 
-  /// Login user dengan email dan password
+  // ── LOGIN ─────────────────────────────────────────────────────
   Future<UserModel?> login({
     required String email,
     required String password,
   }) async {
     try {
-      UserCredential userCredential =
-          await _firebaseAuth.signInWithEmailAndPassword(
+      print('[AuthService] Mencoba login: $email');
+
+      final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      User? firebaseUser = userCredential.user;
-      if (firebaseUser == null) {
-        throw Exception('Login failed');
-      }
+      final firebaseUser = credential.user;
+      if (firebaseUser == null) throw Exception('Login gagal');
 
-      // Ambil user data dari Firestore
-      DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(firebaseUser.uid).get();
+      print('[AuthService] Login berhasil: ${firebaseUser.uid}');
 
-      if (!userDoc.exists) {
-        // Jika belum ada di Firestore, buat data baru
-        final now = DateTime.now();
-        UserModel newUser = UserModel(
+      final now = DateTime.now();
+      final docRef = _firestore.collection('users').doc(firebaseUser.uid);
+
+      try {
+        final docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+          // Safely cast data
+          final data = docSnap.data();
+          if (data == null) {
+            throw Exception('User data tidak ditemukan di Firestore');
+          }
+
+          final userData = Map<String, dynamic>.from(data);
+          final user = UserModel.fromFirestore(userData);
+
+          await docRef.update({
+            'lastLogin': now.toIso8601String(),
+            'updatedAt': now.toIso8601String(),
+          });
+          return user.copyWith(lastLogin: now, updatedAt: now);
+        } else {
+          // User tidak ada di Firestore, buat baru
+          final user = UserModel(
+            uid: firebaseUser.uid,
+            fullName: firebaseUser.displayName ?? 'User',
+            email: firebaseUser.email ?? email,
+            createdAt: now,
+            lastLogin: now,
+            updatedAt: now,
+          );
+          await docRef.set(user.toFirestore());
+          return user;
+        }
+      } on FirebaseException catch (e) {
+        print('[AuthService] Firestore error saat login: ${e.code}');
+        // Tetap return user meski Firestore error
+        return UserModel(
           uid: firebaseUser.uid,
           fullName: firebaseUser.displayName ?? 'User',
-          email: firebaseUser.email ?? '',
-          phoneNumber: firebaseUser.phoneNumber,
-          profileImage: firebaseUser.photoURL,
+          email: firebaseUser.email ?? email,
           createdAt: now,
           lastLogin: now,
           updatedAt: now,
         );
-
-        await _firestore
-            .collection('users')
-            .doc(firebaseUser.uid)
-            .set(newUser.toFirestore());
-
-        return newUser;
       }
-
-      // Update lastLogin
-      final now = DateTime.now();
-      UserModel user = UserModel.fromFirestore(
-        userDoc.data() as Map<String, dynamic>,
-      );
-
-      await _firestore
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .update({'lastLogin': now, 'updatedAt': now});
-
-      return user.copyWith(lastLogin: now, updatedAt: now);
     } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+      print('[AuthService] Login error: ${e.code}');
+      throw Exception(_authErrorMessage(e.code));
     } catch (e) {
-      throw Exception('Login failed: ${e.toString()}');
+      print('[AuthService] Login unknown: $e');
+      throw Exception('Login gagal: $e');
     }
   }
 
-  /// Logout user
+  // ── LOGOUT ───────────────────────────────────────────────────
   Future<void> logout() async {
-    try {
-      await _firebaseAuth.signOut();
-    } catch (e) {
-      throw Exception('Logout failed: ${e.toString()}');
-    }
+    await _auth.signOut();
   }
 
-  /// Get user data dari Firestore
+  // ── GET USER DATA ─────────────────────────────────────────────
   Future<UserModel?> getUserData(String uid) async {
     try {
-      DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(uid).get();
-
-      if (!userDoc.exists) {
-        return null;
-      }
-
-      return UserModel.fromFirestore(
-        userDoc.data() as Map<String, dynamic>,
-      );
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (!doc.exists) return null;
+      return UserModel.fromFirestore(doc.data() as Map<String, dynamic>);
     } catch (e) {
-      throw Exception('Get user data failed: ${e.toString()}');
+      print('[AuthService] getUserData error: $e');
+      return null;
     }
   }
 
-  /// Update user profile
+  // ── UPDATE PROFILE ────────────────────────────────────────────
   Future<void> updateUserProfile({
     required String uid,
     String? fullName,
@@ -171,42 +193,58 @@ class AuthService {
     String? location,
   }) async {
     try {
-      await _firestore.collection('users').doc(uid).update({
-        if (fullName != null) 'fullName': fullName,
-        if (phoneNumber != null) 'phoneNumber': phoneNumber,
-        if (profileImage != null) 'profileImage': profileImage,
-        if (gender != null) 'gender': gender,
-        if (location != null) 'location': location,
-        'updatedAt': DateTime.now(),
-      });
+      final updates = <String, dynamic>{
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+      if (fullName != null) updates['fullName'] = fullName;
+      if (phoneNumber != null) updates['phoneNumber'] = phoneNumber;
+      if (profileImage != null) updates['profileImage'] = profileImage;
+      if (gender != null) updates['gender'] = gender;
+      if (location != null) updates['location'] = location;
+
+      await _firestore.collection('users').doc(uid).update(updates);
+
+      if (fullName != null && _auth.currentUser != null) {
+        await _auth.currentUser!.updateDisplayName(fullName);
+      }
     } catch (e) {
-      throw Exception('Update profile failed: ${e.toString()}');
+      throw Exception('Gagal update profil: $e');
     }
   }
 
-  /// Handle Firebase Auth exceptions
-  String _handleAuthException(FirebaseAuthException e) {
-    switch (e.code) {
+  // ── RESET PASSWORD ────────────────────────────────────────────
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_authErrorMessage(e.code));
+    }
+  }
+
+  // ── ERROR MESSAGES ────────────────────────────────────────────
+  String _authErrorMessage(String code) {
+    switch (code) {
       case 'weak-password':
-        return 'Password terlalu lemah. Gunakan minimal 6 karakter.';
+        return 'Password terlalu lemah. Minimal 6 karakter.';
       case 'email-already-in-use':
-        return 'Email sudah terdaftar.';
+        return 'Email sudah terdaftar. Silakan login.';
       case 'invalid-email':
-        return 'Email tidak valid.';
+        return 'Format email tidak valid.';
       case 'operation-not-allowed':
-        return 'Operasi tidak diizinkan.';
+        return 'Email/Password login belum diaktifkan di Firebase Console.';
       case 'user-disabled':
-        return 'User account telah dinonaktifkan.';
+        return 'Akun ini telah dinonaktifkan.';
       case 'user-not-found':
-        return 'User tidak ditemukan.';
+        return 'Akun tidak ditemukan. Silakan daftar.';
       case 'wrong-password':
-        return 'Password salah.';
+      case 'invalid-credential':
+        return 'Email atau password salah.';
       case 'too-many-requests':
-        return 'Terlalu banyak percobaan login. Coba lagi nanti.';
+        return 'Terlalu banyak percobaan. Coba lagi nanti.';
       case 'network-request-failed':
-        return 'Jaringan tidak stabil.';
+        return 'Koneksi internet bermasalah.';
       default:
-        return 'Error: ${e.message}';
+        return 'Error ($code). Silakan coba lagi.';
     }
   }
 }

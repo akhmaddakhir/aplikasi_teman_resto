@@ -13,6 +13,8 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+
+  // ── Controllers ──────────────────────────────────────────────
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -35,44 +37,49 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        // Register dengan Firebase
-        var user = await _authService.register(
-          fullName: _fullNameController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
+    setState(() => _isLoading = true);
+
+    try {
+      // Register ke Firebase Auth + simpan ke Firestore
+      final user = await _authService.register(
+        fullName: _fullNameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (user != null && mounted) {
+        // Simpan session lokal
+        await _sessionService.saveUserSession(user);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registrasi berhasil! Selamat datang 🎉'),
+            backgroundColor: Color(0xFF16A34A),
+          ),
         );
 
-        if (user != null && mounted) {
-          // Simpan session
-          await _sessionService.saveUserSession(user);
-
-          // Navigate ke complete profile
-          Navigator.pushReplacementNamed(context, '/complete-profile');
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+        // Navigate ke complete profile
+        Navigator.pushReplacementNamed(context, '/complete-profile');
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _handleSocialLogin(String provider) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Login dengan $provider')),
+      SnackBar(content: Text('Login dengan $provider belum tersedia')),
     );
   }
 
@@ -90,7 +97,7 @@ class _RegisterPageState extends State<RegisterPage> {
               children: [
                 const SizedBox(height: 32),
 
-                // Back Button
+                // ── Back Button ──────────────────────────────────
                 Row(
                   children: [
                     InkWell(
@@ -99,10 +106,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: const SizedBox(
                         width: 40,
                         height: 40,
-                        child: Icon(
-                          Icons.arrow_back_ios,
-                          size: 20,
-                        ),
+                        child: Icon(Icons.arrow_back_ios, size: 20),
                       ),
                     ),
                   ],
@@ -110,7 +114,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 16),
 
-                // Title
+                // ── Title ────────────────────────────────────────
                 const Text(
                   'Register',
                   textAlign: TextAlign.center,
@@ -123,38 +127,26 @@ class _RegisterPageState extends State<RegisterPage> {
                 const Text(
                   'Create your account',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
                 ),
 
                 const SizedBox(height: 48),
 
-                // Full Name
-                const Text(
-                  'Full Name',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
+                // ── Full Name ────────────────────────────────────
+                _buildLabel('Full Name'),
                 const SizedBox(height: 8),
                 TextFormField(
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color(0xFFF0F0F0),
-                    hintText: 'Ex. Om Gatot',
-                    hintStyle: const TextStyle(color: Colors.black38),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                  ),
+                  controller:
+                      _fullNameController, // ✅ FIX: controller terhubung
+                  keyboardType: TextInputType.name,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: _inputDecoration('Ex. Om Gatot'),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Nama lengkap tidak boleh kosong';
+                    }
+                    if (value.trim().length < 2) {
+                      return 'Nama minimal 2 karakter';
                     }
                     return null;
                   },
@@ -162,35 +154,21 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 24),
 
-                // Email
-                const Text(
-                  'Email',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
+                // ── Email ────────────────────────────────────────
+                _buildLabel('Email'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color(0xFFF0F0F0),
-                    hintText: 'example@email.com',
-                    hintStyle: const TextStyle(color: Colors.black38),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                  ),
+                  decoration: _inputDecoration('example@email.com'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Email tidak boleh kosong';
                     }
-                    if (!value.contains('@')) {
-                      return 'Email tidak valid';
+                    final emailRegex =
+                        RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (!emailRegex.hasMatch(value.trim())) {
+                      return 'Format email tidak valid';
                     }
                     return null;
                   },
@@ -198,40 +176,23 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 24),
 
-                // Password
-                const Text(
-                  'Password',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
+                // ── Password ─────────────────────────────────────
+                _buildLabel('Password'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color(0xFFF0F0F0),
-                    hintText: '••••••••••••',
-                    hintStyle: const TextStyle(color: Colors.black38),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    suffixIcon: IconButton(
+                  decoration: _inputDecoration(
+                    '••••••••••••',
+                    suffix: IconButton(
                       icon: Icon(
                         _isPasswordVisible
                             ? Icons.visibility
                             : Icons.visibility_off,
                         color: Colors.grey,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
+                      onPressed: () => setState(
+                          () => _isPasswordVisible = !_isPasswordVisible),
                     ),
                   ),
                   validator: (value) {
@@ -247,40 +208,24 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 24),
 
-                // Confirm Password
-                const Text(
-                  'Confirm Password',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
+                // ── Confirm Password ─────────────────────────────
+                _buildLabel('Confirm Password'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: !_isConfirmPasswordVisible,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color(0xFFF0F0F0),
-                    hintText: '••••••••••••',
-                    hintStyle: const TextStyle(color: Colors.black38),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    suffixIcon: IconButton(
+                  decoration: _inputDecoration(
+                    '••••••••••••',
+                    suffix: IconButton(
                       icon: Icon(
-                        _isPasswordVisible
+                        _isConfirmPasswordVisible
                             ? Icons.visibility
                             : Icons.visibility_off,
                         color: Colors.grey,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
+                      onPressed: () => setState(() =>
+                          _isConfirmPasswordVisible =
+                              !_isConfirmPasswordVisible),
                     ),
                   ),
                   validator: (value) {
@@ -296,11 +241,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 32),
 
-                // Register Button
+                // ── Register Button ──────────────────────────────
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5722),
+                    disabledBackgroundColor:
+                        const Color(0xFFFF5722).withOpacity(0.6),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
@@ -312,9 +259,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                             strokeWidth: 2,
                           ),
                         )
@@ -330,7 +276,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 32),
 
-                // Divider
+                // ── Divider ──────────────────────────────────────
                 Row(
                   children: [
                     Expanded(child: Divider(color: Colors.grey[300])),
@@ -344,7 +290,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 32),
 
-                // Social Login
+                // ── Social Login ─────────────────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -367,7 +313,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 32),
 
-                // Sign In
+                // ── Sign In Link ─────────────────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -376,14 +322,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       style: TextStyle(color: Colors.black54),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      ),
                       child: const Text(
                         'Sign In',
                         style: TextStyle(
@@ -404,7 +346,44 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // ===== Helpers =====
+  // ── Helpers ──────────────────────────────────────────────────
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint, {Widget? suffix}) {
+    return InputDecoration(
+      filled: true,
+      fillColor: const Color(0xFFF0F0F0),
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.black38),
+      suffixIcon: suffix,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFFF5722), width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
+      ),
+    );
+  }
 
   Widget _buildSocialButton({
     required String assetPath,
@@ -415,11 +394,7 @@ class _RegisterPageState extends State<RegisterPage> {
       borderRadius: BorderRadius.circular(50),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: SvgPicture.asset(
-          assetPath,
-          width: 32,
-          height: 32,
-        ),
+        child: SvgPicture.asset(assetPath, width: 32, height: 32),
       ),
     );
   }
