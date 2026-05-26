@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:teman_resto/services/location_service.dart';
 import 'package:teman_resto/utils/app_colors.dart';
 
 class ChooseLocationPage extends StatefulWidget {
@@ -9,42 +11,43 @@ class ChooseLocationPage extends StatefulWidget {
 }
 
 class _ChooseLocationPageState extends State<ChooseLocationPage> {
-  static String currentActiveCity = "JAKARTA";
+  static String currentActiveCity = "Jakarta";
+  bool _isLoadingLocation = false;
 
   List<Map<String, dynamic>> locations = [
-    {'name': 'JAKARTA', 'isCurrent': false},
-    {'name': 'MALANG', 'isCurrent': false},
-    {'name': 'MOJOKERTO', 'isCurrent': false},
-    {'name': 'KEDIRI', 'isCurrent': false},
-    {'name': 'PROBOLINGGO', 'isCurrent': false},
-    {'name': 'SURABAYA', 'isCurrent': false},
-    {'name': 'GRESIK', 'isCurrent': false},
-    {'name': 'JEMBER', 'isCurrent': false},
-    {'name': 'MADIUN', 'isCurrent': false},
-    {'name': 'SOLO', 'isCurrent': false},
-    {'name': 'YOGYAKARTA', 'isCurrent': false},
-    {'name': 'PURWOKERTO', 'isCurrent': false},
-    {'name': 'MATARAM', 'isCurrent': false},
-    {'name': 'TEGAL', 'isCurrent': false},
-    {'name': 'CIREBON', 'isCurrent': false},
-    {'name': 'BANDUNG', 'isCurrent': false},
-    {'name': 'PURWAKARTA', 'isCurrent': false},
-    {'name': 'KARAWANG', 'isCurrent': false},
-    {'name': 'CIKARANG', 'isCurrent': false},
-    {'name': 'BEKASI', 'isCurrent': false},
-    {'name': 'BOGOR', 'isCurrent': false},
-    {'name': 'DEPOK', 'isCurrent': false},
-    {'name': 'TANGERANG', 'isCurrent': false},
-    {'name': 'SERANG', 'isCurrent': false},
-    {'name': 'MAKASSAR', 'isCurrent': false},
-    {'name': 'LAMPUNG', 'isCurrent': false},
-    {'name': 'BALIKPAPAN', 'isCurrent': false},
-    {'name': 'SAMARINDA', 'isCurrent': false},
-    {'name': 'PALEMBANG', 'isCurrent': false},
-    {'name': 'BATAM', 'isCurrent': false},
-    {'name': 'PEKANBARU', 'isCurrent': false},
-    {'name': 'MEDAN', 'isCurrent': false},
-    {'name': 'PADANG', 'isCurrent': false},
+    {'name': 'Jakarta', 'isCurrent': false},
+    {'name': 'Malang', 'isCurrent': false},
+    {'name': 'Mojokerto', 'isCurrent': false},
+    {'name': 'Kediri', 'isCurrent': false},
+    {'name': 'Probolinggo', 'isCurrent': false},
+    {'name': 'Surabaya', 'isCurrent': false},
+    {'name': 'Gresik', 'isCurrent': false},
+    {'name': 'Jember', 'isCurrent': false},
+    {'name': 'Madiun', 'isCurrent': false},
+    {'name': 'Solo', 'isCurrent': false},
+    {'name': 'Yogyakarta', 'isCurrent': false},
+    {'name': 'Purwokerto', 'isCurrent': false},
+    {'name': 'Mataram', 'isCurrent': false},
+    {'name': 'Tegal', 'isCurrent': false},
+    {'name': 'Cirebon', 'isCurrent': false},
+    {'name': 'Bandung', 'isCurrent': false},
+    {'name': 'Purwakarta', 'isCurrent': false},
+    {'name': 'Karawang', 'isCurrent': false},
+    {'name': 'Cikarang', 'isCurrent': false},
+    {'name': 'Bekasi', 'isCurrent': false},
+    {'name': 'Bogor', 'isCurrent': false},
+    {'name': 'Depok', 'isCurrent': false},
+    {'name': 'Tangerang', 'isCurrent': false},
+    {'name': 'Serang', 'isCurrent': false},
+    {'name': 'Makassar', 'isCurrent': false},
+    {'name': 'Lampung', 'isCurrent': false},
+    {'name': 'Balikpapan', 'isCurrent': false},
+    {'name': 'Samarinda', 'isCurrent': false},
+    {'name': 'Palembang', 'isCurrent': false},
+    {'name': 'Batam', 'isCurrent': false},
+    {'name': 'Pekanbaru', 'isCurrent': false},
+    {'name': 'Medan', 'isCurrent': false},
+    {'name': 'Padang', 'isCurrent': false},
   ];
 
   String searchQuery = '';
@@ -53,6 +56,66 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
   void initState() {
     super.initState();
     _updateCurrentStatus();
+    _detectUserLocation();
+  }
+
+  /// Detect user location dan update current active city
+  Future<void> _detectUserLocation() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      // Request permission
+      final permission = await Geolocator.checkPermission();
+      late LocationPermission permissionStatus;
+
+      if (permission == LocationPermission.denied) {
+        permissionStatus = await Geolocator.requestPermission();
+      } else {
+        permissionStatus = permission;
+      }
+
+      if (permissionStatus == LocationPermission.whileInUse ||
+          permissionStatus == LocationPermission.always) {
+        // Get current position
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        ).catchError((_) async {
+          // Fallback to last known position
+          return await Geolocator.getLastKnownPosition() ??
+              await Geolocator.getCurrentPosition();
+        });
+
+        // Convert position ke city name
+        final city =
+            await LocationService.instance.getCityFromPosition(position);
+
+        if (mounted) {
+          setState(() {
+            currentActiveCity = city;
+            _updateCurrentStatus();
+            _isLoadingLocation = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoadingLocation = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error detecting location: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingLocation = false;
+        });
+      }
+    }
   }
 
   void _updateCurrentStatus() {
@@ -101,15 +164,33 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
                     ),
                   ),
                   Expanded(
-                    child: Text(
-                      'Choose Location',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Choose Location',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                        if (_isLoadingLocation)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: SizedBox(
+                              height: 12,
+                              width: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary.withOpacity(0.6),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],

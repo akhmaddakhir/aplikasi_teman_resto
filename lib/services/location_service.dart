@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
@@ -13,9 +14,11 @@ class LocationService {
 
   StreamSubscription<Position>? _positionSubscription;
   Position? _latestPosition;
+  String? _latestCity;
 
   Stream<Position> get positionStream => _positionController.stream;
   Position? get latestPosition => _latestPosition;
+  String? get latestCity => _latestCity;
 
   Future<Position> startRealtimeTracking() async {
     if (_positionSubscription != null && _latestPosition != null) {
@@ -63,5 +66,51 @@ class LocationService {
   static String formatPosition(Position position) {
     return '${position.latitude.toStringAsFixed(6)}, '
         '${position.longitude.toStringAsFixed(6)}';
+  }
+
+  Future<String> getCityFromPosition(Position position) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      for (final placemark in placemarks) {
+        final city = _cityFromPlacemark(placemark);
+        if (city != null) {
+          _latestCity = city;
+          return city;
+        }
+      }
+    } catch (_) {
+      // Keep the UI usable if reverse geocoding is temporarily unavailable.
+    }
+
+    return _latestCity ?? 'Jakarta';
+  }
+
+  static String? _cityFromPlacemark(Placemark placemark) {
+    final candidates = <String?>[
+      placemark.subAdministrativeArea,
+      placemark.locality,
+      placemark.administrativeArea,
+    ];
+
+    for (final candidate in candidates) {
+      final city = _normalizeCityName(candidate);
+      if (city != null) return city;
+    }
+
+    return null;
+  }
+
+  static String? _normalizeCityName(String? value) {
+    final city = value?.trim();
+    if (city == null || city.isEmpty) return null;
+
+    return city
+        .replaceFirst(RegExp(r'^(Kota|Kabupaten)\s+', caseSensitive: false), '')
+        .replaceFirst(RegExp(r'^City\s+of\s+', caseSensitive: false), '')
+        .trim();
   }
 }

@@ -6,7 +6,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:teman_resto/pages/home/notification_page.dart';
 import 'package:teman_resto/pages/home/see_all.dart';
+import 'package:teman_resto/services/auth_service.dart';
 import 'package:teman_resto/services/location_service.dart';
+import 'package:teman_resto/services/session_service.dart';
 import '../restaurant/restaurant_detail.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,7 +21,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String selectedLocation = 'Jakarta';
   bool _isInitialized = false;
+  int _locationRequestId = 0;
+  String? _lastSavedLocation;
   StreamSubscription<Position>? _locationSubscription;
+  final _authService = AuthService();
+  final _sessionService = SessionService();
 
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
@@ -32,20 +38,68 @@ class _HomePageState extends State<HomePage> {
       if (args == LocationService.liveLocationArgument) {
         final latestPosition = LocationService.instance.latestPosition;
         if (latestPosition != null) {
-          selectedLocation = LocationService.formatPosition(latestPosition);
+          final latestCity = LocationService.instance.latestCity;
+          if (latestCity != null) {
+            selectedLocation = latestCity;
+            _saveSelectedLocation(latestCity);
+          }
+          _setLocationFromPosition(latestPosition);
         }
 
         _locationSubscription =
             LocationService.instance.positionStream.listen((position) {
-          if (!mounted) return;
-          setState(() {
-            selectedLocation = LocationService.formatPosition(position);
-          });
+          _setLocationFromPosition(position);
         });
       } else if (args != null && args is String) {
         selectedLocation = args;
+        _saveSelectedLocation(args);
+      } else {
+        _loadSavedLocation();
       }
       _isInitialized = true;
+    }
+  }
+
+  Future<void> _setLocationFromPosition(Position position) async {
+    final requestId = ++_locationRequestId;
+    final city = await LocationService.instance.getCityFromPosition(position);
+
+    if (!mounted || requestId != _locationRequestId) return;
+    setState(() {
+      selectedLocation = city;
+    });
+    _saveSelectedLocation(city);
+  }
+
+  Future<void> _loadSavedLocation() async {
+    try {
+      final savedLocation = await _sessionService.getSelectedLocation();
+      if (!mounted || savedLocation == null) return;
+
+      setState(() {
+        selectedLocation = savedLocation;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _saveSelectedLocation(String location) async {
+    final selectedLocation = location.trim();
+    if (selectedLocation.isEmpty) return;
+    if (_lastSavedLocation == selectedLocation) return;
+    _lastSavedLocation = selectedLocation;
+
+    try {
+      await _sessionService.saveSelectedLocation(selectedLocation);
+
+      final currentUser = _authService.currentUser;
+      if (currentUser != null) {
+        await _authService.updateUserProfile(
+          uid: currentUser.uid,
+          location: selectedLocation,
+        );
+      }
+    } catch (e) {
+      print('[HomePage] Error saving selected location: $e');
     }
   }
 
@@ -76,6 +130,7 @@ class _HomePageState extends State<HomePage> {
                       );
                       if (result != null && result is String) {
                         setState(() => selectedLocation = result);
+                        _saveSelectedLocation(result);
                       }
                     },
                     child: Row(

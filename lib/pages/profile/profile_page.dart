@@ -21,7 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _profileImageUrl;
   String _userName = 'User';
   String _userEmail = 'user@example.com';
-  String _userLocation = 'Lokasi belum diatur';
+  String _userLocation = 'Jakarta';
   bool _isLoadingImage = false;
 
   @override
@@ -32,10 +32,16 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUserData() async {
     try {
+      final savedLocation = await _sessionService.getSelectedLocation();
+      if (savedLocation != null && mounted) {
+        setState(() => _userLocation = savedLocation);
+      }
+
       final currentUser = _authService.currentUser;
       if (currentUser != null) {
         final userData = await _authService.getUserData(currentUser.uid);
         if (userData != null && mounted) {
+          final profileLocation = userData.location?.trim();
           setState(() {
             _userName = userData.fullName.trim().isNotEmpty
                 ? userData.fullName
@@ -43,13 +49,21 @@ class _ProfilePageState extends State<ProfilePage> {
             _userEmail = userData.email.trim().isNotEmpty
                 ? userData.email
                 : currentUser.email ?? 'user@example.com';
-            _userLocation = userData.location?.trim().isNotEmpty == true
-                ? userData.location!.trim()
-                : 'Lokasi belum diatur';
+            _userLocation = profileLocation?.isNotEmpty == true
+                ? profileLocation!
+                : savedLocation ?? _userLocation;
             _profileImageUrl = userData.profileImage?.trim().isNotEmpty == true
                 ? userData.profileImage!.trim()
                 : null;
           });
+
+          if (profileLocation == null || profileLocation.isEmpty) {
+            await _sessionService.saveSelectedLocation(_userLocation);
+            await _authService.updateUserProfile(
+              uid: currentUser.uid,
+              location: _userLocation,
+            );
+          }
         }
       }
     } catch (e) {
@@ -70,23 +84,23 @@ class _ProfilePageState extends State<ProfilePage> {
       }
 
       print(
-          '[ProfilePage] 📤 Uploading profile image for ${currentUser.uid}...');
+          '[ProfilePage] Uploading profile image for ${currentUser.uid}...');
       final downloadUrl = await _imageService.uploadProfileImage(
         uid: currentUser.uid,
         imageFile: file,
       );
 
       if (downloadUrl == null) {
-        print('[ProfilePage] ❌ uploadProfileImage returned null');
+        print('[ProfilePage] uploadProfileImage returned null');
         throw Exception(
           'Gagal upload gambar ke Cloudinary. Periksa konfigurasi Cloudinary.',
         );
       }
 
-      print('[ProfilePage] ✅ Upload berhasil, URL: $downloadUrl');
+      print('[ProfilePage] Upload berhasil, URL: $downloadUrl');
 
       // Update profile di Firestore
-      print('[ProfilePage] 💾 Updating Firestore...');
+      print('[ProfilePage] Updating Firestore');
       await _authService.updateUserProfile(
         uid: currentUser.uid,
         profileImage: downloadUrl,
@@ -101,17 +115,17 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _profileImageUrl = downloadUrl);
 
       if (mounted) {
-        print('[ProfilePage] ✅ Showing success message');
+        print('[ProfilePage] Showing success message');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Foto profil berhasil diperbarui! 📸'),
+            content: Text('Foto profil berhasil diperbarui!'),
             backgroundColor: Color(0xFF16A34A),
             duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
-      print('[ProfilePage] ❌ Error: $e');
+      print('[ProfilePage] Error: $e');
       if (mounted) {
         String errorMessage = e.toString().replaceAll('Exception: ', '');
 

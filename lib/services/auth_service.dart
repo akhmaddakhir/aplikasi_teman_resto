@@ -180,7 +180,7 @@ class AuthService {
 
       if (!userDoc.exists) {
         // Dokumen hilang → buat ulang
-        print('[AuthService] Dokumen user hilang, membuat ulang...');
+        print('[AuthService] Dokumen user hilang, membuat ulang');
         final newUser = UserModel(
           uid: customUserId,
           firebaseUid: firebaseUser.uid,

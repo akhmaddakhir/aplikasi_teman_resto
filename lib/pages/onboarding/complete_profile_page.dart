@@ -69,7 +69,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       }
 
       // Update profile di Firestore
-      print('[CompleteProfile] Updating Firestore with profile data...');
+      print('[CompleteProfile] Updating Firestore with profile data');
       await _authService.updateUserProfile(
         uid: currentUser.uid,
         fullName: _nameController.text.trim(),
@@ -79,17 +79,17 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       );
 
       // Update session dengan data terbaru
-      print('[CompleteProfile] Updating session...');
+      print('[CompleteProfile] Updating session');
       final updatedUser = await _authService.getUserData(currentUser.uid);
       if (updatedUser != null) {
         await _sessionService.saveUserSession(updatedUser);
       }
 
       if (mounted) {
-        print('[CompleteProfile] Success! Navigating...');
+        print('[CompleteProfile] Success! Navigating');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profil berhasil diperbarui! 🎉'),
+            content: Text('Profil berhasil diperbarui!'),
             backgroundColor: Color(0xFF16A34A),
             duration: Duration(seconds: 2),
           ),
@@ -275,7 +275,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             value: selectedCountryCode,
                             underline: const SizedBox(),
                             icon: const Icon(Icons.keyboard_arrow_down),
-                            items: ['+62', '+1', '+44', '+81', '+86']
+                            items: ['+62', '+1']
                                 .map((code) => DropdownMenuItem(
                                       value: code,
                                       child: Text(code),

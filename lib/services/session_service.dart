@@ -6,6 +6,7 @@ class SessionService {
   static final SessionService _instance = SessionService._internal();
   static const String _userKey = 'logged_in_user';
   static const String _loginHistoryKey = 'login_history';
+  static const String _selectedLocationKey = 'selected_location';
 
   factory SessionService() {
     return _instance;
@@ -19,6 +20,11 @@ class SessionService {
       final prefs = await SharedPreferences.getInstance();
       String userJson = jsonEncode(user.toJson());
       await prefs.setString(_userKey, userJson);
+
+      final location = user.location?.trim();
+      if (location != null && location.isNotEmpty) {
+        await prefs.setString(_selectedLocationKey, location);
+      }
 
       // Tambah ke login history
       await _addLoginHistory(user);
@@ -41,6 +47,36 @@ class SessionService {
       return UserModel.fromJson(userMap);
     } catch (e) {
       throw Exception('Get session failed: ${e.toString()}');
+    }
+  }
+
+  Future<void> saveSelectedLocation(String location) async {
+    try {
+      final selectedLocation = location.trim();
+      if (selectedLocation.isEmpty) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_selectedLocationKey, selectedLocation);
+
+      final user = await getUserSession();
+      if (user != null) {
+        await prefs.setString(
+          _userKey,
+          jsonEncode(user.copyWith(location: selectedLocation).toJson()),
+        );
+      }
+    } catch (e) {
+      throw Exception('Save selected location failed: ${e.toString()}');
+    }
+  }
+
+  Future<String?> getSelectedLocation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final location = prefs.getString(_selectedLocationKey)?.trim();
+      return location?.isNotEmpty == true ? location : null;
+    } catch (e) {
+      throw Exception('Get selected location failed: ${e.toString()}');
     }
   }
 
