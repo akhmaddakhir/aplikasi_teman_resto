@@ -60,6 +60,9 @@ class UserModel {
     return UserModel(
       uid: json['uid'] ?? '',
       fullName: json['fullName'] ?? '',
+      email: json['email'] ?? '',
+      phoneNumber: json['phoneNumber'],
+      profileImage: json['profileImage'],
       gender: json['gender'],
       location: json['location'],
       createdAt: json['createdAt'] != null
@@ -68,10 +71,7 @@ class UserModel {
       lastLogin:
           json['lastLogin'] != null ? DateTime.parse(json['lastLogin']) : null,
       updatedAt:
-          json['updatedAt'] != null ? DateTime.parse(json['updatedAt
-          : DateTime.now(),
-      lastLogin:
-          json['lastLogin'] != null ? DateTime.parse(json['lastLogin']) : null,
+          json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
   }
 
@@ -79,19 +79,26 @@ class UserModel {
   Map<String, dynamic> toJson() {
     return {
       'uid': uid,
+      'fullName': fullName,
+      'email': email,
+      'phoneNumber': phoneNumber,
+      'profileImage': profileImage,
       'gender': gender,
       'location': location,
       'createdAt': createdAt.toIso8601String(),
       'lastLogin': lastLogin?.toIso8601String(),
-      'updatedAt': updatedAt
-      'phoneNumber': phoneNumber,
-      'profileImage': profileImage,
-      'createdAt': createdAt.toIso8601String(),
-      'lastLogin': lastLogin?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
-  //String? gender,
+  /// Create a copy with modified fields
+  UserModel copyWith({
+    String? uid,
+    String? fullName,
+    String? email,
+    String? phoneNumber,
+    String? profileImage,
+    String? gender,
     String? location,
     DateTime? createdAt,
     DateTime? lastLogin,
@@ -107,14 +114,7 @@ class UserModel {
       location: location ?? this.location,
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
-      updatedAt: updatedAt ?? this.updatedAt
-      uid: uid ?? this.uid,
-      fullName: fullName ?? this.fullName,
-      email: email ?? this.email,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      profileImage: profileImage ?? this.profileImage,
-      createdAt: createdAt ?? this.createdAt,
-      lastLogin: lastLogin ?? this.lastLogin,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
