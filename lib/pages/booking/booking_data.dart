@@ -2,17 +2,44 @@ import 'package:flutter/material.dart';
 import './booking_add.dart';
 
 class BookingData extends StatelessWidget {
-  const BookingData({Key? key, required Map<dynamic, dynamic> menuRequest})
-      : super(key: key);
+  final String restaurantId;
+  final String restaurantName;
+  final String restaurantAddress;
+  final String? restaurantPhotoUrl;
+
+  const BookingData({
+    Key? key,
+    required Map<dynamic, dynamic> menuRequest,
+    this.restaurantId = '',
+    this.restaurantName = '',
+    this.restaurantAddress = '',
+    this.restaurantPhotoUrl,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return const BookingFormPage();
+    return BookingFormPage(
+      restaurantId: restaurantId,
+      restaurantName: restaurantName,
+      restaurantAddress: restaurantAddress,
+      restaurantPhotoUrl: restaurantPhotoUrl,
+    );
   }
 }
 
 class BookingFormPage extends StatefulWidget {
-  const BookingFormPage({Key? key}) : super(key: key);
+  final String restaurantId;
+  final String restaurantName;
+  final String restaurantAddress;
+  final String? restaurantPhotoUrl;
+
+  const BookingFormPage({
+    Key? key,
+    this.restaurantId = '',
+    this.restaurantName = '',
+    this.restaurantAddress = '',
+    this.restaurantPhotoUrl,
+  }) : super(key: key);
 
   @override
   State<BookingFormPage> createState() => _BookingFormPageState();
@@ -190,6 +217,10 @@ class _BookingFormPageState extends State<BookingFormPage> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => BookingAddPage(
+                          restaurantId: widget.restaurantId,
+                          restaurantName: widget.restaurantName,
+                          restaurantAddress: widget.restaurantAddress,
+                          restaurantPhotoUrl: widget.restaurantPhotoUrl,
                           name: _nameController.text,
                           phone:
                               '$_selectedCountryCode ${_phoneController.text}',

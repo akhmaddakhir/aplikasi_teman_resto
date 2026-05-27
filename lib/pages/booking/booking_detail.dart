@@ -1,8 +1,33 @@
 import 'package:flutter/material.dart';
+import '../../models/restaurant_table_model.dart';
 import '../payment/payment_page.dart';
 
 class BookingDetail extends StatefulWidget {
-  const BookingDetail({super.key});
+  final String restaurantName;
+  final String restaurantAddress;
+  final String? restaurantPhotoUrl;
+  final String customerName;
+  final String phone;
+  final String occasion;
+  final int guests;
+  final DateTime? date;
+  final String time;
+  final RestaurantTable? table;
+
+  const BookingDetail({
+    super.key,
+    this.restaurantName = 'Restoran Tapak Djati',
+    this.restaurantAddress =
+        'Jl. Raya Kandangan No.29e, Ngebrak, Wungu, Kec. Wungu, Kabupaten Madiun, Jawa Timur',
+    this.restaurantPhotoUrl,
+    this.customerName = 'Floyd Miles',
+    this.phone = '',
+    this.occasion = 'Breakfast',
+    this.guests = 8,
+    this.date,
+    this.time = '06:00 PM',
+    this.table,
+  });
 
   @override
   State<BookingDetail> createState() => _BookingDetailState();
@@ -11,14 +36,39 @@ class BookingDetail extends StatefulWidget {
 class _BookingDetailState extends State<BookingDetail> {
   bool isOn = false;
 
+  String get _dateLabel {
+    final date = widget.date ?? DateTime(2025, 10, 10);
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year} · ${widget.time}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final restaurantName = widget.restaurantName.isEmpty
+        ? 'Restoran Tapak Djati'
+        : widget.restaurantName;
+    final restaurantAddress = widget.restaurantAddress.isEmpty
+        ? 'Jl. Raya Kandangan No.29e, Ngebrak, Wungu, Kec. Wungu, Kabupaten Madiun, Jawa Timur'
+        : widget.restaurantAddress;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            // Scrollable Content area
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -48,16 +98,14 @@ class _BookingDetailState extends State<BookingDetail> {
                         ],
                       ),
                     ),
-
-                    // Date & Remind toggle
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Oct 10, 2025 · 06:00 PM',
-                            style: TextStyle(
+                          Text(
+                            _dateLabel,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF111111),
@@ -93,22 +141,27 @@ class _BookingDetailState extends State<BookingDetail> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(18),
                         child: Stack(
                           children: [
-                            Image.asset(
-                              'assets/images/melati_restaurant.png',
-                              width: double.infinity,
-                              height: 168,
-                              fit: BoxFit.cover,
-                            ),
-                            // Gradient overlay
+                            widget.restaurantPhotoUrl != null &&
+                                    widget.restaurantPhotoUrl!.isNotEmpty
+                                ? Image.network(
+                                    widget.restaurantPhotoUrl!,
+                                    width: double.infinity,
+                                    height: 168,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.asset(
+                                    'assets/images/melati_restaurant.png',
+                                    width: double.infinity,
+                                    height: 168,
+                                    fit: BoxFit.cover,
+                                  ),
                             Positioned.fill(
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
@@ -131,9 +184,15 @@ class _BookingDetailState extends State<BookingDetail> {
                                 children: [
                                   _buildHeroChip(Icons.schedule, '1 hour'),
                                   const SizedBox(width: 8),
-                                  _buildHeroChip(Icons.group, '8 person'),
+                                  _buildHeroChip(
+                                    Icons.group,
+                                    '${widget.guests} person',
+                                  ),
                                   const SizedBox(width: 8),
-                                  _buildHeroChip(Icons.layers, '1st Floor'),
+                                  _buildHeroChip(
+                                    Icons.layers,
+                                    'Floor ${widget.table?.floor ?? 1}',
+                                  ),
                                 ],
                               ),
                             ),
@@ -141,18 +200,15 @@ class _BookingDetailState extends State<BookingDetail> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Restaurant name & address
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Restoran Tapak Djati',
-                            style: TextStyle(
+                          Text(
+                            restaurantName,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF111111),
@@ -160,7 +216,7 @@ class _BookingDetailState extends State<BookingDetail> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Jl. Raya Kandangan No.29e, Ngebrak, Wungu, Kec. Wungu, Kabupaten Madiun, Jawa Timur',
+                            restaurantAddress,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey.shade400,
@@ -171,8 +227,6 @@ class _BookingDetailState extends State<BookingDetail> {
                         ],
                       ),
                     ),
-
-                    // Section label
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                       child: Text(
@@ -180,14 +234,11 @@ class _BookingDetailState extends State<BookingDetail> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors
-                              .grey.shade400, // Adjusted contrast slightly
+                          color: Colors.grey.shade400,
                           letterSpacing: 1.2,
                         ),
                       ),
                     ),
-
-                    // Summary card
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Container(
@@ -198,35 +249,33 @@ class _BookingDetailState extends State<BookingDetail> {
                         ),
                         child: Column(
                           children: [
-                            _buildInfoRow('Name', 'Floyd Miles'),
+                            _buildInfoRow('Name', widget.customerName),
                             _buildDivider(),
-                            _buildInfoRow('Email', 'tanya.hill@example.com'),
+                            _buildInfoRow('Phone', widget.phone),
+                            _buildDivider(),
+                            _buildInfoRow('Booking Date', _dateLabel),
+                            _buildDivider(),
+                            _buildInfoRow('Occasion', widget.occasion),
+                            _buildDivider(),
+                            _buildInfoRow('Booking for', _dateLabel),
+                            _buildDivider(),
+                            _buildInfoRow('Guests', '${widget.guests} person'),
                             _buildDivider(),
                             _buildInfoRow(
-                              'Booking Date',
-                              'Sep 27, 2025 · 06:00 PM',
+                              'Table',
+                              widget.table?.tableNumber ?? 'G-07',
+                              isHighlight: true,
                             ),
-                            _buildDivider(),
-                            _buildInfoRow('Occasion', 'Breakfast'),
                             _buildDivider(),
                             _buildInfoRow(
-                              'Booking for',
-                              'Oct 10, 2025 · 9:00 AM',
+                              'Floor',
+                              'Floor ${widget.table?.floor ?? 1}',
                             ),
-                            _buildDivider(),
-                            _buildInfoRow('Guests', '8 person'),
-                            _buildDivider(),
-                            _buildInfoRow('Table', 'G-07', isHighlight: true),
-                            _buildDivider(),
-                            _buildInfoRow('Floor', '1st Floor'),
                           ],
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Total Price Section
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
@@ -281,8 +330,6 @@ class _BookingDetailState extends State<BookingDetail> {
                 ),
               ),
             ),
-
-            // Fixed Bottom Button Area (Now safely placed inside the main Column)
             Container(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
               decoration: const BoxDecoration(

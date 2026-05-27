@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:teman_resto/widgets/table_widget.dart';
-import 'package:teman_resto/pages/booking/booking_detail.dart';
+import '../../models/restaurant_table_model.dart';
+import '../../services/reservation_service.dart';
+import 'booking_detail.dart';
 
 class TableBooking extends StatefulWidget {
+  final String restaurantId;
+  final String restaurantName;
+  final String restaurantAddress;
+  final String? restaurantPhotoUrl;
   final String name;
   final String phone;
   final String occasion;
@@ -12,13 +17,17 @@ class TableBooking extends StatefulWidget {
 
   TableBooking({
     Key? key,
+    this.restaurantId = '',
+    this.restaurantName = '',
+    this.restaurantAddress = '',
+    this.restaurantPhotoUrl,
     this.name = '',
     this.phone = '',
     this.occasion = '',
     this.guests = 1,
     DateTime? date,
     this.time = '',
-  })  : date = date ?? DateTime(2024, 1, 1),
+  })  : date = date ?? DateTime.now(),
         super(key: key);
 
   @override
@@ -27,196 +36,228 @@ class TableBooking extends StatefulWidget {
 
 class TableBookingState extends State<TableBooking>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  String? _selectedTable;
+  static const Color _orange = Color(0xFFFF4F0F);
+  static const String _font = 'Inter';
 
-  final Map<String, bool> _reservedTables = {
-    'T-01': true,
-    'T-02': false,
-    'T-03': false,
-    'T-04': true,
-    'T-05': false,
-    'T-06': true,
-    'T-07': true,
-    'T-08': true,
-    'T-09': false,
-    'T-10': false,
-    'T-11': false,
-    'T-12': false,
-    'T-13': false,
-    'T-14': false,
-    'F2-T-01': false,
-    'F2-T-02': false,
-    'F2-T-03': false,
-    'F2-T-03-L': true,
-    'F2-T-03-R': true,
-    'F2-T-04': true,
-    'F2-T-04-L': false,
-    'F2-T-04-R': false,
-    'F2-T-05': false,
-    'F2-T-05-L': false,
-    'F2-T-05-R': true,
-    'F2-T-06': false,
-    'F2-T-07': false,
-    'F3-T-01': false,
-    'F3-T-02': true,
-    'F3-T-03': false,
-    'F3-T-04': false,
-    'F3-T-05': true,
-    'F3-T-06': false,
-    'F3-T-07': false,
-    'F3-T-08': false,
-    'F3-T-09': false,
-    'F3-T-10': false,
-    'F3-T-11': false,
-  };
+  final _reservationService = ReservationService();
+  TabController? _tabController;
+  String? _restaurantId;
+  List<RestaurantTable> _tables = [];
+  RestaurantTable? _selectedTable;
+  bool _loading = true;
+  bool _booking = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _loadTables();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
-  bool _isReserved(String id) => _reservedTables[id] ?? false;
-  bool _isSel(String id) => _selectedTable == id;
-  void _sel(String id) => setState(() => _selectedTable = id);
+  Future<void> _loadTables() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
-  Widget _t(String id) => RectangleTableWithChairs(
-      id: id,
-      reserved: _isReserved(id),
-      isSelected: _isSel(id),
-      onTap: () => _sel(id));
+    try {
+      final restaurantId =
+          await _reservationService.resolveRestaurantId(widget.restaurantId);
+      if (restaurantId == null) {
+        throw Exception('Restoran belum tersedia untuk reservasi.');
+      }
 
-  Widget _sq(String id) => SquareTable(
-      id: id,
-      reserved: _isReserved(id),
-      isSelected: _isSel(id),
-      onTap: () => _sel(id));
+      final tables = await _reservationService.getAvailableTables(
+        restaurantId: restaurantId,
+        guests: widget.guests,
+        date: widget.date,
+        time: widget.time,
+      );
 
-  Widget _lg(String id) => LargeRectangleTable(
-      id: id,
-      reserved: _isReserved(id),
-      isSelected: _isSel(id),
-      onTap: () => _sel(id));
+      final floors = _floorsFrom(tables);
+      _tabController?.dispose();
+      _tabController = TabController(
+        length: floors.isEmpty ? 1 : floors.length,
+        vsync: this,
+      );
 
-  Widget _lv(String id) => LongTableVertical(
-      id: id,
-      reserved: _isReserved(id),
-      isSelected: _isSel(id),
-      onTap: () => _sel(id));
+      setState(() {
+        _restaurantId = restaurantId;
+        _tables = tables;
+        _selectedTable = tables.isEmpty ? null : tables.first;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+        _loading = false;
+      });
+    }
+  }
 
-  Widget _c(String id, double size) => CircleTable(
-      id: id,
-      reserved: _isReserved(id),
-      isSelected: _isSel(id),
-      size: size,
-      onTap: () => _sel(id));
+  List<int> _floorsFrom(List<RestaurantTable> tables) {
+    final floors = tables.map((table) => table.floor).toSet().toList()..sort();
+    return floors;
+  }
+
+  Future<void> _bookSelectedTable() async {
+    if (_selectedTable == null || _restaurantId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak ada meja yang bisa dipesan')),
+      );
+      return;
+    }
+
+    setState(() => _booking = true);
+    try {
+      await _reservationService.createReservation(
+        restaurantId: _restaurantId!,
+        table: _selectedTable!,
+        customerName: widget.name,
+        phone: widget.phone,
+        occasion: widget.occasion,
+        guests: widget.guests,
+        date: widget.date,
+        time: widget.time,
+      );
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookingDetail(
+              restaurantName: widget.restaurantName,
+              restaurantAddress: widget.restaurantAddress,
+              restaurantPhotoUrl: widget.restaurantPhotoUrl,
+              customerName: widget.name,
+              phone: widget.phone,
+              occasion: widget.occasion,
+              guests: widget.guests,
+              date: widget.date,
+              time: widget.time,
+              table: _selectedTable!,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+        _loadTables();
+      }
+    } finally {
+      if (mounted) setState(() => _booking = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final floors = _floorsFrom(_tables);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24 , 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new,
-                        size: 20, color: Colors.black),
-                    onPressed: () => Navigator.maybePop(context),
-                  ),
-                  const Expanded(
+            _topBar(),
+            if (_loading)
+              const Expanded(
+                child: Center(child: CircularProgressIndicator(color: _orange)),
+              )
+            else if (_error != null)
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
                     child: Text(
-                      'Select Table',
+                      _error!,
                       textAlign: TextAlign.center,
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontFamily: _font),
                     ),
                   ),
-                  const SizedBox(width: 48),
-                ],
-              ),
-            ),
-            TabBar(
-              controller: _tabController,
-              labelColor: const Color(0xFFFF5C28),
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFFFF5C28),
-              labelStyle: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600),
-              unselectedLabelStyle: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500),
-              tabs: const [
-                Tab(text: '1st Floor'),
-                Tab(text: '2nd Floor'),
-                Tab(text: '3rd Floor'),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  tableLegend(const Color(0xFFFF4F0F), "Reserved"),
-                  tableLegend(const Color(0xFFEDEDED), "Available"),
-                  tableLegend(const Color(0xFF43EA3B), "Selected"),
-                ],
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
+                ),
+              )
+            else if (_tables.isEmpty)
+              const Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Tidak ada meja tersedia untuk jumlah tamu, tanggal, dan jam ini.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontFamily: _font),
+                    ),
+                  ),
+                ),
+              )
+            else ...[
+              TabBar(
                 controller: _tabController,
-                children: [_floor1(), _floor2(), _floor3()],
+                labelColor: _orange,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: _orange,
+                labelStyle: const TextStyle(
+                  fontFamily: _font,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                tabs:
+                    floors.map((floor) => Tab(text: 'Lantai $floor')).toList(),
               ),
-            ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _legend(const Color(0xFFFF4F0F), 'Reserved'),
+                    _legend(const Color(0xFFEDEDED), 'Available'),
+                    _legend(const Color(0xFF43EA3B), 'Selected'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: floors.map(_floorContent).toList(),
+                ),
+              ),
+            ],
             Padding(
               padding: const EdgeInsets.all(24),
               child: SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_selectedTable == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please select a table")),
-                      );
-                      return;
-                    }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BookingDetail(),
-                      ),
-                    );
-                  },
+                  onPressed:
+                      _booking || _tables.isEmpty ? null : _bookSelectedTable,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF4F0F),
+                    backgroundColor: _orange,
+                    disabledBackgroundColor: _orange.withOpacity(0.45),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
                     ),
                   ),
-                  child: const Text(
-                    'Book a table',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white),
-                  ),
+                  child: _booking
+                      ? const CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2)
+                      : const Text(
+                          'Book a table',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -226,161 +267,145 @@ class TableBookingState extends State<TableBooking>
     );
   }
 
-  // ─── FLOOR 1 ───
-  Widget _floor1() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _topBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+      child: Row(
         children: [
-          Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [_t("T-01"), const SizedBox(width: 40), _t("T-02")]),
-          const SizedBox(height: 32),
-          _f1Section(
-              left: ["T-03", "T-05"], center: "T-13", right: ["T-04", "T-06"]),
-          const SizedBox(height: 32),
-          _f1Section(
-              left: ["T-07", "T-09"], center: "T-14", right: ["T-08", "T-10"]),
-          const SizedBox(height: 32),
-          Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [_t("T-11"), const SizedBox(width: 40), _t("T-12")]),
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new,
+                size: 20, color: Colors.black),
+            onPressed: () => Navigator.maybePop(context),
+          ),
+          const Expanded(
+            child: Text(
+              'Select Table',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.black),
+            onPressed: _loadTables,
+          ),
         ],
       ),
     );
   }
 
-  Widget _f1Section(
-      {required List<String> left,
-      required String center,
-      required List<String> right}) {
-    const double h = 240.0;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-            height: h,
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [_sq(left[0]), _sq(left[1])])),
-        const SizedBox(width: 20),
-        _lg(center),
-        const SizedBox(width: 20),
-        SizedBox(
-            height: h,
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [_sq(right[0]), _sq(right[1])])),
-      ],
+  Widget _floorContent(int floor) {
+    final tables = _tables.where((table) => table.floor == floor).toList();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      child: Wrap(
+        spacing: 18,
+        runSpacing: 22,
+        children: tables.map(_tableCard).toList(),
+      ),
     );
   }
 
-  // ─── FLOOR 2 ───
-  Widget _floor2() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _lv("F2-T-03-L"),
-                  const SizedBox(width: 24),
-                  Column(children: [
-                    _c("F2-T-01", 50),
-                    const SizedBox(height: 24),
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _c("F2-T-02", 42),
-                          const SizedBox(width: 24),
-                          _c("F2-T-03", 42)
-                        ]),
-                  ]),
-                  const SizedBox(width: 24),
-                  _lv("F2-T-03-R"),
-                ],
+  Widget _tableCard(RestaurantTable table) {
+    final selected = _selectedTable?.id == table.id;
+    final isRect = table.shape == TableShape.rectangle;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTable = table),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              isRect ? 2 : 1,
+              (_) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _chair(selected),
               ),
-              const SizedBox(height: 40),
-              Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _lv("F2-T-04-L"),
-                    const SizedBox(width: 24),
-                    _c("F2-T-04", 95),
-                    const SizedBox(width: 24),
-                    _lv("F2-T-04-R")
-                  ]),
-              const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _lv("F2-T-05-L"),
-                  const SizedBox(width: 24),
-                  Column(children: [
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _c("F2-T-06", 42),
-                          const SizedBox(width: 24),
-                          _c("F2-T-07", 42)
-                        ]),
-                    const SizedBox(height: 28),
-                    _c("F2-T-05", 50),
-                  ]),
-                  const SizedBox(width: 24),
-                  _lv("F2-T-05-R"),
-                ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: isRect ? 112 : 82,
+            height: 80,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color:
+                  selected ? const Color(0xFF43EA3B) : const Color(0xFFEDEDED),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF878787), width: 1.5),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  table.tableNumber,
+                  style: const TextStyle(
+                    fontFamily: _font,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${table.capacity} kursi',
+                  style: const TextStyle(
+                    fontFamily: _font,
+                    fontSize: 10,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              isRect ? 2 : 1,
+              (_) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _chair(selected),
               ),
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chair(bool selected) {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFF43EA3B) : const Color(0xFFEDEDED),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF878787), width: 1),
+      ),
+    );
+  }
+
+  Widget _legend(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: _font,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF3A3A3A),
           ),
         ),
-      ),
-    );
-  }
-
-  // ─── FLOOR 3 ───
-  Widget _floor3() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-      child: Column(
-        children: [
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            _t("F3-T-01"),
-            const SizedBox(width: 28),
-            _t("F3-T-02")
-          ]),
-          const SizedBox(height: 28),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            _c("F3-T-03", 50),
-            _c("F3-T-04", 50),
-            _c("F3-T-05", 50)
-          ]),
-          const SizedBox(height: 24),
-          Center(child: _c("F3-T-06", 75)),
-          const SizedBox(height: 24),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            _c("F3-T-07", 50),
-            _c("F3-T-08", 50),
-            _c("F3-T-09", 50)
-          ]),
-          const SizedBox(height: 28),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            _t("F3-T-10"),
-            const SizedBox(width: 28),
-            _t("F3-T-11")
-          ]),
-        ],
-      ),
+      ],
     );
   }
 }

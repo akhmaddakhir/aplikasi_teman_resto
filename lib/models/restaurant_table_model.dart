@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 enum TableShape { square, rectangle }
+
 enum TableStatus { available, reserved }
 
 class RestaurantTable {

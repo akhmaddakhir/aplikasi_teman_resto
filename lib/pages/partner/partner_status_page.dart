@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/partner_model.dart';
+import 'partner_dashboard_page.dart';
 import 'partner_register_page.dart';
 
 class PartnerStatusPage extends StatelessWidget {
@@ -262,7 +263,14 @@ class PartnerStatusPage extends StatelessWidget {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PartnerDashboardPage(
+                              partner: partner,
+                            ),
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _orange,
                           elevation: 0,
@@ -505,7 +513,8 @@ class PartnerStatusPage extends StatelessWidget {
         width: 2,
         height: 20,
         decoration: BoxDecoration(
-          color: isCompleted ? const Color(0xFF16A34A) : const Color(0xFFE0E0E0),
+          color:
+              isCompleted ? const Color(0xFF16A34A) : const Color(0xFFE0E0E0),
           borderRadius: BorderRadius.circular(1),
         ),
       ),

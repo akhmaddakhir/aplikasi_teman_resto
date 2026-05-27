@@ -146,7 +146,10 @@ class PartnerService {
       }
       updates['menuPhotos'] = allMenuUrls;
 
-      await _firestore.collection('restaurants').doc(restaurantId).update(updates);
+      await _firestore
+          .collection('restaurants')
+          .doc(restaurantId)
+          .update(updates);
       await _updateUserPartnerStatus(ownerId, restaurantId, 'pending');
     } catch (e) {
       print('[PartnerService] updateRegistration error: $e');
@@ -166,7 +169,8 @@ class PartnerService {
   }
 
   // ── GET TABLES ────────────────────────────────────────────────
-  Future<List<RestaurantTable>> getTablesByRestaurant(String restaurantId) async {
+  Future<List<RestaurantTable>> getTablesByRestaurant(
+      String restaurantId) async {
     try {
       final query = await _firestore
           .collection('tables')
@@ -187,7 +191,8 @@ class PartnerService {
   }
 
   // ── SAVE TABLES ───────────────────────────────────────────────
-  Future<void> saveTables(String restaurantId, List<RestaurantTable> tables) async {
+  Future<void> saveTables(
+      String restaurantId, List<RestaurantTable> tables) async {
     final batch = _firestore.batch();
 
     // Delete existing
@@ -217,21 +222,23 @@ class PartnerService {
   Future<Map<String, int>> getBookingStats(String restaurantId) async {
     try {
       final query = await _firestore
-          .collection('bookings')
+          .collection('reservations')
           .where('restaurantId', isEqualTo: restaurantId)
           .get();
 
       int total = query.docs.length;
-      int active = query.docs.where((d) => d.data()['status'] == 'active').length;
+      int pending =
+          query.docs.where((d) => d.data()['status'] == 'pending').length;
       int today = query.docs.where((d) {
         final date = d.data()['date'] as String?;
         if (date == null) return false;
-        return date.startsWith(DateTime.now().toIso8601String().substring(0, 10));
+        return date
+            .startsWith(DateTime.now().toIso8601String().substring(0, 10));
       }).length;
 
-      return {'total': total, 'active': active, 'today': today};
+      return {'total': total, 'pending': pending, 'today': today};
     } catch (_) {
-      return {'total': 0, 'active': 0, 'today': 0};
+      return {'total': 0, 'pending': 0, 'today': 0};
     }
   }
 
@@ -242,10 +249,8 @@ class PartnerService {
     String status,
   ) async {
     // Find the user doc
-    final mappingDoc = await _firestore
-        .collection('uid_mapping')
-        .doc(ownerId)
-        .get();
+    final mappingDoc =
+        await _firestore.collection('uid_mapping').doc(ownerId).get();
     String? userDocId;
     if (mappingDoc.exists) {
       userDocId = mappingDoc.data()?['userId'] as String?;

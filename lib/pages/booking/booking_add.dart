@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 import './table_booking.dart';
 
 class BookingAddPage extends StatefulWidget {
+  final String restaurantId;
+  final String restaurantName;
+  final String restaurantAddress;
+  final String? restaurantPhotoUrl;
   final String name;
   final String phone;
   final String occasion;
 
   const BookingAddPage({
     Key? key,
+    this.restaurantId = '',
+    this.restaurantName = '',
+    this.restaurantAddress = '',
+    this.restaurantPhotoUrl,
     this.name = '',
     this.phone = '',
     this.occasion = '',
@@ -120,6 +128,10 @@ class _BookingAddPageState extends State<BookingAddPage> {
       context,
       MaterialPageRoute(
         builder: (_) => TableBooking(
+          restaurantId: widget.restaurantId,
+          restaurantName: widget.restaurantName,
+          restaurantAddress: widget.restaurantAddress,
+          restaurantPhotoUrl: widget.restaurantPhotoUrl,
           name: widget.name,
           phone: widget.phone,
           occasion: widget.occasion,

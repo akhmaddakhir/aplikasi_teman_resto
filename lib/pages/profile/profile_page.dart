@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../services/image_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
+import '../../services/partner_service.dart';
+import '../partner/partner_dashboard_page.dart';
+import '../partner/partner_status_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -17,6 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final _imageService = ImageService();
   final _authService = AuthService();
   final _sessionService = SessionService();
+  final _partnerService = PartnerService();
 
   String? _profileImageUrl;
   String _userName = 'User';
@@ -83,8 +87,7 @@ class _ProfilePageState extends State<ProfilePage> {
         throw Exception('User tidak ditemukan');
       }
 
-      print(
-          '[ProfilePage] Uploading profile image for ${currentUser.uid}...');
+      print('[ProfilePage] Uploading profile image for ${currentUser.uid}...');
       final downloadUrl = await _imageService.uploadProfileImage(
         uid: currentUser.uid,
         imageFile: file,
@@ -133,7 +136,8 @@ class _ProfilePageState extends State<ProfilePage> {
         if (errorMessage.contains('permission-denied')) {
           errorMessage = 'Akses ditolak. Periksa Firestore Rules!';
         } else if (errorMessage.contains('Cloudinary')) {
-          errorMessage = 'Error Cloudinary. Periksa cloud name dan upload preset.';
+          errorMessage =
+              'Error Cloudinary. Periksa cloud name dan upload preset.';
         } else if (errorMessage.contains('network')) {
           errorMessage = 'Koneksi internet bermasalah.';
         }
@@ -150,6 +154,32 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() => _isLoadingImage = false);
       }
+    }
+  }
+
+  Future<void> _openPartnerPage() async {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) {
+      Navigator.pushNamed(context, '/partner-register');
+      return;
+    }
+
+    final partner = await _partnerService.getPartnerByOwnerId(currentUser.uid);
+    if (!mounted) return;
+
+    if (partner == null) {
+      Navigator.pushNamed(context, '/partner-register');
+    } else if (partner.status.name == 'approved') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => PartnerDashboardPage(partner: partner)),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => PartnerStatusPage(partner: partner)),
+      );
     }
   }
 
@@ -191,10 +221,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     _MenuItemData(
                       icon: Icons.storefront_outlined,
-                      title: 'Daftar menjadi partner',
-                      subtitle: 'Daftarkan restoran Anda',
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/partner-register'),
+                      title: 'Mitra Restoran',
+                      subtitle: 'Daftar atau kelola restoran Anda',
+                      onTap: _openPartnerPage,
                     ),
                   ], context),
                   const SizedBox(height: 24),
