@@ -49,6 +49,9 @@ import 'pages/profile/profile_page.dart';
 import 'pages/profile/manage_address_page.dart';
 import 'pages/profile/setting_page.dart';
 
+// Partner
+import 'pages/partner/partner_register_page.dart';
+
 // Navigate
 import 'pages/navigate/navigate_page.dart';
 import 'services/location_service.dart';
@@ -111,6 +114,7 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfilePage(),
         '/manage-address': (_) => const ManageAddressPage(),
         '/settings': (_) => const SettingsPage(),
+        '/partner-register': (_) => const PartnerRegisterPage(),
         '/navigate': (context) => const NavigatePage(),
       },
     );

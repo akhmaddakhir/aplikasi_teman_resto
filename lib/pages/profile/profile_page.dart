@@ -189,6 +189,13 @@ class _ProfilePageState extends State<ProfilePage> {
                       badge: '3',
                       onTap: () => Navigator.pushNamed(context, '/orders'),
                     ),
+                    _MenuItemData(
+                      icon: Icons.storefront_outlined,
+                      title: 'Daftar menjadi partner',
+                      subtitle: 'Daftarkan restoran Anda',
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/partner-register'),
+                    ),
                   ], context),
                   const SizedBox(height: 24),
                   _buildSectionLabel('More'),
