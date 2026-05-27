@@ -23,11 +23,11 @@ class _BottomNavbarState extends State<BottomNavbar>
   static const _kOrange = Color(0xFFFF4F0F);
   static const _kOrangeDark = Color(0xFFCC3300);
 
-  static const _kBarH = 65.0;
-  static const _kCircleD = 54.0;
+  static const _kBarH = 64.0;
+  static const _kCircleD = 52.0;
   static const _kHMargin = 20.0;
   static const _kBMargin = 20.0;
-  static const _kRadius = 25.0;
+  static const _kRadius = 20.0;
   static const _kNotchR = 38.0;
 
   static const _icons = [

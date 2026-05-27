@@ -74,7 +74,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         uid: currentUser.uid,
         fullName: _nameController.text.trim(),
         phoneNumber: selectedCountryCode + _phoneController.text.trim(),
-        gender: selectedGender != 'Select' ? selectedGender : null,
+        gender: selectedGender,
         profileImage: profileImageUrl,
       );
 
@@ -234,6 +234,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _nameController,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Nama wajib diisi';
+                        }
+                        return null;
+                      },
                       decoration: InputDecoration(
                         hintText: 'Ex. Om Gatot',
                         hintStyle: TextStyle(color: Colors.grey[400]),
@@ -275,7 +281,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             value: selectedCountryCode,
                             underline: const SizedBox(),
                             icon: const Icon(Icons.keyboard_arrow_down),
-                            items: ['+62', '+1']
+                            items: ['+62']
                                 .map((code) => DropdownMenuItem(
                                       value: code,
                                       child: Text(code),
@@ -294,6 +300,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                           child: TextFormField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nomor telepon wajib diisi';
+                              }
+                              return null;
+                            },
                             decoration: InputDecoration(
                               hintText: 'Enter Phone Number',
                               hintStyle: TextStyle(color: Colors.grey[400]),
@@ -339,6 +351,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                           vertical: 14,
                         ),
                       ),
+                      validator: (value) {
+                        if (value == null || value == 'Select') {
+                          return 'Gender wajib dipilih';
+                        }
+                        return null;
+                      },
                       items: ['Select', 'Male', 'Female']
                           .map((gender) => DropdownMenuItem(
                                 value: gender,

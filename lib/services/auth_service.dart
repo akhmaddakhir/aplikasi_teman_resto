@@ -20,16 +20,54 @@ class AuthService {
     return await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(counterRef);
 
-      int currentCount = 1;
+      int nextCount = 1;
       if (snapshot.exists) {
-        currentCount = (snapshot.data()?['count'] ?? 0) + 1;
+        final count = snapshot.data()?['count'];
+        if (count is num) {
+          nextCount = count.toInt() + 1;
+        }
       }
 
-      transaction.set(counterRef, {'count': currentCount});
+      if (nextCount < 1) nextCount = 1;
 
-      // Format: USR-0000001
-      return 'USR-${currentCount.toString().padLeft(7, '0')}';
+      while (true) {
+        final userId = 'USR-${nextCount.toString().padLeft(7, '0')}';
+        final userRef = _firestore.collection('users').doc(userId);
+        final userSnapshot = await transaction.get(userRef);
+
+        if (!userSnapshot.exists) {
+          transaction.set(
+            counterRef,
+            {'count': nextCount},
+            SetOptions(merge: true),
+          );
+
+          return userId;
+        }
+
+        nextCount++;
+      }
     });
+  }
+
+  Future<void> syncUserCounterWithExistingUsers() async {
+    int nextCount = 1;
+
+    while (true) {
+      final userId = 'USR-${nextCount.toString().padLeft(7, '0')}';
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+
+      if (!userDoc.exists) {
+        final lastUsedCount = nextCount - 1;
+        await _firestore
+            .collection('counters')
+            .doc('user_counter')
+            .set({'count': lastUsedCount}, SetOptions(merge: true));
+        return;
+      }
+
+      nextCount++;
+    }
   }
 
   // ── REGISTER ─────────────────────────────────────────────────
@@ -66,6 +104,7 @@ class AuthService {
       }
 
       // STEP 3: Generate custom ID
+      await syncUserCounterWithExistingUsers();
       final customUserId = await _generateUserId();
       print('[AuthService] Custom ID: $customUserId');
 
@@ -106,6 +145,23 @@ class AuthService {
           await credential!.user!.delete();
         } catch (_) {}
       }
+      if (e.code == 'email-already-in-use') {
+        final orphanDeleted = await _deleteOrphanAccountForEmail(
+          email: email,
+          password: password,
+        );
+        if (orphanDeleted) {
+          return register(
+            fullName: fullName,
+            email: email,
+            password: password,
+            phoneNumber: phoneNumber,
+            gender: gender,
+            location: location,
+            profileImage: profileImage,
+          );
+        }
+      }
       throw Exception(_authErrorMessage(e.code));
     } catch (e) {
       print('[AuthService] Register error: $e');
@@ -114,6 +170,46 @@ class AuthService {
   }
 
   // ── LOGIN ─────────────────────────────────────────────────────
+  Future<bool> _deleteOrphanAccountForEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = credential.user;
+      if (user == null) return false;
+
+      final hasDatabaseRecord = await _hasUserDatabaseRecord(user.uid);
+      if (hasDatabaseRecord) {
+        await _auth.signOut();
+        return false;
+      }
+
+      print('[AuthService] Email terdaftar tanpa data Firestore, hapus Auth');
+      await _deleteOrphanAuthUser(user);
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        throw Exception(
+          'Email masih terdaftar di Firebase Auth. Hapus akun orphan lewat script admin atau gunakan password lama untuk daftar ulang.',
+        );
+      }
+      throw Exception(_authErrorMessage(e.code));
+    }
+  }
+
+  Future<bool> _hasUserDatabaseRecord(String firebaseUid) async {
+    final docId = await _resolveUserDocId(firebaseUid);
+    if (docId == null) return false;
+
+    final userDoc = await _firestore.collection('users').doc(docId).get();
+    return userDoc.exists && userDoc.data() != null;
+  }
+
   Future<UserModel?> login({
     required String email,
     required String password,
@@ -146,55 +242,44 @@ class AuthService {
         customUserId = mappingDoc.data()!['userId'] as String;
         print('[AuthService] Mapping ditemukan: $customUserId');
       } else {
-        // Mapping tidak ada → user lama, generate ID baru
-        print('[AuthService] Mapping tidak ada, generate ID baru...');
-        customUserId = await _generateUserId();
-
-        final newUser = UserModel(
-          uid: customUserId,
-          firebaseUid: firebaseUser.uid,
-          fullName: firebaseUser.displayName ?? email.split('@')[0],
-          email: email,
-          createdAt: now,
-          lastLogin: now,
-          updatedAt: now,
-        );
-
-        await _firestore
+        // Mapping tidak ada, cari dokumen user yang masih valid.
+        print('[AuthService] Mapping tidak ada, cek data user...');
+        final userQuery = await _firestore
             .collection('users')
-            .doc(customUserId)
-            .set(newUser.toFirestore());
+            .where('firebaseUid', isEqualTo: firebaseUser.uid)
+            .limit(1)
+            .get();
 
+        if (userQuery.docs.isEmpty) {
+          print('[AuthService] Auth user tanpa data Firestore, menghapus akun');
+          await _deleteOrphanAuthUser(firebaseUser);
+          throw Exception(
+            'Akun lama sudah dihapus dari database. Silakan daftar ulang.',
+          );
+        }
+
+        customUserId = userQuery.docs.first.id;
         await _firestore
             .collection('uid_mapping')
             .doc(firebaseUser.uid)
             .set({'userId': customUserId, 'email': email});
-
-        print('[AuthService] User baru dibuat: $customUserId');
-        return newUser;
+        print('[AuthService] Mapping dibuat ulang: $customUserId');
       }
 
       // Ambil dokumen user
       final userDoc =
           await _firestore.collection('users').doc(customUserId).get();
 
-      if (!userDoc.exists) {
-        // Dokumen hilang → buat ulang
-        print('[AuthService] Dokumen user hilang, membuat ulang');
-        final newUser = UserModel(
-          uid: customUserId,
-          firebaseUid: firebaseUser.uid,
-          fullName: firebaseUser.displayName ?? email.split('@')[0],
-          email: email,
-          createdAt: now,
-          lastLogin: now,
-          updatedAt: now,
+      if (!userDoc.exists || userDoc.data() == null) {
+        // Dokumen hilang setelah database direset, hapus akun Auth lama.
+        print('[AuthService] Dokumen user hilang, menghapus akun Auth');
+        await _deleteOrphanAuthUser(
+          firebaseUser,
+          customUserId: customUserId,
         );
-        await _firestore
-            .collection('users')
-            .doc(customUserId)
-            .set(newUser.toFirestore());
-        return newUser;
+        throw Exception(
+          'Akun lama sudah dihapus dari database. Silakan daftar ulang.',
+        );
       }
 
       final user = UserModel.fromFirestore(userDoc.data()!);
@@ -212,13 +297,66 @@ class AuthService {
       throw Exception(_authErrorMessage(e.code));
     } catch (e) {
       print('[AuthService] Login error: $e');
-      throw Exception('Login gagal: $e');
+      final message = e.toString().replaceAll('Exception: ', '');
+      throw Exception('Login gagal: $message');
     }
   }
 
   // ── LOGOUT ───────────────────────────────────────────────────
   Future<void> logout() async {
     await _auth.signOut();
+  }
+
+  Future<void> _deleteOrphanAuthUser(
+    User user, {
+    String? customUserId,
+  }) async {
+    final batch = _firestore.batch();
+
+    if (customUserId != null) {
+      batch.delete(_firestore.collection('users').doc(customUserId));
+    }
+    batch.delete(_firestore.collection('uid_mapping').doc(user.uid));
+
+    await batch.commit();
+    await user.delete();
+  }
+
+  Future<void> deleteCurrentAccount({required String password}) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('User tidak ditemukan');
+    }
+
+    final email = user.email;
+    if (email == null || email.trim().isEmpty) {
+      throw Exception('Email user tidak ditemukan');
+    }
+
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      final docId = await _resolveUserDocId(user.uid);
+      final batch = _firestore.batch();
+
+      if (docId != null) {
+        batch.delete(_firestore.collection('users').doc(docId));
+      }
+      batch.delete(_firestore.collection('uid_mapping').doc(user.uid));
+
+      await batch.commit();
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_authErrorMessage(e.code));
+    } on FirebaseException catch (e) {
+      throw Exception('Gagal menghapus data akun: ${e.message}');
+    } catch (e) {
+      throw Exception('Gagal menghapus akun: $e');
+    }
   }
 
   // ── GET USER DATA ─────────────────────────────────────────────
@@ -358,6 +496,8 @@ class AuthService {
       case 'wrong-password':
       case 'invalid-credential':
         return 'Email atau password salah.';
+      case 'requires-recent-login':
+        return 'Silakan login ulang sebelum menghapus akun.';
       case 'too-many-requests':
         return 'Terlalu banyak percobaan. Coba lagi nanti.';
       case 'network-request-failed':

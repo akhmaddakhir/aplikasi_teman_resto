@@ -13,10 +13,13 @@ class RestaurantDetail extends StatefulWidget {
 }
 
 class RestaurantDetailState extends State<RestaurantDetail>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
+  late final FocusNode _menuSearchFocusNode;
+  final ScrollController _menuScrollController = ScrollController();
   String selectedFilter = 'Most relevant';
   String searchQuery = '';
+  bool _keyboardWasVisible = false;
 
   // ============ MENU REQUEST STATE ============
   // Cart sekarang berfungsi sebagai "menu request" saat booking,
@@ -198,14 +201,85 @@ class RestaurantDetailState extends State<RestaurantDetail>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 4, vsync: this);
     _tabController.animation!.addListener(() => setState(() {}));
+    _menuSearchFocusNode = FocusNode();
+    _menuSearchFocusNode.addListener(_handleMenuSearchFocusChange);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _menuSearchFocusNode.removeListener(_handleMenuSearchFocusChange);
+    _menuSearchFocusNode.dispose();
+    _menuScrollController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_menuSearchFocusNode.hasFocus) return;
+      final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+
+      if (_keyboardWasVisible && !keyboardVisible) {
+        _handleBackPressed();
+      }
+
+      _keyboardWasVisible = keyboardVisible;
+    });
+  }
+
+  void _handleMenuSearchFocusChange() {
+    if (!mounted) return;
+    setState(() {});
+
+    if (!_menuSearchFocusNode.hasFocus) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_menuScrollController.hasClients) return;
+      _menuScrollController.animateTo(
+        88,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  Future<bool> _handleBackPressed() async {
+    if (_menuSearchFocusNode.hasFocus) {
+      _keyboardWasVisible = false;
+      _menuSearchFocusNode.unfocus();
+
+      if (_menuScrollController.hasClients) {
+        _menuScrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+        );
+      }
+
+      return false;
+    }
+
+    return true;
+  }
+
+  void _handleHeaderBackPressed() {
+    if (_menuSearchFocusNode.hasFocus) {
+      _handleBackPressed();
+      return;
+    }
+
+    if (Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    }
   }
 
   List<Map<String, dynamic>> getFilteredMenu() {
@@ -621,172 +695,182 @@ class RestaurantDetailState extends State<RestaurantDetail>
     final bool hasMenuRequest = _totalItems > 0;
     // Cek apakah tab Menu sedang aktif (animasi value < 0.5)
     final bool isMenuTab = _tabController.animation!.value < 0.5;
+    final bool compactHeader = isMenuTab && _menuSearchFocusNode.hasFocus;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
+    return WillPopScope(
+      onWillPop: _handleBackPressed,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: false,
+        body: Stack(
         children: [
-          // Hero image
-          Container(
-            height: 280,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/gambar_restoran_5.jfif'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 40,
-                  left: 16,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                    onPressed: () {
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pushNamedAndRemoveUntil(
-                            context, '/home', (route) => false);
-                      }
-                    },
+          Column(
+            children: [
+              // Hero image
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                height: compactHeader ? 132 : 280,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/gambar_restoran_5.jfif'),
+                    fit: BoxFit.cover,
                   ),
                 ),
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  child: Container(
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: const Color(0xF0F4F4F4),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildImageItem('assets/images/gambar_makanan_2.jfif'),
-                        _buildImageItem('assets/images/gambar_resto_2.jpg'),
-                        _buildImageItem('assets/images/gambar_makanan_2.jfif'),
-                        _buildImageItem('assets/images/gambar_restoran_4.jfif'),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Restaurant info
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Pawon Njawi',
-                  style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Stack(
                   children: [
-                    Row(
-                      children: [
-                        _tagChip(Icons.access_time_rounded, '1 hour'),
-                        const SizedBox(width: 6),
-                        _tagChip(Icons.restaurant_rounded, 'Javanese'),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3EE),
-                        borderRadius: BorderRadius.circular(50),
+                    Positioned(
+                      top: compactHeader ? 12 : 40,
+                      left: 16,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios,
+                            color: Colors.white),
+                        onPressed: _handleHeaderBackPressed,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    ),
+                    Positioned(
+                      bottom: compactHeader ? 8 : 16,
+                      left: 16,
+                      right: 16,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOutCubic,
+                        height: compactHeader ? 56 : 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xF0F4F4F4),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            _buildImageItem(
+                                'assets/images/gambar_makanan_2.jfif'),
+                            _buildImageItem('assets/images/gambar_resto_2.jpg'),
+                            _buildImageItem(
+                                'assets/images/gambar_makanan_2.jfif'),
+                            _buildImageItem(
+                                'assets/images/gambar_restoran_4.jfif'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Restaurant info
+              if (!compactHeader)
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pawon Njawi',
+                        style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.star_rounded,
-                              size: 14, color: Color(0xFFFF4F0F)),
-                          const SizedBox(width: 4),
-                          const Text(
-                            '4.8 (26)',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFFFF4F0F),
+                          Row(
+                            children: [
+                              _tagChip(Icons.access_time_rounded, '1 hour'),
+                              const SizedBox(width: 6),
+                              _tagChip(Icons.restaurant_rounded, 'Javanese'),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3EE),
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star_rounded,
+                                    size: 14, color: Color(0xFFFF4F0F)),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  '4.8 (26)',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFFFF4F0F),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_rounded,
-                        size: 16, color: Color(0xFFFF4F0F)),
-                    const SizedBox(width: 6),
-                    const Expanded(
-                      child: Text(
-                        'Jl. Kahuripan No. 3, Klojen, Kota Malang, Jawatimur',
-                        style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_rounded,
+                              size: 16, color: Color(0xFFFF4F0F)),
+                          const SizedBox(width: 6),
+                          const Expanded(
+                            child: Text(
+                              'Jl. Kahuripan No. 3, Klojen, Kota Malang, Jawatimur',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                    ],
+                  ),
+                ),
+
+              // TabBar
+              TabBar(
+                controller: _tabController,
+                labelColor: const Color(0xFFFF4F0F),
+                unselectedLabelColor: Colors.black54,
+                indicatorColor: const Color(0xFFFF4F0F),
+                dividerColor: Colors.transparent,
+                tabs: const [
+                  Tab(text: 'Menu'),
+                  Tab(text: 'About'),
+                  Tab(text: 'Gallery'),
+                  Tab(text: 'Review'),
+                ],
+              ),
+
+              // Tab content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildMenuTab(),
+                    _buildAboutTab(),
+                    _buildGalleryTab(),
+                    _buildReviewTab(),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          // TabBar
-          TabBar(
-            controller: _tabController,
-            labelColor: const Color(0xFFFF4F0F),
-            unselectedLabelColor: Colors.black54,
-            indicatorColor: const Color(0xFFFF4F0F),
-            dividerColor: Colors.transparent,
-            tabs: const [
-              Tab(text: 'Menu'),
-              Tab(text: 'About'),
-              Tab(text: 'Gallery'),
-              Tab(text: 'Review'),
+              ),
             ],
           ),
 
-          // Tab content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildMenuTab(),
-                _buildAboutTab(),
-                _buildGalleryTab(),
-                _buildReviewTab(),
-              ],
-            ),
-          ),
-
-          // ── BOTTOM BAR ──
+          // ── BOTTOM BAR ── (Fixed position)
           // Hanya tampil di tab Menu
           if (isMenuTab)
-            Container(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: hasMenuRequest
                   // Ada menu yang dipilih → tampilkan Menu Request bar
                   ? _buildMenuRequestBar()
@@ -794,6 +878,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   : _buildBookTableBar(),
             ),
         ],
+        ),
       ),
     );
   }
@@ -1027,12 +1112,13 @@ class RestaurantDetailState extends State<RestaurantDetail>
     final filteredMenu = getFilteredMenu();
 
     return SingleChildScrollView(
+      controller: _menuScrollController,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: const EdgeInsets.fromLTRB(
           16,
           16,
           16,
-          100 + (MediaQuery.of(context).viewInsets.bottom * 1.2),
+          100,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1101,6 +1187,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
+                      focusNode: _menuSearchFocusNode,
                       onChanged: (value) => setState(() => searchQuery = value),
                       decoration: const InputDecoration(
                         hintText: 'Find your favorite menu',

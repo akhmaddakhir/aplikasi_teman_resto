@@ -24,7 +24,10 @@ class _SettingsPageState extends State<SettingsPage> {
   final _sessionService = SessionService();
   String _profileName = 'User';
   String _profileEmail = 'user@example.com';
+  String _profilePhone = '';
+  String _profileGender = 'Select';
   String? _profileImageUrl;
+  bool _profileChanged = false;
 
   @override
   void initState() {
@@ -43,6 +46,8 @@ class _SettingsPageState extends State<SettingsPage> {
           _profileEmail = sessionUser.email.trim().isNotEmpty
               ? sessionUser.email.trim()
               : 'user@example.com';
+          _profilePhone = sessionUser.phoneNumber?.trim() ?? '';
+          _profileGender = _normalizeGender(sessionUser.gender);
           _profileImageUrl = sessionUser.profileImage?.trim().isNotEmpty == true
               ? sessionUser.profileImage!.trim()
               : null;
@@ -62,6 +67,8 @@ class _SettingsPageState extends State<SettingsPage> {
         _profileEmail = userData.email.trim().isNotEmpty
             ? userData.email.trim()
             : currentUser.email ?? 'user@example.com';
+        _profilePhone = userData.phoneNumber?.trim() ?? '';
+        _profileGender = _normalizeGender(userData.gender);
         _profileImageUrl = userData.profileImage?.trim().isNotEmpty == true
             ? userData.profileImage!.trim()
             : null;
@@ -69,6 +76,12 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       print('[SettingsPage] Error loading profile data: $e');
     }
+  }
+
+  String _normalizeGender(String? gender) {
+    final value = gender?.trim();
+    if (value == 'Male' || value == 'Female') return value!;
+    return 'Select';
   }
 
   @override
@@ -175,7 +188,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     ]),
 
                     const SizedBox(height: 32),
-
                   ],
                 ),
               ),
@@ -193,7 +205,8 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () =>
+                Navigator.pop(context, _profileChanged ? true : null),
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
             color: const Color(0xFF0D0D0D),
           ),
@@ -483,6 +496,8 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showEditProfileSheet(BuildContext context) {
     final nameController = TextEditingController(text: _profileName);
     final emailController = TextEditingController(text: _profileEmail);
+    final phoneController = TextEditingController(text: _profilePhone);
+    String selectedGender = _profileGender;
     bool isSaving = false;
 
     showModalBottomSheet(
@@ -490,126 +505,227 @@ class _SettingsPageState extends State<SettingsPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+        builder: (context, setModalState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Text(
-                  'Edit Profile',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Name',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildEditField(
-                  controller: nameController,
-                  hintText: 'Enter your name',
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Email',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildEditField(
-                  controller: emailController,
-                  hintText: 'Enter your email',
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isSaving
-                        ? null
-                        : () async {
-                            final name = nameController.text.trim();
-                            final email = emailController.text.trim();
-                            if (name.isEmpty || email.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Name and email are required'),
-                                ),
-                              );
-                              return;
-                            }
-
-                            setModalState(() => isSaving = true);
-                            await _saveProfileChanges(name, email);
-                            if (context.mounted) {
-                              setModalState(() => isSaving = false);
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF4F0F),
-                      disabledBackgroundColor:
-                          const Color(0xFFFF4F0F).withOpacity(0.6),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                    child: isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.4,
-                              color: Colors.white,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    child: Text(
+                      'Edit Profile',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: const Text(
+                      'Name',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: _buildEditField(
+                      controller: nameController,
+                      hintText: 'Enter your name',
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: const Text(
+                      'Email',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: _buildEditField(
+                      controller: emailController,
+                      hintText: 'Enter your email',
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: const Text(
+                      'Phone Number',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: _buildEditField(
+                      controller: phoneController,
+                      hintText: 'Enter phone number',
+                      keyboardType: TextInputType.phone,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: const Text(
+                      'Gender',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: DropdownButtonFormField<String>(
+                      initialValue: selectedGender,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF0F0F0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      items: ['Select', 'Male', 'Female']
+                          .map(
+                            (gender) => DropdownMenuItem(
+                              value: gender,
+                              child: Text(
+                                gender,
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  color: gender == 'Select'
+                                      ? Colors.black38
+                                      : const Color(0xFF1A1A1A),
+                                ),
+                              ),
                             ),
                           )
-                        : Text(
-                            'Save Changes',
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
+                          .toList(),
+                      onChanged: isSaving
+                          ? null
+                          : (value) {
+                              setModalState(() {
+                                selectedGender = value ?? 'Select';
+                              });
+                            },
+                    ),
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                final name = nameController.text.trim();
+                                final email = emailController.text.trim();
+                                final phone = phoneController.text.trim();
+                                if (name.isEmpty || email.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Name and email are required'),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setModalState(() => isSaving = true);
+                                final saved = await _saveProfileChanges(
+                                  name,
+                                  email,
+                                  phone,
+                                  selectedGender,
+                                );
+
+                                if (!context.mounted) return;
+                                if (saved) {
+                                  Navigator.pop(context);
+                                } else {
+                                  setModalState(() => isSaving = false);
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF4F0F),
+                          disabledBackgroundColor:
+                              const Color(0xFFFF4F0F).withOpacity(0.6),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Save Changes',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -651,7 +767,12 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _saveProfileChanges(String name, String email) async {
+  Future<bool> _saveProfileChanges(
+    String name,
+    String email,
+    String phone,
+    String gender,
+  ) async {
     try {
       final currentUser = _authService.currentUser;
       if (currentUser != null) {
@@ -659,6 +780,8 @@ class _SettingsPageState extends State<SettingsPage> {
           uid: currentUser.uid,
           fullName: name,
           email: email,
+          phoneNumber: phone,
+          gender: gender != 'Select' ? gender : null,
         );
 
         final updatedUser = await _authService.getUserData(currentUser.uid);
@@ -667,19 +790,22 @@ class _SettingsPageState extends State<SettingsPage> {
         }
       }
 
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _profileName = name;
         _profileEmail = email;
+        _profilePhone = phone;
+        _profileGender = gender;
+        _profileChanged = true;
       });
 
-      Navigator.pop(context);
-      Navigator.pop(context, true);
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update profile: $e')),
       );
+      return false;
     }
   }
 
@@ -836,102 +962,186 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
+    final passwordController = TextEditingController();
+    bool isDeleting = false;
+
     showDialog(
       context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFEEEE),
-                  shape: BoxShape.circle,
+      barrierDismissible: false,
+      builder: (_) => StatefulBuilder(
+        builder: (_, setDialogState) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFEEEE),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFE24B4A),
+                    size: 26,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Color(0xFFE24B4A),
-                  size: 26,
+                const SizedBox(height: 16),
+                Text(
+                  'Delete Account?',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Delete Account?',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                const SizedBox(height: 4),
+                Text(
+                  'This action is permanent and cannot be undone. Your account data will be deleted.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: Color(0xFF888888),
+                    height: 1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'This action is permanent and cannot be undone. All your data, orders, and reviews will be deleted.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: Color(0xFF888888),
-                  height: 1.5,
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  enabled: !isDeleting,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color(0xFFF0F0F0),
+                    hintText: 'Enter your password',
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      color: Colors.black38,
+                      fontSize: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFF7F6F2),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed:
+                            isDeleting ? null : () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color(0xFFF7F6F2),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A1A),
+                        child: Text(
+                          'Cancel',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A1A1A),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE24B4A),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isDeleting
+                            ? null
+                            : () async {
+                                final password = passwordController.text.trim();
+                                if (password.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Password wajib diisi'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setDialogState(() => isDeleting = true);
+                                try {
+                                  await _deleteAccount(password);
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  setDialogState(() => isDeleting = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString()),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE24B4A),
+                          disabledBackgroundColor:
+                              const Color(0xFFE24B4A).withOpacity(0.6),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'Delete',
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
+                        child: isDeleting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Delete',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    ).whenComplete(passwordController.dispose);
+  }
+
+  Future<void> _deleteAccount(String password) async {
+    await _authService.deleteCurrentAccount(password: password);
+    await _sessionService.clearUserSession();
+    await _sessionService.clearLoginHistory();
+
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+      (route) => false,
     );
   }
 
