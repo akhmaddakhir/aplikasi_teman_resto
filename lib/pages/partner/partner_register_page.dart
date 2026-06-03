@@ -4,25 +4,49 @@ import 'package:image_picker/image_picker.dart';
 import '../../services/auth_service.dart';
 import '../../models/partner_model.dart';
 import '../../services/partner_service.dart';
-import 'partner_status_page.dart';
+import 'partner_dashboard_page.dart';
+import 'partner_theme.dart';
 
 class PartnerRegisterPage extends StatefulWidget {
   /// Pass existing partner to enable edit/resubmit mode
   final PartnerModel? existingPartner;
 
-  const PartnerRegisterPage({Key? key, this.existingPartner}) : super(key: key);
+  /// Whether this is adding a new restaurant (from dashboard)
+  /// vs initial registration (from profile)
+  final bool isAddingNewRestaurant;
+
+  const PartnerRegisterPage({
+    Key? key,
+    this.existingPartner,
+    this.isAddingNewRestaurant = false,
+  }) : super(key: key);
 
   @override
   State<PartnerRegisterPage> createState() => _PartnerRegisterPageState();
 }
 
 class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
-  static const Color _orange = Color(0xFFFF4F0F);
-  static const String _font = 'Inter';
+  static const Color _orange = PartnerTheme.orange;
+  static const String _font = PartnerTheme.font;
 
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   final _partnerService = PartnerService();
   final _authService = AuthService();
+
+  // Field keys for scrolling to invalid fields
+  final _restaurantNameKey = GlobalKey<FormFieldState>();
+  final _ownerNameKey = GlobalKey<FormFieldState>();
+  final _phoneKey = GlobalKey<FormFieldState>();
+  final _emailKey = GlobalKey<FormFieldState>();
+  final _addressKey = GlobalKey<FormFieldState>();
+
+  // Focus nodes for auto-focus and scroll
+  final _restaurantNameFocus = FocusNode();
+  final _ownerNameFocus = FocusNode();
+  final _phoneFocus = FocusNode();
+  final _emailFocus = FocusNode();
+  final _addressFocus = FocusNode();
 
   // Controllers
   final _restaurantNameCtrl = TextEditingController();
@@ -31,15 +55,43 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
   final _emailCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
+  final _highlightCtrl = TextEditingController();
 
   final List<String> _countryCodes = const ['+62'];
   String _selectedCountryCode = '+62';
 
   String _openTime = '08:00';
   String _closeTime = '22:00';
+  static const List<String> _cuisineOptions = [
+    'Javanese',
+    'Sundanese',
+    'Padang',
+    'Betawi',
+    'Balinese',
+    'Japanese',
+    'Korean',
+    'Chinese',
+    'Western',
+    'Italian',
+    'Thai',
+  ];
+  static const List<String> _paymentMethodOptions = [
+    'Cash',
+    'Debit Card',
+    'Credit Card',
+    'QRIS',
+    'GoPay',
+    'OVO',
+    'DANA',
+    'ShopeePay',
+    'Bank Transfer',
+  ];
+
+  String _selectedCuisine = _cuisineOptions.first;
 
   File? _restaurantPhoto;
-  List<File> _menuPhotos = [];
+  List<String> _highlights = [];
+  List<String> _paymentMethods = ['Cash'];
   bool _isLoading = false;
 
   bool get _isEditMode => widget.existingPartner != null;
@@ -55,8 +107,15 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
       _emailCtrl.text = p.email;
       _addressCtrl.text = p.address;
       _descriptionCtrl.text = p.description;
+      _highlights = List<String>.from(p.highlights);
+      _paymentMethods = p.paymentMethods.isNotEmpty
+          ? List<String>.from(p.paymentMethods)
+          : ['Cash'];
       _openTime = p.openTime;
       _closeTime = p.closeTime;
+      _selectedCuisine = _cuisineOptions.contains(p.cuisine)
+          ? p.cuisine
+          : _cuisineOptions.first;
     }
   }
 
@@ -68,6 +127,13 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
     _emailCtrl.dispose();
     _addressCtrl.dispose();
     _descriptionCtrl.dispose();
+    _highlightCtrl.dispose();
+    _scrollController.dispose();
+    _restaurantNameFocus.dispose();
+    _ownerNameFocus.dispose();
+    _phoneFocus.dispose();
+    _emailFocus.dispose();
+    _addressFocus.dispose();
     super.dispose();
   }
 
@@ -89,22 +155,67 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
     return '$_selectedCountryCode$phone';
   }
 
-  Future<void> _pickRestaurantPhoto() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (picked != null) setState(() => _restaurantPhoto = File(picked.path));
+  void _scrollToFirstInvalidField() {
+    // List of (key, focusNode) pairs in order
+    final fieldPairs = [
+      (_restaurantNameKey, _restaurantNameFocus),
+      (_ownerNameKey, _ownerNameFocus),
+      (_phoneKey, _phoneFocus),
+      (_emailKey, _emailFocus),
+      (_addressKey, _addressFocus),
+    ];
+
+    // Find first invalid field
+    FormFieldState<dynamic>? firstInvalidField;
+    FocusNode? firstInvalidFocus;
+
+    for (final (key, focusNode) in fieldPairs) {
+      final state = key.currentState;
+      if (state != null && !state.isValid) {
+        firstInvalidField = state;
+        firstInvalidFocus = focusNode;
+        break;
+      }
+    }
+
+    if (firstInvalidField != null && firstInvalidFocus != null) {
+      // Scroll to top first
+      _scrollController.jumpTo(0);
+
+      // Then request focus
+      firstInvalidFocus.requestFocus();
+
+      // Double-check by scrolling to field position after a delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+
+        try {
+          final fieldContext = firstInvalidField!.context;
+          final renderBox = fieldContext.findRenderObject() as RenderBox?;
+
+          if (renderBox != null) {
+            final offset = renderBox.localToGlobal(Offset.zero);
+            final targetScroll = _scrollController.offset + offset.dy - 150;
+
+            _scrollController.animateTo(
+              targetScroll.clamp(
+                  0.0, _scrollController.position.maxScrollExtent),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+            );
+          }
+        } catch (e) {
+          print('Scroll error: $e');
+        }
+      });
+    }
   }
 
-  Future<void> _pickMenuPhoto() async {
-    if (_menuPhotos.length >= 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maksimal 6 foto menu')),
-      );
-      return;
-    }
+  Future<void> _pickRestaurantPhoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (picked != null) setState(() => _menuPhotos.add(File(picked.path)));
+    final picked =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) setState(() => _restaurantPhoto = File(picked.path));
   }
 
   Future<void> _pickTime(bool isOpen) async {
@@ -137,7 +248,37 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // Delay slightly to ensure validation messages are rendered
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        _scrollToFirstInvalidField();
+      }
+      return;
+    }
+
+    if (_highlightCtrl.text.trim().isNotEmpty) {
+      _addHighlightsFromInput(_highlightCtrl.text);
+    }
+
+    if (_highlights.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tambahkan minimal 1 alasan memilih restoran'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (_paymentMethods.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tambahkan minimal 1 metode pembayaran'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     // Restaurant photo required for new submission
     if (!_isEditMode && _restaurantPhoto == null) {
@@ -170,14 +311,19 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
           openTime: _openTime,
           closeTime: _closeTime,
           description: _descriptionCtrl.text.trim(),
+          cuisine: _selectedCuisine,
+          highlights: _highlights,
+          paymentMethods: _paymentMethods,
           restaurantPhoto: _restaurantPhoto,
-          newMenuPhotos: _menuPhotos,
-          existingMenuPhotoUrls: widget.existingPartner!.menuPhotos,
-          existingRestaurantPhotoUrl: widget.existingPartner!.restaurantPhotoUrl,
+          existingRestaurantPhotoUrl:
+              widget.existingPartner!.restaurantPhotoUrl,
         );
         result = widget.existingPartner!.copyWith(
-          status: PartnerStatus.pending,
+          status: PartnerStatus.approved,
           restaurantName: _restaurantNameCtrl.text.trim(),
+          cuisine: _selectedCuisine,
+          highlights: _highlights,
+          paymentMethods: _paymentMethods,
         );
       } else {
         result = await _partnerService.submitRegistration(
@@ -190,8 +336,10 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
           openTime: _openTime,
           closeTime: _closeTime,
           description: _descriptionCtrl.text.trim(),
+          cuisine: _selectedCuisine,
+          highlights: _highlights,
+          paymentMethods: _paymentMethods,
           restaurantPhoto: _restaurantPhoto,
-          menuPhotos: _menuPhotos,
         );
       }
 
@@ -200,7 +348,7 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => PartnerStatusPage(partner: result!),
+          builder: (_) => PartnerDashboardPage(partner: result!),
         ),
       );
     } catch (e) {
@@ -219,207 +367,212 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildSectionTitle('Informasi Restoran'),
-                      const SizedBox(height: 16),
-                      _buildField(
-                        controller: _restaurantNameCtrl,
-                        label: 'Nama Restoran',
-                        hint: 'Contoh: Warung Makan Bu Sari',
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildField(
-                        controller: _ownerNameCtrl,
-                        label: 'Nama Pemilik',
-                        hint: 'Nama lengkap pemilik restoran',
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPhoneField(
-                        controller: _phoneCtrl,
-                        label: 'Nomor WhatsApp',
-                        hint: '812xxxxxxxx',
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                          var phone = _phoneWithoutCountryCode(v);
-                          if (phone.startsWith('0')) {
-                            phone = phone.substring(1);
-                          }
-                          if (phone.length < 8) return 'Nomor tidak valid';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildField(
-                        controller: _emailCtrl,
-                        label: 'Email',
-                        hint: 'email@restoran.com',
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                          if (!v.contains('@')) return 'Email tidak valid';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildField(
-                        controller: _addressCtrl,
-                        label: 'Alamat Restoran',
-                        hint: 'Jl. Contoh No. 1, Kota...',
-                        maxLines: 3,
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Jam Operasional'),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildTimePicker(
-                              label: 'Jam Buka',
-                              value: _openTime,
-                              onTap: () => _pickTime(true),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildTimePicker(
-                              label: 'Jam Tutup',
-                              value: _closeTime,
-                              onTap: () => _pickTime(false),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Deskripsi Restoran'),
-                      const SizedBox(height: 16),
-                      _buildField(
-                        controller: _descriptionCtrl,
-                        label: 'Deskripsi',
-                        hint:
-                            'Ceritakan keunggulan restoran Anda, menu andalan, suasana, dll.',
-                        maxLines: 5,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                          if (v.trim().length < 30) {
-                            return 'Minimal 30 karakter';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Foto Restoran'),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Upload foto utama restoran Anda',
-                        style: TextStyle(
-                          fontFamily: _font,
-                          fontSize: 13,
-                          color: Colors.grey.shade500,
+    return PartnerTheme.wrap(
+      context,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildTopBar(),
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildSectionTitle('Informasi Restoran'),
+                        const SizedBox(height: 16),
+                        _buildField(
+                          key: _restaurantNameKey,
+                          focusNode: _restaurantNameFocus,
+                          controller: _restaurantNameCtrl,
+                          label: 'Nama Restoran',
+                          hint: 'Contoh: Warung Makan Bu Sari',
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Wajib diisi'
+                              : null,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildRestaurantPhotoUpload(),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Foto Menu'),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Upload beberapa foto menu unggulan (maks. 6 foto)',
-                        style: TextStyle(
-                          fontFamily: _font,
-                          fontSize: 13,
-                          color: Colors.grey.shade500,
+                        const SizedBox(height: 16),
+                        _buildField(
+                          key: _ownerNameKey,
+                          focusNode: _ownerNameFocus,
+                          controller: _ownerNameCtrl,
+                          label: 'Nama Pemilik',
+                          hint: 'Nama lengkap pemilik restoran',
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Wajib diisi'
+                              : null,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildMenuPhotosUpload(),
-                      const SizedBox(height: 32),
-                      _buildSubmitButton(),
-                    ],
+                        const SizedBox(height: 16),
+                        _buildPhoneField(
+                          key: _phoneKey,
+                          focusNode: _phoneFocus,
+                          controller: _phoneCtrl,
+                          label: 'Nomor WhatsApp',
+                          hint: '812xxxxxxxx',
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty)
+                              return 'Wajib diisi';
+                            var phone = _phoneWithoutCountryCode(v);
+                            if (phone.startsWith('0')) {
+                              phone = phone.substring(1);
+                            }
+                            if (phone.length < 8) return 'Nomor tidak valid';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildField(
+                          key: _emailKey,
+                          focusNode: _emailFocus,
+                          controller: _emailCtrl,
+                          label: 'Email',
+                          hint: 'email@restoran.com',
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty)
+                              return 'Wajib diisi';
+                            if (!v.contains('@')) return 'Email tidak valid';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildField(
+                          key: _addressKey,
+                          focusNode: _addressFocus,
+                          controller: _addressCtrl,
+                          label: 'Alamat Restoran',
+                          hint: 'Jl. Contoh No. 1, Kota...',
+                          maxLines: 3,
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Wajib diisi'
+                              : null,
+                        ),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('Jam Operasional'),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTimePicker(
+                                label: 'Jam Buka',
+                                value: _openTime,
+                                onTap: () => _pickTime(true),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildTimePicker(
+                                label: 'Jam Tutup',
+                                value: _closeTime,
+                                onTap: () => _pickTime(false),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('Deskripsi Restoran'),
+                        const SizedBox(height: 16),
+                        _buildField(
+                          controller: _descriptionCtrl,
+                          label: 'Deskripsi',
+                          hint:
+                              'Ceritakan keunggulan restoran Anda, menu andalan, suasana, dll.',
+                          maxLines: 5,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty)
+                              return 'Wajib diisi';
+                            if (v.trim().length < 30) {
+                              return 'Minimal 30 karakter';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('Mengapa Memilih Kami?'),
+                        const SizedBox(height: 16),
+                        _buildHighlightsInput(),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('Jenis Masakan'),
+                        const SizedBox(height: 16),
+                        _buildCuisineDropdown(),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('Metode Pembayaran'),
+                        const SizedBox(height: 16),
+                        _buildPaymentMethodsSelector(),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('Foto Restoran'),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Upload foto utama restoran Anda',
+                          style: TextStyle(
+                            fontFamily: _font,
+                            fontSize: 13,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildRestaurantPhotoUpload(),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+              // Fixed submit button at bottom
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildSubmitButton(),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildTopBar() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(4, 16, 16, 16),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            color: const Color(0xFF0D0D0D),
-            onPressed: () => Navigator.pop(context),
-          ),
-          Expanded(
-            child: Text(
-              _isEditMode ? 'Edit Pengajuan' : 'Daftar Menjadi Mitra',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: _font,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0D0D0D),
-              ),
-            ),
-          ),
-          const SizedBox(width: 44),
-        ],
-      ),
+    String title;
+    String subtitle;
+
+    if (_isEditMode) {
+      title = 'Edit Pengajuan';
+      subtitle = 'Perbarui data restoran';
+    } else if (widget.isAddingNewRestaurant) {
+      title = 'Tambah Restoran';
+      subtitle = 'Daftarkan cabang atau restoran baru';
+    } else {
+      title = 'Daftar Mitra';
+      subtitle = 'Tambah restoran';
+    }
+
+    return PartnerPageHeader(
+      title: title,
+      subtitle: subtitle,
     );
   }
 
   Widget _buildSectionTitle(String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 18,
-          decoration: BoxDecoration(
-            color: _orange,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            fontFamily: _font,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
-      ],
+    return Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        fontFamily: _font,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFFBBBBBB),
+        letterSpacing: 1.2,
+      ),
     );
   }
 
   Widget _buildField({
+    Key? key,
+    FocusNode? focusNode,
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -441,6 +594,8 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          key: key,
+          focusNode: focusNode,
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
@@ -484,6 +639,8 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
   }
 
   Widget _buildPhoneField({
+    Key? key,
+    FocusNode? focusNode,
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -540,6 +697,7 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
             const SizedBox(width: 12),
             Expanded(
               child: TextFormField(
+                focusNode: focusNode,
                 controller: controller,
                 keyboardType: TextInputType.phone,
                 validator: validator,
@@ -563,18 +721,15 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Colors.red, width: 1.5),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: _orange, width: 1.5),
+                    borderSide: const BorderSide(color: _orange, width: 1.5),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Colors.red, width: 1.5),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
                   ),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -768,103 +923,231 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
     );
   }
 
-  Widget _buildMenuPhotosUpload() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
+  void _addHighlightsFromInput(String raw) {
+    final parts = raw
+        .split(',')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty);
+    var changed = false;
+
+    for (final part in parts) {
+      if (_highlights.length >= 6) {
+        _showHighlightMessage('Maksimal 6 alasan');
+        break;
+      }
+      if (part.length > 60) {
+        _showHighlightMessage('Setiap alasan maksimal 60 karakter');
+        continue;
+      }
+      final exists = _highlights.any(
+        (item) => item.toLowerCase() == part.toLowerCase(),
+      );
+      if (exists) continue;
+      _highlights.add(part);
+      changed = true;
+    }
+
+    if (changed) setState(() {});
+    _highlightCtrl.clear();
+  }
+
+  void _showHighlightMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  Widget _buildHighlightsInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Existing photos (edit mode)
-        if (_isEditMode)
-          ...widget.existingPartner!.menuPhotos.map(
-            (url) => _buildMenuPhotoTile(networkUrl: url),
+        const Text(
+          'Tambah alasan',
+          style: TextStyle(
+            fontFamily: _font,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1A1A1A),
           ),
-
-        // New photos
-        ..._menuPhotos.asMap().entries.map(
-              (entry) => _buildMenuPhotoTile(
-                file: entry.value,
-                onRemove: () => setState(() => _menuPhotos.removeAt(entry.key)),
-              ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _highlightCtrl,
+          textInputAction: TextInputAction.done,
+          onSubmitted: _addHighlightsFromInput,
+          onChanged: (value) {
+            if (value.contains(',')) _addHighlightsFromInput(value);
+          },
+          style: const TextStyle(
+            fontFamily: _font,
+            fontSize: 15,
+            color: Color(0xFF1A1A1A),
+          ),
+          decoration: InputDecoration(
+            hintText: 'Contoh: Nyaman, bersih, parkir luas',
+            hintStyle: TextStyle(
+              fontFamily: _font,
+              color: Colors.grey.shade400,
+              fontSize: 14,
             ),
-
-        // Add button
-        if (_menuPhotos.length < 6)
-          GestureDetector(
-            onTap: _pickMenuPhoto,
-            child: Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF7F7F7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: const Color(0xFFE0E0E0), width: 1.5),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_rounded, color: _orange, size: 28),
-                  SizedBox(height: 4),
-                  Text(
-                    'Tambah',
-                    style: TextStyle(
+            filled: true,
+            fillColor: const Color(0xFFF0F0F0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _orange, width: 1.5),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _highlights
+              .map(
+                (item) => Chip(
+                  label: Text(
+                    item,
+                    style: const TextStyle(
                       fontFamily: _font,
-                      fontSize: 11,
-                      color: _orange,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  onDeleted: () => setState(() => _highlights.remove(item)),
+                  backgroundColor: const Color(0xFFFFF3EE),
+                  deleteIconColor: _orange,
+                  side: BorderSide.none,
+                ),
+              )
+              .toList(),
+        ),
       ],
     );
   }
 
-  Widget _buildMenuPhotoTile({
-    File? file,
-    String? networkUrl,
-    VoidCallback? onRemove,
-  }) {
-    Widget imageWidget;
-    if (file != null) {
-      imageWidget = Image.file(file, fit: BoxFit.cover);
-    } else if (networkUrl != null) {
-      imageWidget = Image.network(networkUrl, fit: BoxFit.cover);
-    } else {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      width: 96,
-      height: 96,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            imageWidget,
-            if (onRemove != null)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: GestureDetector(
-                  onTap: onRemove,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(
-                      color: Colors.black54,
-                      shape: BoxShape.circle,
+  Widget _buildCuisineDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pilih Jenis Masakan',
+          style: const TextStyle(
+            fontFamily: _font,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1A1A1A),
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _selectedCuisine,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFFF0F0F0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _orange, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+          items: _cuisineOptions
+              .map(
+                (cuisine) => DropdownMenuItem(
+                  value: cuisine,
+                  child: Text(
+                    cuisine,
+                    style: const TextStyle(
+                      fontFamily: _font,
+                      color: Color(0xFF1A1A1A),
                     ),
-                    child: const Icon(Icons.close,
-                        color: Colors.white, size: 12),
                   ),
                 ),
-              ),
-          ],
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value != null) {
+              setState(() => _selectedCuisine = value);
+            }
+          },
+          validator: (value) =>
+              value == null || value.isEmpty ? 'Wajib diisi' : null,
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentMethodsSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Pilih metode pembayaran yang diterima',
+          style: TextStyle(
+            fontFamily: _font,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1A1A1A),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _paymentMethodOptions.map((method) {
+            final selected = _paymentMethods.contains(method);
+            return FilterChip(
+              label: Text(
+                method,
+                style: TextStyle(
+                  fontFamily: _font,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? _orange : const Color(0xFF444444),
+                ),
+              ),
+              selected: selected,
+              onSelected: (value) {
+                setState(() {
+                  if (value) {
+                    _paymentMethods.add(method);
+                  } else {
+                    _paymentMethods.remove(method);
+                  }
+                });
+              },
+              selectedColor: const Color(0xFFFFF3EE),
+              backgroundColor: const Color(0xFFF0F0F0),
+              checkmarkColor: _orange,
+              side: BorderSide(
+                color: selected ? _orange : Colors.transparent,
+                width: 1.2,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

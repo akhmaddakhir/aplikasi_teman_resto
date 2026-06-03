@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import '../../config/cloudinary_config.dart';
 import '../../services/image_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
@@ -58,6 +59,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         profileImageUrl = await _imageService.uploadProfileImage(
           uid: currentUser.uid,
           imageFile: _selectedImage!,
+          folder: CloudinaryConfig.profileFolder,
+          publicIdPrefix: 'profile',
         );
         if (profileImageUrl == null) {
           print('[CompleteProfile] uploadProfileImage returned null');
@@ -105,7 +108,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         if (errorMessage.contains('permission-denied')) {
           errorMessage = 'Akses ditolak. Periksa Firestore Rules!';
         } else if (errorMessage.contains('Cloudinary')) {
-          errorMessage = 'Error Cloudinary. Periksa cloud name dan upload preset.';
+          errorMessage =
+              'Error Cloudinary. Periksa cloud name dan upload preset.';
         } else if (errorMessage.contains('network')) {
           errorMessage = 'Koneksi internet bermasalah.';
         }

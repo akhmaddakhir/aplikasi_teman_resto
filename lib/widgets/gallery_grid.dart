@@ -25,6 +25,9 @@ class GalleryGrid extends StatelessWidget {
             spacing: gap,
             runSpacing: gap,
             children: List.generate(images.length, (i) {
+              final image = images[i];
+              final isNetwork =
+                  image.startsWith('http://') || image.startsWith('https://');
               return GestureDetector(
                 onTap: () => onTap(i),
                 child: ClipRRect(
@@ -32,15 +35,17 @@ class GalleryGrid extends StatelessWidget {
                   child: SizedBox(
                     width: cellSize,
                     height: cellSize,
-                    child: Image.asset(
-                      images[i],
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image_outlined,
-                            color: Colors.grey),
-                      ),
-                    ),
+                    child: isNetwork
+                        ? Image.network(
+                            image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _fallback(),
+                          )
+                        : Image.asset(
+                            image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _fallback(),
+                          ),
                   ),
                 ),
               );
@@ -48,6 +53,13 @@ class GalleryGrid extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _fallback() {
+    return Container(
+      color: Colors.grey[300],
+      child: const Icon(Icons.image_outlined, color: Colors.grey),
     );
   }
 }

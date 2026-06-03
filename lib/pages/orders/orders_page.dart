@@ -1,9 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../restaurant/restaurant_detail.dart';
-import '../navigate/navigate_page.dart';
+import '../../models/partner_model.dart';
+import '../../services/reservation_service.dart';
 import '../booking/booking_cancelled.dart';
 import '../booking/booking_data.dart';
+import '../navigate/navigate_page.dart';
+import '../restaurant/restaurant_detail.dart';
 import './review_page.dart';
+
+enum _OrderBucket { active, completed, cancelled }
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -15,6 +20,10 @@ class OrdersPage extends StatefulWidget {
 class OrdersPageState extends State<OrdersPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _reservationService = ReservationService();
+  final _firestore = FirebaseFirestore.instance;
+  String? _ordersSignature;
+  Future<List<_BookingOrder>>? _ordersFuture;
 
   @override
   void initState() {
@@ -26,6 +35,85 @@ class OrdersPageState extends State<OrdersPage>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<List<_BookingOrder>> _hydrateOrders(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) async {
+    final restaurantIds = docs
+        .map((doc) => doc.data()['restaurantId'] as String?)
+        .whereType<String>()
+        .where((id) => id.trim().isNotEmpty)
+        .toSet();
+
+    final restaurants = <String, PartnerModel>{};
+    await Future.wait(restaurantIds.map((id) async {
+      try {
+        final snap = await _firestore.collection('restaurants').doc(id).get();
+        final data = snap.data();
+        if (data != null) {
+          restaurants[id] = PartnerModel.fromFirestore({...data, 'id': id});
+        }
+      } catch (_) {
+        // Reservation data is still usable even when restaurant metadata
+        // cannot be read, for example because the partner is no longer active.
+      }
+    }));
+
+    final orders = docs.map((doc) {
+      final data = doc.data();
+      final restaurantId = data['restaurantId'] as String? ?? '';
+      return _BookingOrder.fromFirestore(
+        id: doc.id,
+        data: data,
+        restaurant: restaurants[restaurantId],
+      );
+    }).toList();
+
+    orders.sort((a, b) {
+      final aTime = a.bookingDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.bookingDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+    return orders;
+  }
+
+  Future<List<_BookingOrder>> _ordersFutureFor(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    final signature = docs
+        .map((doc) =>
+            '${doc.id}:${doc.data()['updatedAt'] ?? ''}:${doc.data()['status'] ?? ''}')
+        .join('|');
+    if (_ordersFuture == null || _ordersSignature != signature) {
+      _ordersSignature = signature;
+      _ordersFuture = _hydrateOrders(docs);
+    }
+    return _ordersFuture!;
+  }
+
+  Map<_OrderBucket, List<_BookingOrder>> _groupOrders(
+    List<_BookingOrder> orders,
+  ) {
+    final now = DateTime.now();
+    final grouped = {
+      _OrderBucket.active: <_BookingOrder>[],
+      _OrderBucket.completed: <_BookingOrder>[],
+      _OrderBucket.cancelled: <_BookingOrder>[],
+    };
+
+    for (final order in orders) {
+      if (order.status == 'cancelled') {
+        grouped[_OrderBucket.cancelled]!.add(order);
+      } else if (order.bookingDateTime != null &&
+          now.isAfter(order.bookingDateTime!)) {
+        grouped[_OrderBucket.completed]!.add(order);
+      } else {
+        grouped[_OrderBucket.active]!.add(order);
+      }
+    }
+
+    return grouped;
   }
 
   @override
@@ -45,11 +133,11 @@ class OrdersPageState extends State<OrdersPage>
                         const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
                     color: const Color(0xFF0D0D0D),
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'My Orders',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -63,32 +151,85 @@ class OrdersPageState extends State<OrdersPage>
             ),
             TabBar(
               controller: _tabController,
-              indicatorColor: Color(0xFFFF4F0F),
+              indicatorColor: const Color(0xFFFF4F0F),
               indicatorWeight: 2,
               indicatorSize: TabBarIndicatorSize.label,
-              labelColor: Color(0xFFFF4F0F),
-              labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              labelColor: const Color(0xFFFF4F0F),
+              labelStyle:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               unselectedLabelColor: Colors.grey,
-              unselectedLabelStyle: TextStyle(
+              unselectedLabelStyle: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
               dividerColor: Colors.transparent,
-              tabs: [
+              tabs: const [
                 Tab(text: 'Active'),
                 Tab(text: 'Completed'),
                 Tab(text: 'Cancelled'),
               ],
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildActiveOrders(),
-                  _buildCompletedOrders(),
-                  _buildCancelledOrders(),
-                ],
+              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: _reservationService.streamCurrentUserReservations(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFFF4F0F),
+                      ),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return _emptyState(
+                      Icons.error_outline_rounded,
+                      'Gagal memuat booking',
+                      snapshot.error.toString(),
+                    );
+                  }
+
+                  final docs = snapshot.data?.docs ?? [];
+                  return FutureBuilder<List<_BookingOrder>>(
+                    future: _ordersFutureFor(docs),
+                    builder: (context, hydratedSnapshot) {
+                      if (hydratedSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFFF4F0F),
+                          ),
+                        );
+                      }
+                      if (hydratedSnapshot.hasError) {
+                        return _emptyState(
+                          Icons.error_outline_rounded,
+                          'Gagal memuat detail booking',
+                          hydratedSnapshot.error.toString(),
+                        );
+                      }
+
+                      final grouped = _groupOrders(hydratedSnapshot.data ?? []);
+                      return TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildOrdersList(
+                            grouped[_OrderBucket.active]!,
+                            _OrderBucket.active,
+                          ),
+                          _buildOrdersList(
+                            grouped[_OrderBucket.completed]!,
+                            _OrderBucket.completed,
+                          ),
+                          _buildOrdersList(
+                            grouped[_OrderBucket.cancelled]!,
+                            _OrderBucket.cancelled,
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],
@@ -97,42 +238,88 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  Widget _buildActiveOrders() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: 16),
+  Widget _buildOrdersList(List<_BookingOrder> orders, _OrderBucket bucket) {
+    if (orders.isEmpty) {
+      final (label, subtitle) = switch (bucket) {
+        _OrderBucket.active => (
+            'Belum ada booking aktif',
+            'Mulai booking untuk membuat pesanan baru'
+          ),
+        _OrderBucket.completed => (
+            'Belum ada booking selesai',
+            'Pesanan yang sudah selesai akan muncul di sini'
+          ),
+        _OrderBucket.cancelled => (
+            'Belum ada booking dibatalkan',
+            'Pesanan yang dibatalkan akan muncul di sini'
+          ),
+      };
+      return _emptyState(Icons.event_note_rounded, label, subtitle);
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      itemCount: orders.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (_, index) {
+        final order = orders[index];
+        return switch (bucket) {
+          _OrderBucket.active => _buildActiveOrderCard(order),
+          _OrderBucket.completed => _buildCompletedOrderCard(order),
+          _OrderBucket.cancelled => _buildCancelledOrderCard(order),
+        };
+      },
+    );
+  }
+
+  Widget _emptyState(IconData icon, String title, String? subtitle) {
+    const orange = Color(0xFFFF4F0F);
+    return Center(
       child: Column(
-        children: List.generate(5, (index) => _buildActiveOrderCard()),
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: orange.withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: orange, size: 32),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+          if (subtitle != null && subtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildCompletedOrders() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: List.generate(5, (index) => _buildCompletedOrderCard()),
-      ),
-    );
-  }
-
-  Widget _buildCancelledOrders() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: List.generate(5, (index) => _buildCancelledOrderCard()),
-      ),
-    );
-  }
-
-  Widget _buildActiveOrderCard() {
+  Widget _buildActiveOrderCard(_BookingOrder order) {
     return _OrderCard(
-      title: 'Marina Kitchen',
-      image: 'assets/images/melati_restaurant.png',
-      address: 'Jl Mangan III 216 Psr II Mabar...',
-      rating: '4.8',
-      duration: '20 min',
-      cuisine: 'Javanese',
-      isOpen: true,
+      order: order,
+      statusLabel: 'Active',
+      statusColor: const Color(0xFF16A34A),
       buttons: Row(
         children: [
           Expanded(
@@ -141,7 +328,10 @@ class OrdersPageState extends State<OrdersPage>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const BookingCancelled()),
+                    builder: (context) => BookingCancelled(
+                      reservationId: order.id,
+                    ),
+                  ),
                 );
               },
               style: TextButton.styleFrom(
@@ -189,26 +379,16 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  Widget _buildCompletedOrderCard() {
+  Widget _buildCompletedOrderCard(_BookingOrder order) {
     return _OrderCard(
-      title: 'Marina Kitchen',
-      image: 'assets/images/melati_restaurant.png',
-      address: 'Jl Mangan III 216 Psr II Mabar...',
-      rating: '4.8',
-      duration: '20 min',
-      cuisine: 'Javanese',
-      isOpen: true,
+      order: order,
+      statusLabel: 'Completed',
+      statusColor: const Color(0xFF64748B),
       buttons: Row(
         children: [
           Expanded(
             child: TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const BookingData(menuRequest: {})),
-                );
-              },
+              onPressed: () => _openRebook(order),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -227,8 +407,6 @@ class OrdersPageState extends State<OrdersPage>
             flex: 2,
             child: ElevatedButton(
               onPressed: () {
-                // Pass returnRoute '/orders' agar setelah submit
-                // kembali ke OrdersPage, bukan ke home
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -259,26 +437,16 @@ class OrdersPageState extends State<OrdersPage>
     );
   }
 
-  Widget _buildCancelledOrderCard() {
+  Widget _buildCancelledOrderCard(_BookingOrder order) {
     return _OrderCard(
-      title: 'Marina Kitchen',
-      image: 'assets/images/melati_restaurant.png',
-      address: 'Jl Mangan III 216 Psr II Mabar...',
-      rating: '4.8',
-      duration: '20 min',
-      cuisine: 'Javanese',
-      isOpen: false,
+      order: order,
+      statusLabel: 'Cancelled',
+      statusColor: const Color(0xFFE24B4A),
       buttons: Row(
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const BookingData(menuRequest: {})),
-                );
-              },
+              onPressed: () => _openRebook(order),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF4F0F),
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -300,26 +468,148 @@ class OrdersPageState extends State<OrdersPage>
       ),
     );
   }
+
+  void _openRebook(_BookingOrder order) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BookingData(
+          menuRequest: const {},
+          restaurantId: order.restaurantId,
+          restaurantName: order.title,
+          restaurantAddress: order.address,
+          restaurantPhotoUrl: order.photoUrl,
+          paymentMethods: order.restaurant?.paymentMethods ?? const ['Cash'],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingOrder {
+  final String id;
+  final String restaurantId;
+  final String title;
+  final String address;
+  final String cuisine;
+  final String? photoUrl;
+  final String status;
+  final String date;
+  final String time;
+  final int guests;
+  final String tableNumber;
+  final int floor;
+  final int tablePrice;
+  final PartnerModel? restaurant;
+
+  const _BookingOrder({
+    required this.id,
+    required this.restaurantId,
+    required this.title,
+    required this.address,
+    required this.cuisine,
+    required this.photoUrl,
+    required this.status,
+    required this.date,
+    required this.time,
+    required this.guests,
+    required this.tableNumber,
+    required this.floor,
+    required this.tablePrice,
+    required this.restaurant,
+  });
+
+  factory _BookingOrder.fromFirestore({
+    required String id,
+    required Map<String, dynamic> data,
+    required PartnerModel? restaurant,
+  }) {
+    return _BookingOrder(
+      id: id,
+      restaurantId: data['restaurantId'] as String? ?? '',
+      title: restaurant?.restaurantName ??
+          data['restaurantName'] as String? ??
+          'Restoran',
+      address:
+          restaurant?.address ?? data['restaurantAddress'] as String? ?? '-',
+      cuisine: restaurant?.cuisine ?? 'Indonesian',
+      photoUrl: restaurant?.restaurantPhotoUrl ??
+          data['restaurantPhotoUrl'] as String?,
+      status: (data['status'] as String? ?? 'pending').toLowerCase(),
+      date: data['date'] as String? ?? '',
+      time: data['time'] as String? ?? '',
+      guests: (data['guests'] as num?)?.toInt() ?? 1,
+      tableNumber: data['tableNumber'] as String? ?? '-',
+      floor: (data['floor'] as num?)?.toInt() ?? 1,
+      tablePrice: (data['tablePrice'] as num?)?.toInt() ?? 0,
+      restaurant: restaurant,
+    );
+  }
+
+  DateTime? get bookingDateTime {
+    if (date.isEmpty || time.isEmpty) return null;
+
+    final dateParts = date.split('-');
+    if (dateParts.length != 3) return null;
+
+    final year = int.tryParse(dateParts[0]);
+    final month = int.tryParse(dateParts[1]);
+    final day = int.tryParse(dateParts[2]);
+    if (year == null || month == null || day == null) return null;
+
+    final parsedTime = _parseTime(time);
+    if (parsedTime == null) return null;
+
+    return DateTime(year, month, day, parsedTime.$1, parsedTime.$2);
+  }
+
+  String get scheduleLabel {
+    if (date.isEmpty && time.isEmpty) return '-';
+    return [date, time].where((value) => value.isNotEmpty).join(' - ');
+  }
+
+  String get tableLabel => 'Table $tableNumber - Floor $floor';
+
+  String get priceLabel {
+    if (tablePrice <= 0) return 'Gratis';
+    final text = tablePrice.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final remaining = text.length - i;
+      buffer.write(text[i]);
+      if (remaining > 1 && remaining % 3 == 1) buffer.write('.');
+    }
+    return 'Rp $buffer';
+  }
+
+  static (int, int)? _parseTime(String value) {
+    final normalized = value.trim().toUpperCase();
+    final match =
+        RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)?$').firstMatch(normalized);
+    if (match == null) return null;
+
+    var hour = int.tryParse(match.group(1)!);
+    final minute = int.tryParse(match.group(2)!);
+    final period = match.group(3);
+    if (hour == null || minute == null) return null;
+
+    if (period == 'PM' && hour != 12) hour += 12;
+    if (period == 'AM' && hour == 12) hour = 0;
+
+    return (hour, minute);
+  }
 }
 
 class _OrderCard extends StatefulWidget {
-  final String title;
-  final String image;
-  final String address;
-  final String rating;
-  final String duration;
-  final String cuisine;
-  final bool isOpen;
+  final _BookingOrder order;
+  final String statusLabel;
+  final Color statusColor;
   final Widget buttons;
 
   const _OrderCard({
-    required this.title,
-    required this.image,
-    required this.address,
-    required this.rating,
-    required this.duration,
-    required this.cuisine,
-    required this.isOpen,
+    required this.order,
+    required this.statusLabel,
+    required this.statusColor,
     required this.buttons,
   });
 
@@ -333,7 +623,6 @@ class _OrderCardState extends State<_OrderCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -346,12 +635,18 @@ class _OrderCardState extends State<_OrderCard> {
         ],
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const RestaurantDetail()),
-          );
-        },
+        onTap: widget.order.restaurant == null
+            ? null
+            : () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RestaurantDetail(
+                      partner: widget.order.restaurant,
+                    ),
+                  ),
+                );
+              },
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -363,12 +658,7 @@ class _OrderCardState extends State<_OrderCard> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(
-                          widget.image,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                        ),
+                        child: _restaurantImage(),
                       ),
                       Positioned(
                         bottom: 6,
@@ -377,9 +667,7 @@ class _OrderCardState extends State<_OrderCard> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: widget.isOpen
-                                ? const Color(0xFF16A34A)
-                                : const Color(0xFFD97706),
+                            color: widget.statusColor,
                             borderRadius: BorderRadius.circular(50),
                           ),
                           child: Row(
@@ -395,7 +683,7 @@ class _OrderCardState extends State<_OrderCard> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                widget.isOpen ? 'Open' : 'Closed',
+                                widget.statusLabel,
                                 style: const TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: 10,
@@ -419,7 +707,7 @@ class _OrderCardState extends State<_OrderCard> {
                           children: [
                             Expanded(
                               child: Text(
-                                widget.title,
+                                widget.order.title,
                                 style: const TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: 16,
@@ -451,7 +739,7 @@ class _OrderCardState extends State<_OrderCard> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                widget.address,
+                                widget.order.address,
                                 style: TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: 12,
@@ -470,19 +758,29 @@ class _OrderCardState extends State<_OrderCard> {
                           child: Row(
                             children: [
                               _MiniChip(
-                                icon: Icons.star_rounded,
-                                label: widget.rating,
+                                icon: Icons.access_time_rounded,
+                                label: widget.order.scheduleLabel,
                                 isHighlight: true,
                               ),
                               const SizedBox(width: 8),
                               _MiniChip(
-                                icon: Icons.access_time_rounded,
-                                label: widget.duration,
+                                icon: Icons.table_restaurant_rounded,
+                                label: widget.order.tableLabel,
+                              ),
+                              const SizedBox(width: 8),
+                              _MiniChip(
+                                icon: Icons.group_rounded,
+                                label: '${widget.order.guests} orang',
+                              ),
+                              const SizedBox(width: 8),
+                              _MiniChip(
+                                icon: Icons.payments_outlined,
+                                label: widget.order.priceLabel,
                               ),
                               const SizedBox(width: 8),
                               _MiniChip(
                                 icon: Icons.restaurant_rounded,
-                                label: widget.cuisine,
+                                label: widget.order.cuisine,
                               ),
                             ],
                           ),
@@ -498,6 +796,29 @@ class _OrderCardState extends State<_OrderCard> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _restaurantImage() {
+    final photoUrl = widget.order.photoUrl;
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      return Image.network(
+        photoUrl,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallbackImage(),
+      );
+    }
+    return _fallbackImage();
+  }
+
+  Widget _fallbackImage() {
+    return Image.asset(
+      'assets/images/melati_restaurant.png',
+      width: 80,
+      height: 80,
+      fit: BoxFit.cover,
     );
   }
 }

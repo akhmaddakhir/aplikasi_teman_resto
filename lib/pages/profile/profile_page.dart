@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../config/cloudinary_config.dart';
 import '../../services/image_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
@@ -21,11 +23,17 @@ class _ProfilePageState extends State<ProfilePage> {
   final _authService = AuthService();
   final _sessionService = SessionService();
   final _partnerService = PartnerService();
+  final _firestore = FirebaseFirestore.instance;
 
   String? _profileImageUrl;
   String _userName = 'User';
   String _userEmail = 'user@example.com';
   String _userLocation = 'Jakarta';
+  String? _customUserId;
+  int _ordersCount = 0;
+  int _activeOrdersCount = 0;
+  int _reviewsCount = 0;
+  int _favoritesCount = 0;
   bool _isLoadingImage = false;
 
   @override
@@ -59,7 +67,15 @@ class _ProfilePageState extends State<ProfilePage> {
             _profileImageUrl = userData.profileImage?.trim().isNotEmpty == true
                 ? userData.profileImage!.trim()
                 : null;
+            _customUserId = userData.uid.trim().isNotEmpty
+                ? userData.uid.trim()
+                : _customUserId;
           });
+
+          await _loadProfileStats(
+            firebaseUid: currentUser.uid,
+            customUserId: userData.uid,
+          );
 
           if (profileLocation == null || profileLocation.isEmpty) {
             await _sessionService.saveSelectedLocation(_userLocation);
@@ -73,6 +89,83 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       print('[ProfilePage] Error loading user data: $e');
     }
+  }
+
+  Future<void> _loadProfileStats({
+    required String firebaseUid,
+    required String customUserId,
+  }) async {
+    try {
+      final results = await Future.wait([
+        _firestore
+            .collection('reservations')
+            .where('userId', isEqualTo: firebaseUid)
+            .get(),
+        _firestore
+            .collection('reviews')
+            .where('userId', isEqualTo: firebaseUid)
+            .get(),
+        _firestore
+            .collection('users')
+            .doc(customUserId)
+            .collection('wishlist')
+            .get(),
+      ]);
+
+      final reservationDocs = results[0].docs;
+      final activeCount = reservationDocs.where((doc) {
+        final data = doc.data();
+        final status = (data['status'] as String? ?? '').toLowerCase();
+        if (status == 'cancelled' || status == 'completed') return false;
+
+        final bookingDateTime = _bookingDateTime(data);
+        if (bookingDateTime == null) return true;
+        return DateTime.now().isBefore(bookingDateTime);
+      }).length;
+
+      if (!mounted) return;
+      setState(() {
+        _ordersCount = reservationDocs.length;
+        _activeOrdersCount = activeCount;
+        _reviewsCount = results[1].docs.length;
+        _favoritesCount = results[2].docs.length;
+      });
+    } catch (_) {}
+  }
+
+  DateTime? _bookingDateTime(Map<String, dynamic> data) {
+    final date = data['date'] as String? ?? '';
+    final time = data['time'] as String? ?? '';
+    if (date.isEmpty || time.isEmpty) return null;
+
+    final dateParts = date.split('-');
+    if (dateParts.length != 3) return null;
+
+    final year = int.tryParse(dateParts[0]);
+    final month = int.tryParse(dateParts[1]);
+    final day = int.tryParse(dateParts[2]);
+    if (year == null || month == null || day == null) return null;
+
+    final timeParts = _parseTime(time);
+    if (timeParts == null) return null;
+    return DateTime(year, month, day, timeParts.$1, timeParts.$2);
+  }
+
+  (int, int)? _parseTime(String value) {
+    final normalized = value.trim().toUpperCase();
+    final match =
+        RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)?$').firstMatch(normalized);
+    if (match == null) return null;
+
+    var hour = int.tryParse(match.group(1)!);
+    final minute = int.tryParse(match.group(2)!);
+    final period = match.group(3);
+    if (hour == null || minute == null) return null;
+
+    if (period == 'PM' && hour != 12) hour += 12;
+    if (period == 'AM' && hour == 12) hour = 0;
+
+    return (hour, minute);
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -91,6 +184,8 @@ class _ProfilePageState extends State<ProfilePage> {
       final downloadUrl = await _imageService.uploadProfileImage(
         uid: currentUser.uid,
         imageFile: file,
+        folder: CloudinaryConfig.profileFolder,
+        publicIdPrefix: 'profile',
       );
 
       if (downloadUrl == null) {
@@ -160,26 +255,84 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _openPartnerPage() async {
     final currentUser = _authService.currentUser;
     if (currentUser == null) {
-      Navigator.pushNamed(context, '/partner-register');
+      if (mounted) {
+        Navigator.pushNamed(context, '/partner-register');
+      }
       return;
     }
 
-    final partner = await _partnerService.getPartnerByOwnerId(currentUser.uid);
     if (!mounted) return;
 
-    if (partner == null) {
-      Navigator.pushNamed(context, '/partner-register');
-    } else if (partner.status.name == 'approved') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => PartnerDashboardPage(partner: partner)),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => PartnerStatusPage(partner: partner)),
-      );
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4F0F)),
+        ),
+      ),
+    );
+
+    try {
+      final partners =
+          await _partnerService.getPartnersByOwnerId(currentUser.uid);
+
+      if (!mounted) {
+        Navigator.pop(context); // Close loading dialog
+        return;
+      }
+
+      // Close loading dialog
+      Navigator.pop(context);
+
+      if (partners.isEmpty) {
+        if (mounted) {
+          Navigator.pushNamed(context, '/partner-register');
+        }
+        return;
+      }
+
+      // Get approved and other partners
+      final approvedPartners =
+          partners.where((p) => p.status.name == 'approved').toList();
+      final targetPartner =
+          approvedPartners.isNotEmpty ? approvedPartners.first : partners.first;
+
+      if (!mounted) return;
+
+      if (approvedPartners.isNotEmpty) {
+        // Navigate to dashboard for approved partner
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PartnerDashboardPage(partner: targetPartner),
+          ),
+        );
+      } else {
+        // Navigate to status page for pending/rejected partner
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PartnerStatusPage(partner: targetPartner),
+          ),
+        );
+      }
+    } catch (e) {
+      print('[ProfilePage] Error opening partner page: $e');
+      if (mounted) {
+        // Close loading dialog first
+        Navigator.pop(context);
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat data mitra: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -207,17 +360,25 @@ class _ProfilePageState extends State<ProfilePage> {
                           Navigator.pushNamed(context, '/manage-address'),
                     ),
                     _MenuItemData(
-                      icon: Icons.credit_card_outlined,
-                      title: 'Payment',
-                      subtitle: 'Visa •••• 4242',
-                      onTap: () => Navigator.pushNamed(context, '/payment'),
-                    ),
-                    _MenuItemData(
                       icon: Icons.receipt_long_outlined,
                       title: 'My Orders',
-                      subtitle: '3 active orders',
-                      badge: '3',
-                      onTap: () => Navigator.pushNamed(context, '/orders'),
+                      subtitle: _ordersSubtitle,
+                      badge: _activeOrdersCount > 0
+                          ? _activeOrdersCount.toString()
+                          : null,
+                      onTap: () async {
+                        await Navigator.pushNamed(context, '/orders');
+                        final currentUser = _authService.currentUser;
+                        final customUserId = _customUserId;
+                        if (currentUser != null &&
+                            customUserId != null &&
+                            customUserId.isNotEmpty) {
+                          await _loadProfileStats(
+                            firebaseUid: currentUser.uid,
+                            customUserId: customUserId,
+                          );
+                        }
+                      },
                     ),
                     _MenuItemData(
                       icon: Icons.storefront_outlined,
@@ -377,11 +538,11 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               child: Row(
                 children: [
-                  _buildStat('12', 'Orders'),
+                  _buildStat(_ordersCount.toString(), 'Orders'),
                   _buildStatDivider(),
-                  _buildStat('4', 'Reviews'),
+                  _buildStat(_reviewsCount.toString(), 'Reviews'),
                   _buildStatDivider(),
-                  _buildStat('3', 'Favorites'),
+                  _buildStat(_favoritesCount.toString(), 'Favorites'),
                 ],
               ),
             ),
@@ -417,6 +578,12 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  String get _ordersSubtitle {
+    if (_ordersCount == 0) return 'Belum ada booking';
+    if (_activeOrdersCount == 0) return 'Tidak ada booking aktif';
+    return '$_activeOrdersCount booking aktif';
   }
 
   Widget _buildStatDivider() {
@@ -667,8 +834,11 @@ class _LogoutBottomSheet extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(context);
+                    await AuthService().logout();
+                    await SessionService().clearUserSession();
+                    if (!context.mounted) return;
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/login',

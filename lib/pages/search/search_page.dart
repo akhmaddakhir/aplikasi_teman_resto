@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:teman_resto/pages/restaurant/restaurant_detail.dart';
+import 'package:teman_resto/widgets/wishlist_button.dart';
+import '../../models/partner_model.dart';
+import '../../services/session_service.dart';
 import './search_results.dart';
 import './filter_page.dart';
 
@@ -15,12 +18,18 @@ class _SearchPageState extends State<SearchPage> {
   static const String _font = 'Inter';
 
   late final TextEditingController _searchController;
+  final _sessionService = SessionService();
   String _query = '';
+  List<_RecentItem> _recentViewed = [];
+  late List<String> _recentSearches;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _recentSearches = [];
+    _loadRecentViewed();
+    _loadRecentSearches();
   }
 
   @override
@@ -31,38 +40,86 @@ class _SearchPageState extends State<SearchPage> {
 
   void _goToResults(String query) {
     if (query.trim().isEmpty) return;
+
+    final trimmedQuery = query.trim();
+
+    // Simpan ke recent searches via SessionService
+    _sessionService.saveRecentSearch(trimmedQuery);
+
+    // Update UI
+    setState(() {
+      _recentSearches.removeWhere((item) => item == trimmedQuery);
+      _recentSearches.insert(0, trimmedQuery);
+      // Limit ke 10 recent searches
+      if (_recentSearches.length > 10) {
+        _recentSearches.removeLast();
+      }
+    });
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => SearchResults(initialQuery: query.trim()),
+        builder: (_) => SearchResults(initialQuery: trimmedQuery),
       ),
     );
   }
 
-  final List<String> _recentSearches = [
-    'Melati Restaurant',
-    'Javanese food Malang',
-    'Restoran dekat Ijen',
-  ];
+  Future<void> _loadRecentSearches() async {
+    try {
+      final searches = await _sessionService.getRecentSearches();
+      if (!mounted) return;
+      setState(() {
+        _recentSearches = searches;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _recentSearches = []);
+    }
+  }
 
-  final List<_RecentItem> _recentViewed = [
-    _RecentItem(
-      imagePath: 'assets/images/gambar_restoran_8.jfif',
-      name: 'Kinan Dapur',
-      duration: '30 min',
-      cuisine: 'Fusion',
-      address: 'Jl. Kawi No.5, Kota Malang',
-      rating: '4.6',
-    ),
-    _RecentItem(
-      imagePath: 'assets/images/melati_restaurant.png',
-      name: 'Melati Restaurant',
-      duration: '25 min',
-      cuisine: 'Javanese',
-      address: 'Jl. Kahuripan No.3, Klojen',
-      rating: '4.8',
-    ),
-  ];
+  Future<void> _clearRecentSearches() async {
+    try {
+      await _sessionService.clearRecentSearches();
+      if (!mounted) return;
+      setState(() => _recentSearches = []);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _recentSearches = []);
+    }
+  }
+
+  Future<void> _removeRecentSearch(int index) async {
+    if (index < 0 || index >= _recentSearches.length) return;
+
+    final query = _recentSearches[index];
+    _recentSearches.removeAt(index);
+
+    // Update SharedPreferences
+    try {
+      await _sessionService.clearRecentSearches();
+      for (final search in _recentSearches) {
+        await _sessionService.saveRecentSearch(search);
+      }
+    } catch (_) {
+      // Ignore errors
+    }
+
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  Future<void> _loadRecentViewed() async {
+    try {
+      final restaurants = await _sessionService.getRecentViewedRestaurants();
+      if (!mounted) return;
+      setState(() {
+        _recentViewed = restaurants.map(_RecentItem.fromPartner).toList();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _recentViewed = []);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +248,7 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => setState(() => _recentSearches.clear()),
+                    onTap: _clearRecentSearches,
                     child: const Text(
                       'Clear all',
                       style: TextStyle(
@@ -224,46 +281,48 @@ class _SearchPageState extends State<SearchPage> {
                     final isLast = i == _recentSearches.length - 1;
                     return Column(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF2F2F7),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.history_rounded,
-                                  size: 18,
-                                  color: Color(0xFF999999),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  _recentSearches[i],
-                                  style: const TextStyle(
-                                    fontFamily: _font,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF2A2A2A),
+                        GestureDetector(
+                          onTap: () => _goToResults(_recentSearches[i]),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF2F2F7),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.history_rounded,
+                                    size: 18,
+                                    color: Color(0xFF999999),
                                   ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () =>
-                                    setState(() => _recentSearches.removeAt(i)),
-                                child: const Icon(
-                                  Icons.close_rounded,
-                                  size: 18,
-                                  color: Color(0xFFBBBBBB),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _recentSearches[i],
+                                    style: const TextStyle(
+                                      fontFamily: _font,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF2A2A2A),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                                GestureDetector(
+                                  onTap: () => _removeRecentSearch(i),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    size: 18,
+                                    color: Color(0xFFBBBBBB),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         if (!isLast)
@@ -294,25 +353,44 @@ class _SearchPageState extends State<SearchPage> {
 
               const SizedBox(height: 12),
 
-              Column(
-                children: _recentViewed
-                    .asMap()
-                    .entries
-                    .map((entry) => Padding(
-                          padding: EdgeInsets.only(
-                              bottom: entry.key == _recentViewed.length - 1
-                                  ? 0
-                                  : 14),
-                          child: _HorizontalRestaurantCard(
-                            item: entry.value,
-                            onTap: () => Navigator.push(
+              if (_recentViewed.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      'Belum ada restoran yang dilihat',
+                      style: TextStyle(
+                        fontFamily: _font,
+                        fontSize: 14,
+                        color: Color(0xFF888888),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Column(
+                  children: _recentViewed
+                      .asMap()
+                      .entries
+                      .map((entry) => Padding(
+                            padding: EdgeInsets.only(
+                                bottom: entry.key == _recentViewed.length - 1
+                                    ? 0
+                                    : 14),
+                            child: _HorizontalRestaurantCard(
+                              item: entry.value,
+                              onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (_) => const RestaurantDetail())),
-                          ),
-                        ))
-                    .toList(),
-              ),
+                                  builder: (_) => RestaurantDetail(
+                                    partner: entry.value.partner,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ))
+                      .toList(),
+                ),
             ],
           ),
         ),
@@ -323,6 +401,8 @@ class _SearchPageState extends State<SearchPage> {
 
 class _RecentItem {
   final String imagePath, name, duration, cuisine, address, rating;
+  final PartnerModel? partner;
+
   const _RecentItem({
     required this.imagePath,
     required this.name,
@@ -330,7 +410,23 @@ class _RecentItem {
     required this.cuisine,
     required this.address,
     required this.rating,
+    this.partner,
   });
+
+  factory _RecentItem.fromPartner(PartnerModel partner) {
+    final photo = partner.restaurantPhotoUrl?.trim();
+    return _RecentItem(
+      imagePath: photo?.isNotEmpty == true
+          ? photo!
+          : 'assets/images/gambar_restoran_5.jfif',
+      name: partner.restaurantName,
+      duration: '25 min',
+      cuisine: partner.cuisine,
+      address: partner.address,
+      rating: '4.8',
+      partner: partner,
+    );
+  }
 }
 
 class _HorizontalRestaurantCard extends StatefulWidget {
@@ -344,9 +440,26 @@ class _HorizontalRestaurantCard extends StatefulWidget {
 }
 
 class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
-  bool _saved = false;
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
+
+  Widget _image(String path) {
+    final isNetwork = path.startsWith('http://') || path.startsWith('https://');
+    if (isNetwork) {
+      return Image.network(
+        path,
+        width: 90,
+        height: 90,
+        fit: BoxFit.cover,
+      );
+    }
+    return Image.asset(
+      path,
+      width: 90,
+      height: 90,
+      fit: BoxFit.cover,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -357,10 +470,10 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
         border: Border.all(color: Colors.white.withOpacity(0.28), width: 1),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.07),
-              blurRadius: 16,
-              offset: const Offset(0, 2),
-            ),
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: InkWell(
@@ -372,12 +485,7 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  widget.item.imagePath,
-                  width: 90,
-                  height: 90,
-                  fit: BoxFit.cover,
-                ),
+                child: _image(widget.item.imagePath),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -400,14 +508,17 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () => setState(() => _saved = !_saved),
-                          child: Icon(
-                            _saved
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: 22,
-                            color: _saved ? _orange : const Color(0xFFD1D1D1),
+                        WishlistButton(
+                          restaurant: widget.item.partner,
+                          builder: (context, saved, onTap) => GestureDetector(
+                            onTap: onTap,
+                            child: Icon(
+                              saved
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              size: 22,
+                              color: saved ? _orange : const Color(0xFFD1D1D1),
+                            ),
                           ),
                         ),
                       ],

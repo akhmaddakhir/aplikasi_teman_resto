@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:teman_resto/pages/restaurant/restaurant_detail.dart';
+import 'package:teman_resto/widgets/wishlist_button.dart';
+import '../../models/partner_model.dart';
+import '../../services/partner_service.dart';
 
 /// SearchResults — halaman hasil pencarian restoran
 /// Menerima [initialQuery] dari SearchPage
@@ -29,6 +32,9 @@ class _SearchResultsState extends State<SearchResults> {
   static const String _font = 'Inter';
 
   late final TextEditingController _searchController;
+  final _partnerService = PartnerService();
+  List<Map<String, dynamic>> _restaurantResults = [];
+  bool _loadingRestaurants = true;
   String _query = '';
 
   // ── Filter state ───────────────────────────────────────────────
@@ -37,72 +43,53 @@ class _SearchResultsState extends State<SearchResults> {
   late double? _filterDistance;
 
   // ── Data dummy ─────────────────────────────────────────────────
-  final List<Map<String, dynamic>> _allRestaurants = [
-    {
-      'image': 'assets/images/gambar_restoran_5.jfif',
-      'title': 'Panon Njawi',
-      'rating': '4.8',
-      'duration': '25 min',
-      'cuisine': 'Javanese',
-      'address': 'Jl. Kahuripan No.3, Klojen, Malang',
-      'distance': '0.8 km',
-      'isOpen': true,
-    },
-    {
-      'image': 'assets/images/melati_restaurant.png',
-      'title': 'Melati Restaurant',
-      'rating': '4.7',
-      'duration': '20 min',
-      'cuisine': 'Indonesian',
-      'address': 'Jl. Semeru No.7, Klojen, Malang',
-      'distance': '1.2 km',
-      'isOpen': true,
-    },
-    {
-      'image': 'assets/images/gambar_restoran_6.jfif',
-      'title': 'Lakana Restaurant',
-      'rating': '4.6',
-      'duration': '30 min',
-      'cuisine': 'Fusion',
-      'address': 'Jl. Veteran No.12, Kota Malang',
-      'distance': '2.1 km',
-      'isOpen': true,
-    },
-    {
-      'image': 'assets/images/gambar_restoran_8.jfif',
-      'title': 'Kinan Dapur',
-      'rating': '4.5',
-      'duration': '35 min',
-      'cuisine': 'Local',
-      'address': 'Jl. Kawi No.5, Kota Malang',
-      'distance': '2.8 km',
-      'isOpen': false,
-    },
-    {
-      'image': 'assets/images/gambar_restoran_5.jfif',
-      'title': 'Warung Sari',
-      'rating': '4.4',
-      'duration': '15 min',
-      'cuisine': 'Sundanese',
-      'address': 'Jl. Kertanegara No.1, Malang',
-      'distance': '3.0 km',
-      'isOpen': true,
-    },
-    {
-      'image': 'assets/images/gambar_restoran_6.jfif',
-      'title': 'Semaja Menteng',
-      'rating': '4.9',
-      'duration': '40 min',
-      'cuisine': 'International',
-      'address': 'Jl. Gereja No.11, Gondangdia, Jakarta',
-      'distance': '3.5 km',
-      'isOpen': true,
-    },
-  ];
+  List<Map<String, dynamic>> _fromPartners(List<PartnerModel> partners) {
+    return partners
+        .map(
+          (p) => {
+            'image': p.restaurantPhotoUrl?.trim().isNotEmpty == true
+                ? p.restaurantPhotoUrl!.trim()
+                : 'assets/images/gambar_restoran_5.jfif',
+            'title': p.restaurantName,
+            'rating': '4.8',
+            'duration': '25 min',
+            'cuisine': p.cuisine,
+            'address': p.address,
+            'distance': '0.8 km',
+            'isOpen': _isOpenNow(p),
+            'partner': p,
+          },
+        )
+        .toList();
+  }
+
+  bool _isOpenNow(PartnerModel restaurant) {
+    final now = TimeOfDay.now();
+    final open = _parseTime(restaurant.openTime);
+    final close = _parseTime(restaurant.closeTime);
+    if (open == null || close == null) return true;
+
+    final nowMinutes = now.hour * 60 + now.minute;
+    final openMinutes = open.hour * 60 + open.minute;
+    final closeMinutes = close.hour * 60 + close.minute;
+    if (closeMinutes < openMinutes) {
+      return nowMinutes >= openMinutes || nowMinutes <= closeMinutes;
+    }
+    return nowMinutes >= openMinutes && nowMinutes <= closeMinutes;
+  }
+
+  TimeOfDay? _parseTime(String value) {
+    final parts = value.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
 
   // ── Filtered & sorted results ──────────────────────────────────
-  List<Map<String, dynamic>> get _results {
-    List<Map<String, dynamic>> filtered = List.from(_allRestaurants);
+  List<Map<String, dynamic>> _results(List<Map<String, dynamic>> source) {
+    List<Map<String, dynamic>> filtered = List.from(source);
 
     // Filter by search query
     if (_query.trim().isNotEmpty) {
@@ -160,6 +147,24 @@ class _SearchResultsState extends State<SearchResults> {
     _filterRating = widget.filterRating;
     _filterDistance = widget.filterDistance;
     _searchController = TextEditingController(text: widget.initialQuery);
+    _loadRestaurants();
+  }
+
+  Future<void> _loadRestaurants() async {
+    try {
+      final restaurants = await _partnerService.getApprovedRestaurants();
+      if (!mounted) return;
+      setState(() {
+        _restaurantResults = _fromPartners(restaurants);
+        _loadingRestaurants = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _restaurantResults = [];
+        _loadingRestaurants = false;
+      });
+    }
   }
 
   @override
@@ -170,7 +175,7 @@ class _SearchResultsState extends State<SearchResults> {
 
   @override
   Widget build(BuildContext context) {
-    final results = _results;
+    final results = _results(_restaurantResults);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
@@ -323,17 +328,24 @@ class _SearchResultsState extends State<SearchResults> {
 
               // ── List / Empty State ───────────────────────────────
               Expanded(
-                child: results.isEmpty
-                    ? _EmptyState(query: _query)
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 56),
-                        itemCount: results.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
-                        itemBuilder: (_, i) => _ResultCard(
-                          data: results[i],
-                          query: _query,
+                child: _loadingRestaurants
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFFF4F0F),
                         ),
-                      ),
+                      )
+                    : results.isEmpty
+                        ? _EmptyState(query: _query)
+                        : ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 56),
+                            itemCount: results.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 16),
+                            itemBuilder: (_, i) => _ResultCard(
+                              data: results[i],
+                              query: _query,
+                            ),
+                          ),
               ),
             ],
           ),
@@ -403,7 +415,6 @@ class _ResultCard extends StatefulWidget {
 }
 
 class _ResultCardState extends State<_ResultCard> {
-  bool _saved = false;
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
 
@@ -411,6 +422,10 @@ class _ResultCardState extends State<_ResultCard> {
   Widget build(BuildContext context) {
     final d = widget.data;
     final bool isOpen = d['isOpen'] as bool;
+    final image = d['image'] as String;
+    final isNetwork =
+        image.startsWith('http://') || image.startsWith('https://');
+    final partner = d['partner'] as PartnerModel?;
 
     return Container(
       decoration: BoxDecoration(
@@ -427,7 +442,7 @@ class _ResultCardState extends State<_ResultCard> {
       child: InkWell(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const RestaurantDetail()),
+          MaterialPageRoute(builder: (_) => RestaurantDetail(partner: partner)),
         ),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
@@ -439,12 +454,19 @@ class _ResultCardState extends State<_ResultCard> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      d['image'] as String,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
+                    child: isNetwork
+                        ? Image.network(
+                            image,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.asset(
+                            image,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                   Positioned(
                     bottom: 6,
@@ -515,14 +537,17 @@ class _ResultCardState extends State<_ResultCard> {
                             ),
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () => setState(() => _saved = !_saved),
-                          child: Icon(
-                            _saved
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: 20,
-                            color: _saved ? _orange : const Color(0xFFD1D1D1),
+                        WishlistButton(
+                          restaurant: partner,
+                          builder: (context, saved, onTap) => GestureDetector(
+                            onTap: onTap,
+                            child: Icon(
+                              saved
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              size: 20,
+                              color: saved ? _orange : const Color(0xFFD1D1D1),
+                            ),
                           ),
                         ),
                       ],

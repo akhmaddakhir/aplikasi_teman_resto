@@ -3,10 +3,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
 import './register_page.dart';
-import './forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -44,6 +43,7 @@ class _LoginPageState extends State<LoginPage> {
           // Simpan session
           await _sessionService.saveUserSession(user);
 
+          if (!mounted) return;
           // Navigate ke home
           Navigator.pushReplacementNamed(context, '/home');
         }
@@ -64,18 +64,50 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.loginWithGoogle();
+      if (result == null) return;
+
+      if (!result.needsProfileCompletion) {
+        await _sessionService.saveUserSession(result.user);
+      }
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(
+        context,
+        result.needsProfileCompletion ? '/complete-profile' : '/home',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   void _handleSocialLogin(String provider) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Login dengan $provider')),
+      SnackBar(content: Text('Login dengan $provider belum tersedia')),
     );
   }
 
   void _handleForgotPassword() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ForgotPasswordPage(),
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Fitur lupa password belum tersedia.')),
     );
   }
 
@@ -293,8 +325,8 @@ class _LoginPageState extends State<LoginPage> {
                     Row(
                       children: [
                         Expanded(child: Divider(color: Colors.grey[300])),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             'Or',
                             style: TextStyle(color: Colors.grey),
@@ -312,7 +344,7 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         _buildSocialButton(
                           assetPath: 'assets/icons/google.svg',
-                          onPressed: () => _handleSocialLogin('Google'),
+                          onPressed: _handleGoogleLogin,
                         ),
                         const SizedBox(width: 32),
                         _buildSocialButton(

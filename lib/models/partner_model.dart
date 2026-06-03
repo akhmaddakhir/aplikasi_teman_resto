@@ -13,8 +13,14 @@ class PartnerModel {
   final String openTime;
   final String closeTime;
   final String description;
+  final String cuisine;
+  final List<String> highlights;
+  final List<String> paymentMethods;
   final String? restaurantPhotoUrl;
   final List<String> menuPhotos;
+  final List<String> galleryPhotos;
+  final double? latitude;
+  final double? longitude;
   final PartnerStatus status;
   final String? rejectionReason;
   final DateTime createdAt;
@@ -31,8 +37,14 @@ class PartnerModel {
     required this.openTime,
     required this.closeTime,
     required this.description,
+    required this.cuisine,
+    this.highlights = const [],
+    this.paymentMethods = const [],
     this.restaurantPhotoUrl,
     this.menuPhotos = const [],
+    this.galleryPhotos = const [],
+    this.latitude,
+    this.longitude,
     required this.status,
     this.rejectionReason,
     required this.createdAt,
@@ -51,8 +63,14 @@ class PartnerModel {
       'openTime': openTime,
       'closeTime': closeTime,
       'description': description,
+      'cuisine': cuisine,
+      'highlights': highlights,
+      'paymentMethods': paymentMethods,
       'restaurantPhotoUrl': restaurantPhotoUrl,
       'menuPhotos': menuPhotos,
+      'galleryPhotos': galleryPhotos,
+      'latitude': latitude,
+      'longitude': longitude,
       'status': status.name,
       'rejectionReason': rejectionReason,
       'createdAt': createdAt.toIso8601String(),
@@ -72,8 +90,16 @@ class PartnerModel {
       openTime: (data['openTime'] as String?) ?? '08:00',
       closeTime: (data['closeTime'] as String?) ?? '22:00',
       description: (data['description'] as String?) ?? '',
+      cuisine: (data['cuisine'] as String?) ?? 'Indonesian',
+      highlights: List<String>.from(data['highlights'] ?? []),
+      paymentMethods: List<String>.from(
+        data['paymentMethods'] ?? const ['Cash'],
+      ),
       restaurantPhotoUrl: data['restaurantPhotoUrl'] as String?,
       menuPhotos: List<String>.from(data['menuPhotos'] ?? []),
+      galleryPhotos: List<String>.from(data['galleryPhotos'] ?? []),
+      latitude: _parseCoordinate(data['latitude'], min: -90, max: 90),
+      longitude: _parseCoordinate(data['longitude'], min: -180, max: 180),
       status: _parseStatus(data['status'] as String?),
       rejectionReason: data['rejectionReason'] as String?,
       createdAt: _parseDate(data['createdAt']) ?? DateTime.now(),
@@ -92,6 +118,22 @@ class PartnerModel {
       default:
         return PartnerStatus.none;
     }
+  }
+
+  static double? _parseCoordinate(
+    dynamic value, {
+    required double min,
+    required double max,
+  }) {
+    final coordinate =
+        value is num ? value.toDouble() : double.tryParse('$value');
+    if (coordinate == null ||
+        !coordinate.isFinite ||
+        coordinate < min ||
+        coordinate > max) {
+      return null;
+    }
+    return coordinate;
   }
 
   static DateTime? _parseDate(dynamic value) {
@@ -114,8 +156,14 @@ class PartnerModel {
     String? openTime,
     String? closeTime,
     String? description,
+    String? cuisine,
+    List<String>? highlights,
+    List<String>? paymentMethods,
     String? restaurantPhotoUrl,
     List<String>? menuPhotos,
+    List<String>? galleryPhotos,
+    double? latitude,
+    double? longitude,
     PartnerStatus? status,
     String? rejectionReason,
   }) {
@@ -130,8 +178,14 @@ class PartnerModel {
       openTime: openTime ?? this.openTime,
       closeTime: closeTime ?? this.closeTime,
       description: description ?? this.description,
+      cuisine: cuisine ?? this.cuisine,
+      highlights: highlights ?? this.highlights,
+      paymentMethods: paymentMethods ?? this.paymentMethods,
       restaurantPhotoUrl: restaurantPhotoUrl ?? this.restaurantPhotoUrl,
       menuPhotos: menuPhotos ?? this.menuPhotos,
+      galleryPhotos: galleryPhotos ?? this.galleryPhotos,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       status: status ?? this.status,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       createdAt: createdAt,

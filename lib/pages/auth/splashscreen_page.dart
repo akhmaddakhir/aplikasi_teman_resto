@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -71,9 +72,11 @@ class _SplashScreenState extends State<SplashScreen>
           // Check apakah ada active session
           final sessionService = SessionService();
           bool hasSession = await sessionService.hasActiveSession();
+          bool hasAuthUser = AuthService().isLoggedIn;
+          if (!mounted) return;
 
-          // Navigate ke home jika ada session, atau ke welcome jika tidak
-          String route = hasSession ? '/home' : '/welcome';
+          // Navigate ke home jika ada session, atau ke login jika tidak
+          final route = hasSession && hasAuthUser ? '/home' : '/login';
           Navigator.pushReplacementNamed(context, route);
         }
       });

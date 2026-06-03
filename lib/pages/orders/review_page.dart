@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
+import '../../models/partner_model.dart';
+import '../../services/review_service.dart';
+import '../../widgets/wishlist_button.dart';
 
 class ReviewPage extends StatefulWidget {
   /// [returnRoute] — nama route tujuan setelah submit.
   /// Jika null, cukup pop satu level (default).
   /// Contoh: '/orders', '/home'
   final String? returnRoute;
+  final String? restaurantId;
+  final String? restaurantName;
+  final String? restaurantAddress;
+  final String? restaurantPhotoUrl;
+  final String? restaurantCuisine;
+  final String? restaurantRating;
 
-  const ReviewPage({super.key, this.returnRoute});
+  const ReviewPage({
+    super.key,
+    this.returnRoute,
+    this.restaurantId,
+    this.restaurantName,
+    this.restaurantAddress,
+    this.restaurantPhotoUrl,
+    this.restaurantCuisine,
+    this.restaurantRating,
+  });
 
   @override
   State<ReviewPage> createState() => _ReviewPageState();
@@ -14,8 +32,9 @@ class ReviewPage extends StatefulWidget {
 
 class _ReviewPageState extends State<ReviewPage> {
   int selectedRating = 0;
-  bool _saved = false;
+  bool _submitting = false;
   final TextEditingController reviewController = TextEditingController();
+  final _reviewService = ReviewService();
 
   static const _orange = Color(0xFFFF4F0F);
   static const _starActive = Color(0xFFFFCD29);
@@ -33,13 +52,80 @@ class _ReviewPageState extends State<ReviewPage> {
     'Excellent'
   ];
 
-  void _submitReview() {
-    if (widget.returnRoute != null) {
-      // Kembali ke route spesifik yang diberikan pemanggil
-      Navigator.of(context).popUntil(ModalRoute.withName(widget.returnRoute!));
-    } else {
-      // Default: kembali satu level ke halaman sebelumnya
-      Navigator.of(context).pop();
+  String get _restaurantName => widget.restaurantName ?? 'Restoran';
+  String get _restaurantAddress =>
+      widget.restaurantAddress ?? 'Jl Mangan III 216 Psr II Mabar...';
+  String get _restaurantCuisine => widget.restaurantCuisine ?? 'Javanese';
+  String get _restaurantRating => widget.restaurantRating ?? '4.8';
+  String get _restaurantImage =>
+      widget.restaurantPhotoUrl ?? 'assets/images/melati_restaurant.png';
+
+  PartnerModel? get _restaurant {
+    final restaurantId = widget.restaurantId?.trim();
+    if (restaurantId == null || restaurantId.isEmpty) return null;
+    return PartnerModel(
+      id: restaurantId,
+      ownerId: '',
+      restaurantName: _restaurantName,
+      ownerName: '',
+      phone: '',
+      email: '',
+      address: _restaurantAddress,
+      openTime: '08:00',
+      closeTime: '22:00',
+      description: '',
+      cuisine: _restaurantCuisine,
+      restaurantPhotoUrl: widget.restaurantPhotoUrl,
+      status: PartnerStatus.approved,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  bool _isNetworkImage(String path) =>
+      path.startsWith('http://') || path.startsWith('https://');
+
+  Future<void> _submitReview() async {
+    if (_submitting) return;
+
+    setState(() => _submitting = true);
+    try {
+      final restaurantId = widget.restaurantId?.trim() ?? '';
+      final newReview = restaurantId.isNotEmpty
+          ? await _reviewService.submitRestaurantReview(
+              restaurantId: restaurantId,
+              restaurantName: _restaurantName,
+              rating: selectedRating,
+              review: reviewController.text,
+            )
+          : {
+              'name': 'You',
+              'date': DateTime.now(),
+              'timeAgo': 'now',
+              'rating': selectedRating.toDouble(),
+              'review': reviewController.text,
+              'likes': 0,
+            };
+
+      if (!mounted) return;
+      if (widget.returnRoute != null) {
+        // Kembali ke route spesifik yang diberikan pemanggil dengan data review
+        Navigator.of(context)
+            .popUntil(ModalRoute.withName(widget.returnRoute!));
+        Navigator.of(context).pop(newReview);
+      } else {
+        // Default: kembali satu level ke halaman sebelumnya dengan data review
+        Navigator.of(context).pop(newReview);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan review: $e'),
+          backgroundColor: const Color(0xFFFF4F0F),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -104,12 +190,25 @@ class _ReviewPageState extends State<ReviewPage> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Image.asset(
-                              'assets/images/melati_restaurant.png',
-                              width: 90,
-                              height: 90,
-                              fit: BoxFit.cover,
-                            ),
+                            child: _isNetworkImage(_restaurantImage)
+                                ? Image.network(
+                                    _restaurantImage,
+                                    width: 90,
+                                    height: 90,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Image.asset(
+                                      'assets/images/melati_restaurant.png',
+                                      width: 90,
+                                      height: 90,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Image.asset(
+                                    _restaurantImage,
+                                    width: 90,
+                                    height: 90,
+                                    fit: BoxFit.cover,
+                                  ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -122,7 +221,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        'Marina Kitchen',
+                                        _restaurantName,
                                         style: const TextStyle(
                                           fontFamily: 'Inter',
                                           fontSize: 16,
@@ -133,17 +232,20 @@ class _ReviewPageState extends State<ReviewPage> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    GestureDetector(
-                                      onTap: () =>
-                                          setState(() => _saved = !_saved),
-                                      child: Icon(
-                                        _saved
-                                            ? Icons.favorite_rounded
-                                            : Icons.favorite_border_rounded,
-                                        size: 22,
-                                        color: _saved
-                                            ? _orange
-                                            : const Color(0xFFD1D1D1),
+                                    WishlistButton(
+                                      restaurant: _restaurant,
+                                      builder: (context, saved, onTap) =>
+                                          GestureDetector(
+                                        onTap: onTap,
+                                        child: Icon(
+                                          saved
+                                              ? Icons.favorite_rounded
+                                              : Icons.favorite_border_rounded,
+                                          size: 22,
+                                          color: saved
+                                              ? _orange
+                                              : const Color(0xFFD1D1D1),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -156,7 +258,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        'Jl Mangan III 216 Psr II Mabar...',
+                                        _restaurantAddress,
                                         style: TextStyle(
                                           fontFamily: 'Inter',
                                           fontSize: 12,
@@ -176,7 +278,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                     children: [
                                       _MiniChip(
                                           icon: Icons.star_rounded,
-                                          label: '4.8',
+                                          label: _restaurantRating,
                                           isHighlight: true),
                                       const SizedBox(width: 8),
                                       _MiniChip(
@@ -185,7 +287,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                       const SizedBox(width: 8),
                                       _MiniChip(
                                           icon: Icons.restaurant_rounded,
-                                          label: 'Javanese'),
+                                          label: _restaurantCuisine),
                                     ],
                                   ),
                                 ),
@@ -386,7 +488,8 @@ class _ReviewPageState extends State<ReviewPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: selectedRating > 0 ? _submitReview : null,
+                  onPressed:
+                      selectedRating > 0 && !_submitting ? _submitReview : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _orange,
                     disabledBackgroundColor: const Color(0xFFFFCDBD),
@@ -395,8 +498,8 @@ class _ReviewPageState extends State<ReviewPage> {
                       borderRadius: BorderRadius.circular(50),
                     ),
                   ),
-                  child: const Text(
-                    'Submit Review',
+                  child: Text(
+                    _submitting ? 'Menyimpan...' : 'Submit Review',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 16,

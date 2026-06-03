@@ -1,11 +1,23 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
+
+class GoogleLoginResult {
+  final UserModel user;
+  final bool needsProfileCompletion;
+
+  const GoogleLoginResult({
+    required this.user,
+    required this.needsProfileCompletion,
+  });
+}
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   factory AuthService() => _instance;
   AuthService._internal();
@@ -30,44 +42,15 @@ class AuthService {
 
       if (nextCount < 1) nextCount = 1;
 
-      while (true) {
-        final userId = 'USR-${nextCount.toString().padLeft(7, '0')}';
-        final userRef = _firestore.collection('users').doc(userId);
-        final userSnapshot = await transaction.get(userRef);
-
-        if (!userSnapshot.exists) {
-          transaction.set(
-            counterRef,
-            {'count': nextCount},
-            SetOptions(merge: true),
-          );
-
-          return userId;
-        }
-
-        nextCount++;
-      }
-    });
-  }
-
-  Future<void> syncUserCounterWithExistingUsers() async {
-    int nextCount = 1;
-
-    while (true) {
       final userId = 'USR-${nextCount.toString().padLeft(7, '0')}';
-      final userDoc = await _firestore.collection('users').doc(userId).get();
+      transaction.set(
+        counterRef,
+        {'count': nextCount},
+        SetOptions(merge: true),
+      );
 
-      if (!userDoc.exists) {
-        final lastUsedCount = nextCount - 1;
-        await _firestore
-            .collection('counters')
-            .doc('user_counter')
-            .set({'count': lastUsedCount}, SetOptions(merge: true));
-        return;
-      }
-
-      nextCount++;
-    }
+      return userId;
+    });
   }
 
   // ── REGISTER ─────────────────────────────────────────────────
@@ -104,7 +87,6 @@ class AuthService {
       }
 
       // STEP 3: Generate custom ID
-      await syncUserCounterWithExistingUsers();
       final customUserId = await _generateUserId();
       print('[AuthService] Custom ID: $customUserId');
 
@@ -302,8 +284,128 @@ class AuthService {
     }
   }
 
+  Future<GoogleLoginResult?> loginWithGoogle() async {
+    try {
+      try {
+        await _googleSignIn.disconnect();
+      } catch (_) {
+        await _googleSignIn.signOut();
+      }
+
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null;
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) throw Exception('Login Google gagal');
+
+      final now = DateTime.now();
+      final email = firebaseUser.email ?? googleUser.email;
+      final displayName = firebaseUser.displayName ?? googleUser.displayName;
+      final photoUrl = firebaseUser.photoURL ?? googleUser.photoUrl;
+
+      String? customUserId;
+      final mappingDoc = await _firestore
+          .collection('uid_mapping')
+          .doc(firebaseUser.uid)
+          .get();
+
+      if (mappingDoc.exists && mappingDoc.data()?['userId'] is String) {
+        customUserId = mappingDoc.data()!['userId'] as String;
+      } else {
+        final userQuery = await _firestore
+            .collection('users')
+            .where('firebaseUid', isEqualTo: firebaseUser.uid)
+            .limit(1)
+            .get();
+
+        if (userQuery.docs.isNotEmpty) {
+          customUserId = userQuery.docs.first.id;
+        }
+      }
+
+      UserModel user;
+      if (customUserId == null) {
+        customUserId = await _generateUserId();
+        user = UserModel(
+          uid: customUserId,
+          firebaseUid: firebaseUser.uid,
+          fullName: displayName?.trim().isNotEmpty == true
+              ? displayName!.trim()
+              : 'User',
+          email: email,
+          profileImage: photoUrl,
+          createdAt: now,
+          lastLogin: now,
+          updatedAt: now,
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(customUserId)
+            .set(user.toFirestore());
+      } else {
+        final userDoc =
+            await _firestore.collection('users').doc(customUserId).get();
+        if (!userDoc.exists || userDoc.data() == null) {
+          user = UserModel(
+            uid: customUserId,
+            firebaseUid: firebaseUser.uid,
+            fullName: displayName?.trim().isNotEmpty == true
+                ? displayName!.trim()
+                : 'User',
+            email: email,
+            profileImage: photoUrl,
+            createdAt: now,
+            lastLogin: now,
+            updatedAt: now,
+          );
+
+          await _firestore
+              .collection('users')
+              .doc(customUserId)
+              .set(user.toFirestore());
+        } else {
+          user = UserModel.fromFirestore(userDoc.data()!);
+          await _firestore.collection('users').doc(customUserId).update({
+            'lastLogin': now.toIso8601String(),
+            'updatedAt': now.toIso8601String(),
+          });
+          user = user.copyWith(lastLogin: now, updatedAt: now);
+        }
+      }
+
+      await _firestore.collection('uid_mapping').doc(firebaseUser.uid).set({
+        'userId': customUserId,
+        'email': email,
+      });
+
+      final needsProfileCompletion = user.fullName.trim().isEmpty ||
+          user.fullName == 'User' ||
+          user.phoneNumber?.trim().isNotEmpty != true ||
+          user.gender?.trim().isNotEmpty != true;
+
+      return GoogleLoginResult(
+        user: user,
+        needsProfileCompletion: needsProfileCompletion,
+      );
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_authErrorMessage(e.code));
+    } catch (e) {
+      final message = e.toString().replaceAll('Exception: ', '');
+      throw Exception('Login Google gagal: $message');
+    }
+  }
+
   // ── LOGOUT ───────────────────────────────────────────────────
   Future<void> logout() async {
+    await _googleSignIn.signOut();
     await _auth.signOut();
   }
 
@@ -445,10 +547,12 @@ class AuthService {
   }
 
   Future<String?> _resolveUserDocId(String uidOrFirebaseUid) async {
-    final directDoc =
-        await _firestore.collection('users').doc(uidOrFirebaseUid).get();
-    if (directDoc.exists) {
-      return uidOrFirebaseUid;
+    if (uidOrFirebaseUid.startsWith('USR-')) {
+      final directDoc =
+          await _firestore.collection('users').doc(uidOrFirebaseUid).get();
+      if (directDoc.exists) {
+        return uidOrFirebaseUid;
+      }
     }
 
     final mappingDoc =
@@ -467,15 +571,6 @@ class AuthService {
     }
 
     return null;
-  }
-
-  // ── RESET PASSWORD ────────────────────────────────────────────
-  Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
-    } on FirebaseAuthException catch (e) {
-      throw Exception(_authErrorMessage(e.code));
-    }
   }
 
   // ── ERROR MESSAGES ────────────────────────────────────────────

@@ -1,12 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/partner_model.dart';
+import '../../services/review_service.dart';
+import '../../services/session_service.dart';
 import 'package:teman_resto/widgets/gallery_grid.dart';
 import 'package:teman_resto/widgets/menu_card.dart';
 import 'package:teman_resto/widgets/review_card.dart';
 import 'package:teman_resto/pages/booking/booking_data.dart';
 import 'package:teman_resto/pages/orders/review_page.dart';
+import 'package:teman_resto/pages/restaurant/restaurant_route_map.dart';
+import '../../data/malang_restaurant_locations.dart';
 
 class RestaurantDetail extends StatefulWidget {
-  const RestaurantDetail({super.key});
+  final PartnerModel? partner;
+
+  const RestaurantDetail({super.key, this.partner});
 
   @override
   State<RestaurantDetail> createState() => RestaurantDetailState();
@@ -16,10 +26,17 @@ class RestaurantDetailState extends State<RestaurantDetail>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   late final FocusNode _menuSearchFocusNode;
-  final ScrollController _menuScrollController = ScrollController();
+  final _sessionService = SessionService();
+  final _reviewService = ReviewService();
+  StreamSubscription<List<Map<String, dynamic>>>? _reviewsSubscription;
   String selectedFilter = 'Most relevant';
   String searchQuery = '';
   bool _keyboardWasVisible = false;
+  List<Map<String, dynamic>> _firestoreMenuItems = [];
+  bool _loadingMenus = false;
+  bool _loadingReviews = false;
+  String? _reviewError;
+  int _reviewIdCounter = 1;
 
   // ============ MENU REQUEST STATE ============
   // Cart sekarang berfungsi sebagai "menu request" saat booking,
@@ -29,174 +46,98 @@ class RestaurantDetailState extends State<RestaurantDetail>
   int get _totalItems => _cart.values.fold(0, (a, b) => a + b);
 
   // ================= DATA SOURCE =================
-  final List<Map<String, dynamic>> menuItems = [
-    {
-      'name': 'Gudeg Jogja',
-      'price': 'Rp 25.000',
-      'priceNum': 25000,
-      'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'VEGETABLE',
-      'description':
-          'Young jackfruit slow-cooked 8 hrs in palm sugar and coconut milk, with areh and krecek.',
-    },
-    {
-      'name': 'Nasi Goreng Spesial',
-      'price': 'Rp 20.000',
-      'priceNum': 20000,
-      'image': 'assets/images/gambar_makanan_4.jfif',
-      'category': 'RICE',
-      'description':
-          'Wok-fried rice with egg, chicken, shrimp, and house special sambal.',
-    },
-    {
-      'name': 'Rawon Daging',
-      'price': 'Rp 30.000',
-      'priceNum': 30000,
-      'image': 'assets/images/gambar_restoran_4.jfif',
-      'category': 'MAIN COURSE',
-      'description':
-          'East Javanese black beef soup with kluwek nut, served with salted egg and bean sprouts.',
-    },
-    {
-      'name': 'Ayam Bakar Madu',
-      'price': 'Rp 28.000',
-      'priceNum': 28000,
-      'image': 'assets/images/gambar_restoran_5.jfif',
-      'category': 'POULTRY',
-      'description':
-          'Free-range chicken marinated 12 hrs in opor spices, charcoal-grilled, with fresh greens and mortar sambal.',
-    },
-    {
-      'name': 'Soto Ayam',
-      'price': 'Rp 18.000',
-      'priceNum': 18000,
-      'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'SOUP',
-      'description':
-          'Javanese chicken soup with turmeric broth, glass noodles, boiled egg, and crispy shallots.',
-    },
-    {
-      'name': 'Tongseng Ayam',
-      'price': 'Rp 28.000',
-      'priceNum': 28000,
-      'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'MAIN COURSE',
-      'description':
-          'Braised chicken in sweet soy and coconut milk with cabbage, tomato, and leek.',
-    },
-    {
-      'name': 'Gado-Gado',
-      'price': 'Rp 15.000',
-      'priceNum': 15000,
-      'image': 'assets/images/gambar_resto_2.jpg',
-      'category': 'VEGETABLE',
-      'description':
-          'Mixed blanched vegetables with tofu, tempeh, and thick peanut sauce dressing.',
-    },
-    {
-      'name': 'Es Teh Manis',
-      'price': 'Rp 5.000',
-      'priceNum': 5000,
-      'image': 'assets/images/gambar_makanan_4.jfif',
-      'category': 'BEVERAGE',
-      'description': 'Classic Javanese sweet iced tea, freshly brewed.',
-    },
-    {
-      'name': 'Kopi Tubruk',
-      'price': 'Rp 12.000',
-      'priceNum': 12000,
-      'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'BEVERAGE',
-      'description':
-          'Traditional Indonesian ground coffee steeped directly in hot water.',
-    },
-    {
-      'name': 'Wedang Jahe',
-      'price': 'Rp 15.000',
-      'priceNum': 15000,
-      'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'BEVERAGE',
-      'description':
-          'Warm ginger drink with palm sugar and pandan, a Javanese herbal classic.',
-    },
-    {
-      'name': 'Es Dawet',
-      'price': 'Rp 10.000',
-      'priceNum': 10000,
-      'image': 'assets/images/gambar_makanan_2.jfif',
-      'category': 'BEVERAGE',
-      'description':
-          'Chilled coconut milk drink with pandan jelly, palm sugar, and shaved ice.',
-    },
-  ];
+  final List<Map<String, dynamic>> menuItems = [];
+  final List<String> galleryImages = [];
 
-  final List<String> galleryImages = [
-    'assets/images/gambar_makanan_2.jfif',
-    'assets/images/gambar_resto_2.jpg',
-    'assets/images/gambar_restoran_4.jfif',
-    'assets/images/gambar_restoran_5.jfif',
-    'assets/images/gambar_makanan_4.jfif',
-    'assets/images/gambar_makanan_2.jfif',
-    'assets/images/gambar_resto_2.jpg',
-    'assets/images/gambar_restoran_4.jfif',
-  ];
+  String get _restaurantId => widget.partner?.id ?? '';
+  String get _restaurantName =>
+      widget.partner?.restaurantName ?? 'Melati Restaurant';
+  String get _restaurantAddress =>
+      widget.partner?.address ?? malangRestaurantLocations.first.address;
+  String get _restaurantCuisine => widget.partner?.cuisine ?? 'Javanese';
+  String get _restaurantDescription =>
+      widget.partner?.description ??
+      'Melati Restaurant berada di Hotel Tugu Malang dan menyajikan masakan Indonesia, Peranakan, serta menu klasik dalam suasana Malang tempo dulu.';
+  String get _restaurantOpenTime => widget.partner?.openTime ?? '10.00';
+  String get _restaurantCloseTime => widget.partner?.closeTime ?? '22.00';
+  String? get _restaurantPhotoUrl => widget.partner?.restaurantPhotoUrl;
+  double? get _restaurantLatitude =>
+      widget.partner?.latitude ?? malangRestaurantLocations.first.latitude;
+  double? get _restaurantLongitude =>
+      widget.partner?.longitude ?? malangRestaurantLocations.first.longitude;
+  List<String> get _restaurantPaymentMethods {
+    final methods = widget.partner?.paymentMethods ?? const <String>[];
+    return methods.isNotEmpty ? methods : const ['Cash'];
+  }
 
-  final List<Map<String, dynamic>> allReviews = [
-    {
-      'name': 'Budi Santoso',
-      'date': DateTime(2025, 2, 5),
-      'timeAgo': '6 days ago',
-      'rating': 5.0,
-      'review':
-          'Rawonnya enak banget! Bumbunya meresap sempurna dan dagingnya empuk. Tempatnya juga bersih dan nyaman. Pelayanannya ramah. Pasti balik lagi!',
-      'likes': 45,
-    },
-    {
-      'name': 'Siti Nurhaliza',
-      'date': DateTime(2025, 1, 28),
-      'timeAgo': '2 weeks ago',
-      'rating': 4.5,
-      'review':
-          'Soto ayamnya recommended banget. Kuahnya seger, isian komplit. Harga sesuai dengan rasa. Cuma kadang pas weekend agak rame jadi harus nunggu.',
-      'likes': 38,
-    },
-    {
-      'name': 'Ahmad Fauzi',
-      'date': DateTime(2025, 1, 15),
-      'timeAgo': '3 weeks ago',
-      'rating': 5.0,
-      'review':
-          'Pertama kali ke sini langsung jatuh cinta sama nasi gorengnya. Porsinya banyak, bumbu pas, ga terlalu asin. Harga terjangkau untuk mahasiswa.',
-      'likes': 52,
-    },
-    {
-      'name': 'Dewi Lestari',
-      'date': DateTime(2024, 12, 20),
-      'timeAgo': '1 month ago',
-      'rating': 4.0,
-      'review':
-          'Tempatnya cozy buat makan keluarga. Menu variatif, semuanya enak-enak. Ayam bakar madunya juara! Cuma parkir agak susah kalau weekend.',
-      'likes': 29,
-    },
-    {
-      'name': 'Rizki Pratama',
-      'date': DateTime(2024, 12, 10),
-      'timeAgo': '2 months ago',
-      'rating': 5.0,
-      'review':
-          'Salah satu resto Jawa terbaik di Malang! Semua menu yang pernah saya coba selalu konsisten enak. Gudeg Jogjanya authentic banget. Highly recommended!',
-      'likes': 67,
-    },
-    {
-      'name': 'Linda Wijaya',
-      'date': DateTime(2024, 11, 25),
-      'timeAgo': '2 months ago',
-      'rating': 3.5,
-      'review':
-          'Makanannya enak sih, tapi pas kemarin datang pelayanannya agak lama. Mungkin karena lagi rame. Overall masih worth it.',
-      'likes': 15,
-    },
-  ];
+  List<String> get _restaurantHighlights {
+    final highlights = widget.partner?.highlights ?? const <String>[];
+    if (highlights.isNotEmpty) return highlights;
+    return const [
+      'Bahan baku segar dan berkualitas',
+      'Resep turun temurun yang otentik',
+      'Suasana nyaman dan bersih',
+      'Harga terjangkau',
+      'Pelayanan ramah dan profesional',
+    ];
+  }
+
+  List<String> get _galleryImages {
+    final gallery = widget.partner?.galleryPhotos ?? const <String>[];
+    return gallery.isNotEmpty ? gallery : galleryImages;
+  }
+
+  List<Map<String, dynamic>> get _menuItems =>
+      _firestoreMenuItems.isNotEmpty ? _firestoreMenuItems : menuItems;
+
+  bool _isNetworkImage(String path) =>
+      path.startsWith('http://') || path.startsWith('https://');
+
+  Widget _restaurantImage({
+    required String path,
+    required BoxFit fit,
+    double? width,
+    double? height,
+  }) {
+    if (_isNetworkImage(path)) {
+      return Image.network(
+        path,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (_, __, ___) => _imageFallback(width, height),
+      );
+    }
+    return Image.asset(
+      path,
+      width: width,
+      height: height,
+      fit: fit,
+      errorBuilder: (_, __, ___) => _imageFallback(width, height),
+    );
+  }
+
+  Widget _imageFallback(double? width, double? height) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.grey[300],
+      child: const Icon(Icons.image_outlined, color: Colors.grey),
+    );
+  }
+
+  Widget _detailBookingData(Map<dynamic, dynamic> menuRequest) {
+    return BookingData(
+      menuRequest: menuRequest,
+      restaurantId: _restaurantId,
+      restaurantName: _restaurantName,
+      restaurantAddress: _restaurantAddress,
+      restaurantPhotoUrl: _restaurantPhotoUrl,
+      paymentMethods: _restaurantPaymentMethods,
+    );
+  }
+
+  final List<Map<String, dynamic>> allReviews = [];
 
   @override
   void initState() {
@@ -206,14 +147,92 @@ class RestaurantDetailState extends State<RestaurantDetail>
     _tabController.animation!.addListener(() => setState(() {}));
     _menuSearchFocusNode = FocusNode();
     _menuSearchFocusNode.addListener(_handleMenuSearchFocusChange);
+    _saveRecentView();
+    _loadRestaurantMenus();
+    _listenRestaurantReviews();
+  }
+
+  Future<void> _saveRecentView() async {
+    final partner = widget.partner;
+    if (partner == null) return;
+    try {
+      await _sessionService.saveRecentViewedRestaurant(partner);
+    } catch (_) {}
+  }
+
+  Future<void> _loadRestaurantMenus() async {
+    if (_restaurantId.isEmpty) return;
+    setState(() => _loadingMenus = true);
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('restaurants')
+          .doc(_restaurantId)
+          .collection('menus')
+          .get();
+
+      final menus = query.docs.map((doc) {
+        final data = doc.data();
+        final price = data['price']?.toString() ?? '0';
+        final cleanPrice =
+            price.replaceAll('.', '').replaceAll('Rp', '').trim();
+        return {
+          'name': data['name']?.toString() ?? 'Menu',
+          'price': price.startsWith('Rp') ? price : 'Rp $price',
+          'priceNum': int.tryParse(cleanPrice) ?? 0,
+          'image': data['imageUrl']?.toString().isNotEmpty == true
+              ? data['imageUrl'].toString()
+              : 'assets/images/gambar_makanan_2.jfif',
+          'category': data['category']?.toString().toUpperCase() ?? 'MENU',
+          'description': data['description']?.toString() ?? '',
+        };
+      }).toList();
+
+      if (!mounted) return;
+      setState(() {
+        _firestoreMenuItems = menus;
+        _loadingMenus = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMenus = false);
+    }
+  }
+
+  void _listenRestaurantReviews() {
+    if (_restaurantId.isEmpty) return;
+    setState(() {
+      _loadingReviews = true;
+      _reviewError = null;
+    });
+
+    _reviewsSubscription =
+        _reviewService.streamRestaurantReviews(_restaurantId).listen(
+      (reviews) {
+        if (!mounted) return;
+        setState(() {
+          allReviews
+            ..clear()
+            ..addAll(reviews);
+          _loadingReviews = false;
+          _reviewError = null;
+        });
+      },
+      onError: (error) {
+        if (!mounted) return;
+        setState(() {
+          _loadingReviews = false;
+          _reviewError = error.toString();
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _reviewsSubscription?.cancel();
     _menuSearchFocusNode.removeListener(_handleMenuSearchFocusChange);
     _menuSearchFocusNode.dispose();
-    _menuScrollController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -241,8 +260,14 @@ class RestaurantDetailState extends State<RestaurantDetail>
     if (!_menuSearchFocusNode.hasFocus) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_menuScrollController.hasClients) return;
-      _menuScrollController.animateTo(
+      final scrollController = PrimaryScrollController.maybeOf(context);
+      if (!mounted ||
+          scrollController == null ||
+          !scrollController.hasClients) {
+        return;
+      }
+
+      scrollController.animateTo(
         88,
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
@@ -255,8 +280,9 @@ class RestaurantDetailState extends State<RestaurantDetail>
       _keyboardWasVisible = false;
       _menuSearchFocusNode.unfocus();
 
-      if (_menuScrollController.hasClients) {
-        _menuScrollController.animateTo(
+      final scrollController = PrimaryScrollController.maybeOf(context);
+      if (scrollController != null && scrollController.hasClients) {
+        scrollController.animateTo(
           0,
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
@@ -282,9 +308,36 @@ class RestaurantDetailState extends State<RestaurantDetail>
     }
   }
 
+  void _openRouteMap() {
+    final latitude = _restaurantLatitude;
+    final longitude = _restaurantLongitude;
+
+    if (latitude == null || longitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Koordinat restoran belum tersedia.'),
+          backgroundColor: Color(0xFFE24B4A),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RestaurantRouteMap(
+          restaurantName: _restaurantName,
+          restaurantAddress: _restaurantAddress,
+          restaurantLatitude: latitude,
+          restaurantLongitude: longitude,
+        ),
+      ),
+    );
+  }
+
   List<Map<String, dynamic>> getFilteredMenu() {
-    if (searchQuery.isEmpty) return menuItems;
-    return menuItems.where((item) {
+    if (searchQuery.isEmpty) return _menuItems;
+    return _menuItems.where((item) {
       return item['name'].toLowerCase().contains(searchQuery.toLowerCase());
     }).toList();
   }
@@ -324,21 +377,16 @@ class RestaurantDetailState extends State<RestaurantDetail>
               children: [
                 PageView.builder(
                   controller: pageController,
-                  itemCount: galleryImages.length,
+                  itemCount: _galleryImages.length,
                   onPageChanged: (i) => setDialogState(() => currentIndex = i),
                   itemBuilder: (context, index) {
                     return InteractiveViewer(
                       minScale: 0.8,
                       maxScale: 4.0,
                       child: Center(
-                        child: Image.asset(
-                          galleryImages[index],
+                        child: _restaurantImage(
+                          path: _galleryImages[index],
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.broken_image,
-                            color: Colors.white54,
-                            size: 64,
-                          ),
                         ),
                       ),
                     );
@@ -363,7 +411,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   right: 0,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(galleryImages.length, (i) {
+                    children: List.generate(_galleryImages.length, (i) {
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -389,7 +437,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
   // ============= BOTTOM SHEET: Menu Request Summary =============
   void _showMenuRequestSheet() {
     final requestedItems =
-        menuItems.where((item) => (_cart[item['name']] ?? 0) > 0).toList();
+        _menuItems.where((item) => (_cart[item['name']] ?? 0) > 0).toList();
 
     showModalBottomSheet(
       context: context,
@@ -510,18 +558,11 @@ class RestaurantDetailState extends State<RestaurantDetail>
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.asset(
-                            item['image'] as String,
+                          child: _restaurantImage(
+                            path: item['image'] as String,
                             width: 48,
                             height: 48,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 48,
-                              height: 48,
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.restaurant,
-                                  size: 20, color: Colors.grey),
-                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -620,9 +661,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => BookingData(
-                                  menuRequest: {},
-                                )),
+                            builder: (context) => _detailBookingData({})),
                       );
                     },
                     style: OutlinedButton.styleFrom(
@@ -654,9 +693,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => BookingData(
-                            menuRequest: Map.from(_cart),
-                          ),
+                          builder: (context) =>
+                              _detailBookingData(Map.from(_cart)),
                         ),
                       );
                     },
@@ -682,7 +720,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ],
             ),
 
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -695,7 +733,6 @@ class RestaurantDetailState extends State<RestaurantDetail>
     final bool hasMenuRequest = _totalItems > 0;
     // Cek apakah tab Menu sedang aktif (animasi value < 0.5)
     final bool isMenuTab = _tabController.animation!.value < 0.5;
-    final bool compactHeader = isMenuTab && _menuSearchFocusNode.hasFocus;
 
     return WillPopScope(
       onWillPop: _handleBackPressed,
@@ -703,181 +740,219 @@ class RestaurantDetailState extends State<RestaurantDetail>
         backgroundColor: Colors.white,
         resizeToAvoidBottomInset: false,
         body: Stack(
-        children: [
-          Column(
-            children: [
-              // Hero image
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeOutCubic,
-                height: compactHeader ? 132 : 280,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/gambar_restoran_5.jfif'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: compactHeader ? 12 : 40,
-                      left: 16,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios,
-                            color: Colors.white),
-                        onPressed: _handleHeaderBackPressed,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: compactHeader ? 8 : 16,
-                      left: 16,
-                      right: 16,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 260),
-                        curve: Curves.easeOutCubic,
-                        height: compactHeader ? 56 : 80,
-                        decoration: BoxDecoration(
-                          color: const Color(0xF0F4F4F4),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            _buildImageItem(
-                                'assets/images/gambar_makanan_2.jfif'),
-                            _buildImageItem('assets/images/gambar_resto_2.jpg'),
-                            _buildImageItem(
-                                'assets/images/gambar_makanan_2.jfif'),
-                            _buildImageItem(
-                                'assets/images/gambar_restoran_4.jfif'),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Restaurant info
-              if (!compactHeader)
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pawon Njawi',
-                        style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              _tagChip(Icons.access_time_rounded, '1 hour'),
-                              const SizedBox(width: 6),
-                              _tagChip(Icons.restaurant_rounded, 'Javanese'),
-                            ],
+          children: [
+            NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  // ── SLIVER HERO IMAGE ──
+                  SliverAppBar(
+                    automaticallyImplyLeading: false,
+                    pinned: false,
+                    floating: false,
+                    snap: false,
+                    expandedHeight: 240,
+                    backgroundColor: Colors.white,
+                    elevation: 0,
+                    flexibleSpace: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: _restaurantImage(
+                            path: _restaurantPhotoUrl ??
+                                'assets/images/gambar_restoran_5.jfif',
+                            fit: BoxFit.cover,
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
+                        ),
+                        Positioned(
+                          bottom: 16,
+                          left: 16,
+                          right: 16,
+                          child: Container(
+                            height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFF3EE),
-                              borderRadius: BorderRadius.circular(50),
+                              color: const Color(0xF0F4F4F4),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.star_rounded,
-                                    size: 14, color: Color(0xFFFF4F0F)),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  '4.8 (26)',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFFFF4F0F),
-                                  ),
+                              children: List.generate(
+                                _galleryImages.take(4).length,
+                                (index) => _buildImageItem(
+                                  _galleryImages[index],
+                                  index,
+                                  _galleryImages.take(4).length,
                                 ),
-                              ],
+                              ),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_rounded,
-                              size: 16, color: Color(0xFFFF4F0F)),
-                          const SizedBox(width: 6),
-                          const Expanded(
-                            child: Text(
-                              'Jl. Kahuripan No. 3, Klojen, Kota Malang, Jawatimur',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                        ),
+                        Positioned(
+                          top: 40,
+                          left: 16,
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back_ios,
+                                color: Colors.white),
+                            onPressed: _handleHeaderBackPressed,
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-              // TabBar
-              TabBar(
+                  // ── SLIVER RESTAURANT INFO ──
+                  SliverToBoxAdapter(
+                    child: Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _restaurantName,
+                            style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  _tagChip(Icons.access_time_rounded, '1 hour'),
+                                  const SizedBox(width: 6),
+                                  _tagChip(Icons.restaurant_rounded,
+                                      _restaurantCuisine),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF3EE),
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.star_rounded,
+                                        size: 14, color: Color(0xFFFF4F0F)),
+                                    const SizedBox(width: 4),
+                                    const Text(
+                                      '4.8 (26)',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFFFF4F0F),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_rounded,
+                                  size: 16, color: Color(0xFFFF4F0F)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  _restaurantAddress,
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w500),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 44,
+                            child: OutlinedButton.icon(
+                              onPressed: _openRouteMap,
+                              icon: const Icon(
+                                Icons.route_rounded,
+                                size: 18,
+                                color: Color(0xFFFF4F0F),
+                              ),
+                              label: const Text(
+                                'Rute ke Restoran',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFFF4F0F),
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Color(0xFFFF4F0F),
+                                  width: 1.2,
+                                ),
+                                disabledForegroundColor: Colors.grey,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── SLIVER TAB BAR (PINNED) ──
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SliverTabBarDelegate(
+                      child: TabBar(
+                        controller: _tabController,
+                        labelColor: const Color(0xFFFF4F0F),
+                        unselectedLabelColor: Colors.black54,
+                        indicatorColor: const Color(0xFFFF4F0F),
+                        dividerColor: Colors.transparent,
+                        tabs: const [
+                          Tab(text: 'Menu'),
+                          Tab(text: 'About'),
+                          Tab(text: 'Gallery'),
+                          Tab(text: 'Review'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ];
+              },
+              body: TabBarView(
                 controller: _tabController,
-                labelColor: const Color(0xFFFF4F0F),
-                unselectedLabelColor: Colors.black54,
-                indicatorColor: const Color(0xFFFF4F0F),
-                dividerColor: Colors.transparent,
-                tabs: const [
-                  Tab(text: 'Menu'),
-                  Tab(text: 'About'),
-                  Tab(text: 'Gallery'),
-                  Tab(text: 'Review'),
+                children: [
+                  _buildMenuTab(),
+                  _buildAboutTab(),
+                  _buildGalleryTab(),
+                  _buildReviewTab(),
                 ],
               ),
-
-              // Tab content
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildMenuTab(),
-                    _buildAboutTab(),
-                    _buildGalleryTab(),
-                    _buildReviewTab(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          // ── BOTTOM BAR ── (Fixed position)
-          // Hanya tampil di tab Menu
-          if (isMenuTab)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: hasMenuRequest
-                  // Ada menu yang dipilih → tampilkan Menu Request bar
-                  ? _buildMenuRequestBar()
-                  // Belum ada menu dipilih → tampilkan Book a Table bar
-                  : _buildBookTableBar(),
             ),
-        ],
+
+            // ── BOTTOM BAR ── (Fixed position)
+            // Hanya tampil di tab Menu
+            if (isMenuTab)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: hasMenuRequest
+                    // Ada menu yang dipilih → tampilkan Menu Request bar
+                    ? _buildMenuRequestBar()
+                    // Belum ada menu dipilih → tampilkan Book a Table bar
+                    : _buildBookTableBar(),
+              ),
+          ],
         ),
       ),
     );
@@ -910,14 +985,29 @@ class RestaurantDetailState extends State<RestaurantDetail>
     );
   }
 
-  Widget _buildImageItem(String imagePath) {
+  Widget _buildImageItem(String imagePath, int index, int itemCount) {
+    final radius = BorderRadius.horizontal(
+      left: index == 0 ? const Radius.circular(6) : Radius.zero,
+      right: index == itemCount - 1 ? const Radius.circular(6) : Radius.zero,
+    );
+
     return Expanded(
-      child: Container(
-        margin: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(6),
-          image:
-              DecorationImage(image: AssetImage(imagePath), fit: BoxFit.cover),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          index == 0 ? 4 : 0,
+          4,
+          index == itemCount - 1 ? 4 : 4,
+          4,
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: _restaurantImage(
+              path: imagePath,
+              fit: BoxFit.cover,
+            ),
+          ),
         ),
       ),
     );
@@ -960,9 +1050,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => BookingData(
-                              menuRequest: {},
-                            )));
+                        builder: (context) => _detailBookingData({})));
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF4F0F),
@@ -1112,13 +1200,12 @@ class RestaurantDetailState extends State<RestaurantDetail>
     final filteredMenu = getFilteredMenu();
 
     return SingleChildScrollView(
-      controller: _menuScrollController,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           16,
           16,
           16,
-          100,
+          1,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1128,7 +1215,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
               children: [
                 Expanded(
                   child: Text(
-                    'Menu (${menuItems.length} Items)',
+                    'Menu (${_menuItems.length} Items)',
                     style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1215,7 +1302,16 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ),
             ),
 
-            if (filteredMenu.isEmpty)
+            if (_loadingMenus)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFFF4F0F),
+                  ),
+                ),
+              )
+            else if (filteredMenu.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32),
@@ -1277,8 +1373,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Tentang Pawon Njawi',
+            Text(
+              'Tentang $_restaurantName',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -1292,9 +1388,9 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 color: const Color(0xFFFFF3F0),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Pawon Njawi adalah restoran masakan Jawa yang telah berdiri sejak tahun 2015 di jantung kota Malang. Kami berkomitmen untuk menyajikan hidangan tradisional Jawa dengan cita rasa autentik dan kualitas terbaik.',
-                style: TextStyle(
+              child: Text(
+                _restaurantDescription,
+                style: const TextStyle(
                   fontSize: 14,
                   color: Colors.black87,
                   height: 1.6,
@@ -1311,11 +1407,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ),
             ),
             const SizedBox(height: 12),
-            _buildAboutPoint('Bahan baku segar dan berkualitas'),
-            _buildAboutPoint('Resep turun temurun yang otentik'),
-            _buildAboutPoint('Suasana nyaman dan bersih'),
-            _buildAboutPoint('Harga terjangkau'),
-            _buildAboutPoint('Pelayanan ramah dan profesional'),
+            ..._restaurantHighlights.map(_buildAboutPoint),
             const SizedBox(height: 20),
             const Text(
               'Jam Operasional',
@@ -1326,8 +1418,8 @@ class RestaurantDetailState extends State<RestaurantDetail>
               ),
             ),
             const SizedBox(height: 12),
-            _buildInfoChip(
-                Icons.access_time_rounded, 'Senin - Minggu: 10.00 - 22.00 WIB'),
+            _buildInfoChip(Icons.access_time_rounded,
+                'Senin - Minggu: $_restaurantOpenTime - $_restaurantCloseTime WIB'),
           ],
         ),
       ),
@@ -1398,13 +1490,13 @@ class RestaurantDetailState extends State<RestaurantDetail>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GalleryGrid(
-              images: galleryImages,
+              images: _galleryImages,
               onTap: _openGalleryPreview,
             ),
             const SizedBox(height: 16),
             Center(
               child: Text(
-                'SHOWING ${galleryImages.length} PHOTOS',
+                'SHOWING ${_galleryImages.length} PHOTOS',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 12,
@@ -1420,9 +1512,79 @@ class RestaurantDetailState extends State<RestaurantDetail>
     );
   }
 
+  String _generateReviewId() {
+    return 'RVW-${_reviewIdCounter.toString().padLeft(7, '0')}';
+  }
+
+  Future<void> _handleAddReview() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReviewPage(
+          restaurantId: _restaurantId,
+          restaurantName: _restaurantName,
+          restaurantAddress: _restaurantAddress,
+          restaurantPhotoUrl: _restaurantPhotoUrl,
+          restaurantCuisine: _restaurantCuisine,
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        result['id'] = _generateReviewId();
+        _reviewIdCounter++;
+        allReviews.insert(0, result);
+      });
+    }
+  }
+
   // ================= TAB REVIEW =================
   Widget _buildReviewTab() {
     final filteredReviews = getFilteredReviews();
+
+    if (_loadingReviews) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(color: Color(0xFFFF4F0F)),
+        ),
+      );
+    }
+
+    if (_reviewError != null) {
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const SizedBox(height: 48),
+              const Icon(Icons.error_outline_rounded,
+                  color: Color(0xFFFF4F0F), size: 40),
+              const SizedBox(height: 12),
+              const Text(
+                'Gagal memuat review',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _reviewError!,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: () {
+                  _reviewsSubscription?.cancel();
+                  _listenRestaurantReviews();
+                },
+                child: const Text('Coba lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     final Map<int, int> ratingCount = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
     for (final r in allReviews) {
@@ -1434,6 +1596,82 @@ class RestaurantDetailState extends State<RestaurantDetail>
             allReviews.length
         : 0;
 
+    // If no reviews, show empty state
+    if (allReviews.isEmpty) {
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 48),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF4F0F).withOpacity(0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.rate_review_rounded,
+                          color: Color(0xFFFF4F0F), size: 32),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Belum ada review',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Jadilah yang pertama memberikan review',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _handleAddReview(),
+                        icon: const Icon(Icons.add_rounded,
+                            color: Color(0xFFFF4F0F), size: 20),
+                        label: const Text(
+                          'Tambah Review',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFFF4F0F),
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(
+                              color: Color(0xFFFF4F0F), width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // If there are reviews, show normal layout
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1528,12 +1766,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                       color: Colors.black),
                 ),
                 TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ReviewPage()),
-                    );
-                  },
+                  onPressed: _handleAddReview,
                   icon: const Icon(Icons.edit, size: 16, color: Colors.black),
                   label: const Text(
                     'Add Review',
@@ -1605,4 +1838,36 @@ class RestaurantDetailState extends State<RestaurantDetail>
     'Highest',
     'Lowest',
   ];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Custom SliverPersistentHeaderDelegate for TabBar
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _SliverTabBarDelegate({required this.child});
+
+  @override
+  double get minExtent => 48;
+
+  @override
+  double get maxExtent => 48;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Colors.white,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) =>
+      oldDelegate.child != child;
 }

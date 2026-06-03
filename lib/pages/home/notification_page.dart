@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../models/notification_model.dart';
+import '../../services/notification_service.dart';
+
 void main() {
   runApp(const MaterialApp(
     home: NotificationPage(),
@@ -23,87 +26,8 @@ class _NotificationPageState extends State<NotificationPage> {
   static const Color _lightGray = Color(0xFFF3F3F3);
   static const Color _textBlack = Color(0xFF111111);
 
+  final NotificationService _notificationService = NotificationService();
   String _currentFilter = 'All';
-
-  final List<NotifModel> _notifications = [
-    NotifModel(
-      id: 0,
-      type: 'promo',
-      title: 'Weekend Special Deal',
-      desc:
-          'Get 30% off all bookings this weekend at Melati Restaurant. Valid Sat–Sun only.',
-      time: '2m ago',
-      isUnread: true,
-      day: 'TODAY',
-    ),
-    NotifModel(
-      id: 1,
-      type: 'booking',
-      title: 'Booking Confirmed',
-      desc:
-          'Your table for 2 at Panon Njawi on Sat, 10 May at 19:00 is confirmed.',
-      time: '1h ago',
-      isUnread: true,
-      day: 'TODAY',
-    ),
-    NotifModel(
-      id: 2,
-      type: 'booking',
-      title: 'Booking Reminder',
-      desc:
-          "Don't forget! You have a reservation at Lakana Restaurant today at 18:30.",
-      time: '3h ago',
-      isUnread: true,
-      day: 'TODAY',
-    ),
-    NotifModel(
-      id: 3,
-      type: 'promo',
-      title: 'New Restaurant Alert',
-      desc:
-          'SEMAJA Menteng is now live on the app. Be the first to book a table!',
-      time: '5h ago',
-      isUnread: false,
-      day: 'TODAY',
-    ),
-    NotifModel(
-      id: 4,
-      type: 'booking',
-      title: 'Review Request',
-      desc:
-          'How was your dinner at Kinan Dapur? Tap here to share your experience.',
-      time: 'Yesterday',
-      isUnread: false,
-      day: 'YESTERDAY',
-    ),
-    NotifModel(
-      id: 5,
-      type: 'system',
-      title: 'Account Verified',
-      desc:
-          'Your phone number has been verified successfully. Enjoy full access!',
-      time: '2d ago',
-      isUnread: false,
-      day: 'EARLIER',
-    ),
-    NotifModel(
-      id: 6,
-      type: 'system',
-      title: 'App Update Available',
-      desc:
-          'Version 2.1.0 is here with smoother booking flow and new restaurant filters.',
-      time: '5d ago',
-      isUnread: false,
-      day: 'EARLIER',
-    ),
-  ];
-
-  List<NotifModel> get _filteredNotifs {
-    if (_currentFilter == 'All') return _notifications;
-    return _notifications
-        .where((n) => n.type.toLowerCase() == _currentFilter.toLowerCase())
-        .toList();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,8 +43,11 @@ class _NotificationPageState extends State<NotificationPage> {
         centerTitle: true,
         leading: Center(
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new,
-                size: 20, color: _textBlack),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              size:20,
+              color: _textBlack,
+            ),
             onPressed: () => Navigator.maybePop(context),
           ),
         ),
@@ -137,7 +64,7 @@ class _NotificationPageState extends State<NotificationPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: ['All', 'Promo', 'Booking'].map((filter) {
-              bool isActive = _currentFilter == filter;
+              final isActive = _currentFilter == filter;
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: InkWell(
@@ -145,8 +72,10 @@ class _NotificationPageState extends State<NotificationPage> {
                   onTap: () => setState(() => _currentFilter = filter),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isActive ? _primaryOrange : Colors.white,
                       borderRadius: BorderRadius.circular(50),
@@ -170,50 +99,130 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: 24, bottom: 40),
-              itemCount: _filteredNotifs.length,
-              itemBuilder: (context, index) {
-                final item = _filteredNotifs[index];
-                bool showLabel =
-                    index == 0 || item.day != _filteredNotifs[index - 1].day;
+      body: StreamBuilder<List<NotificationModel>>(
+        stream: _notificationService.streamCurrentUserNotifications(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: _primaryOrange),
+            );
+          }
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (showLabel)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-                        child: Text(
-                          item.day,
-                          style: const TextStyle(
-                            color: Color(0xFFCCCCCC),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 1.2,
-                          ),
+          if (snapshot.hasError) {
+            return _emptyState(
+              Icons.error_outline_rounded,
+              'Gagal memuat notifikasi',
+              'Periksa koneksi atau izin database, lalu coba lagi.',
+            );
+          }
+
+          final notifications = List<NotificationModel>.from(
+            snapshot.data ?? const <NotificationModel>[],
+          );
+          notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+          final filteredNotifications = _filteredNotifications(notifications);
+          if (filteredNotifications.isEmpty) {
+            return _emptyState(
+              Icons.notifications_none_rounded,
+              'Belum ada notifikasi',
+              'Notifikasi booking dan promo akan muncul di sini',
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.only(top: 24, bottom: 40),
+            itemCount: filteredNotifications.length,
+            itemBuilder: (context, index) {
+              final item = filteredNotifications[index];
+              final showLabel = index == 0 ||
+                  _dayLabel(item.createdAt) !=
+                      _dayLabel(filteredNotifications[index - 1].createdAt);
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (showLabel)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                      child: Text(
+                        _dayLabel(item.createdAt),
+                        style: const TextStyle(
+                          color: Color(0xFFCCCCCC),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          letterSpacing: 1.2,
                         ),
                       ),
-                    _buildNotificationCard(item),
-                  ],
-                );
-              },
+                    ),
+                  _buildNotificationCard(item),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  List<NotificationModel> _filteredNotifications(
+    List<NotificationModel> notifications,
+  ) {
+    if (_currentFilter == 'All') return notifications;
+    return notifications
+        .where((n) => n.type.toLowerCase() == _currentFilter.toLowerCase())
+        .toList();
+  }
+
+  Widget _emptyState(IconData icon, String title, String? subtitle) {
+    const orange = Color(0xFFFF4F0F);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: orange.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: orange, size: 32),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A1A1A),
             ),
           ),
+          if (subtitle != null && subtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildNotificationCard(NotifModel notif) {
+  Widget _buildNotificationCard(NotificationModel notification) {
     IconData iconData;
     Color iconColor;
     Color iconBg;
 
-    switch (notif.type) {
+    switch (notification.type) {
       case 'promo':
         iconData = Icons.local_offer_rounded;
         iconColor = _primaryOrange;
@@ -230,21 +239,21 @@ class _NotificationPageState extends State<NotificationPage> {
         iconBg = const Color(0xFFF5F5F5);
     }
 
-    if (!notif.isUnread) {
+    if (notification.isRead) {
       iconColor = const Color(0xFFBBBBBB);
       iconBg = const Color(0xFFF5F5F5);
     }
 
     return InkWell(
-      onTap: () => setState(() => notif.isUnread = false),
+      onTap: () => _markAsRead(notification),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: notif.isUnread ? _unreadBg : Colors.white,
+          color: notification.isRead ? Colors.white : _unreadBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: notif.isUnread ? _unreadBorder : _lightGray,
+            color: notification.isRead ? _lightGray : _unreadBorder,
             width: 1,
           ),
         ),
@@ -270,20 +279,20 @@ class _NotificationPageState extends State<NotificationPage> {
                     children: [
                       Expanded(
                         child: Text(
-                          notif.title,
+                          notification.title,
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: notif.isUnread
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: notif.isUnread
-                                ? _textBlack
-                                : const Color(0xFF666666),
+                            fontWeight: notification.isRead
+                                ? FontWeight.w600
+                                : FontWeight.w800,
+                            color: notification.isRead
+                                ? const Color(0xFF666666)
+                                : _textBlack,
                           ),
                         ),
                       ),
                       Text(
-                        notif.time,
+                        _timeLabel(notification.createdAt),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFFBBBBBB),
@@ -294,12 +303,12 @@ class _NotificationPageState extends State<NotificationPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    notif.desc,
+                    notification.message,
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: notif.isUnread
-                          ? const Color(0xFF777777)
-                          : const Color(0xFFAAAAAA),
+                      color: notification.isRead
+                          ? const Color(0xFFAAAAAA)
+                          : const Color(0xFF777777),
                       height: 1.4,
                     ),
                     maxLines: 2,
@@ -308,7 +317,7 @@ class _NotificationPageState extends State<NotificationPage> {
                 ],
               ),
             ),
-            if (notif.isUnread)
+            if (!notification.isRead)
               Container(
                 margin: const EdgeInsets.only(top: 4, left: 8),
                 width: 7,
@@ -323,24 +332,28 @@ class _NotificationPageState extends State<NotificationPage> {
       ),
     );
   }
-}
 
-class NotifModel {
-  final int id;
-  final String type;
-  final String title;
-  final String desc;
-  final String time;
-  final String day;
-  bool isUnread;
+  Future<void> _markAsRead(NotificationModel notification) async {
+    await _notificationService.markAsRead(notification);
+  }
 
-  NotifModel({
-    required this.id,
-    required this.type,
-    required this.title,
-    required this.desc,
-    required this.time,
-    required this.day,
-    required this.isUnread,
-  });
+  String _timeLabel(DateTime date) {
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _dayLabel(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(date.year, date.month, date.day);
+    final difference = today.difference(target).inDays;
+
+    if (difference == 0) return 'TODAY';
+    if (difference == 1) return 'YESTERDAY';
+
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
 }

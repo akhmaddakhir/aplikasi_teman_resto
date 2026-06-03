@@ -12,7 +12,20 @@
           "package_name": "com.example.teman_resto_pjbl"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "749004572344-g96arf1ut4jjf2fcm864q3j78eht0r0t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.teman_resto_pjbl",
+            "certificate_hash": "f06d7aee2a2093233bfcf4cf88adf718cddb0056"
+          }
+        },
+        {
+          "client_id": "749004572344-7mhf96k2h6smpoler31el5vvbj7qsain.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBYHQ8oAqYZVK284ALfO6tTNkQB9T60ZV0"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "749004572344-7mhf96k2h6smpoler31el5vvbj7qsain.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "749004572344-rhv92fv8gqbfoimq4r9flmfvsgtg1o74.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.temanRestoPjbl"
+              }
+            }
+          ]
         }
       }
     }

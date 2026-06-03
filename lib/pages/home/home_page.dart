@@ -8,7 +8,10 @@ import 'package:teman_resto/pages/home/notification_page.dart';
 import 'package:teman_resto/pages/home/see_all.dart';
 import 'package:teman_resto/services/auth_service.dart';
 import 'package:teman_resto/services/location_service.dart';
+import 'package:teman_resto/services/partner_service.dart';
 import 'package:teman_resto/services/session_service.dart';
+import 'package:teman_resto/widgets/wishlist_button.dart';
+import '../../models/partner_model.dart';
 import '../restaurant/restaurant_detail.dart';
 
 class HomePage extends StatefulWidget {
@@ -26,6 +29,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   StreamSubscription<Position>? _locationSubscription;
   final _authService = AuthService();
   final _sessionService = SessionService();
+  final _partnerService = PartnerService();
+  late Future<List<PartnerModel>> _restaurantsFuture;
 
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
@@ -34,6 +39,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _restaurantsFuture = _partnerService.getApprovedRestaurants();
   }
 
   @override
@@ -82,7 +88,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   /// Auto-detect lokasi user terkini dari GPS
-  Future<void> _detectCurrentLocation({bool resetManualLocation = false}) async {
+  Future<void> _detectCurrentLocation(
+      {bool resetManualLocation = false}) async {
     try {
       if (resetManualLocation) {
         LocationService.instance.clearManualCity();
@@ -153,6 +160,116 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _locationSubscription?.cancel();
     super.dispose();
+  }
+
+  void _openRestaurant(PartnerModel restaurant) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RestaurantDetail(partner: restaurant),
+      ),
+    );
+  }
+
+  String _restaurantImage(PartnerModel restaurant, String fallback) {
+    final url = restaurant.restaurantPhotoUrl?.trim();
+    return url != null && url.isNotEmpty ? url : fallback;
+  }
+
+  String _ratingFor(PartnerModel restaurant) => '4.8';
+
+  bool _isOpenNow(PartnerModel restaurant) {
+    final now = TimeOfDay.now();
+    final open = _parseTime(restaurant.openTime);
+    final close = _parseTime(restaurant.closeTime);
+    if (open == null || close == null) return true;
+
+    final nowMinutes = now.hour * 60 + now.minute;
+    final openMinutes = open.hour * 60 + open.minute;
+    final closeMinutes = close.hour * 60 + close.minute;
+    if (closeMinutes < openMinutes) {
+      return nowMinutes >= openMinutes || nowMinutes <= closeMinutes;
+    }
+    return nowMinutes >= openMinutes && nowMinutes <= closeMinutes;
+  }
+
+  TimeOfDay? _parseTime(String value) {
+    final parts = value.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  Widget _popularPartnerList(List<PartnerModel> restaurants) {
+    return ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        ...restaurants.expand(
+          (restaurant) => [
+            _PopularCard(
+              imagePath: _restaurantImage(
+                restaurant,
+                'assets/images/gambar_restoran_8.jfif',
+              ),
+              title: restaurant.restaurantName,
+              address: restaurant.address,
+              rating: _ratingFor(restaurant),
+              distance: '0.8 km',
+              onTap: () => _openRestaurant(restaurant),
+            ),
+            const SizedBox(width: 13),
+          ],
+        ),
+        const SizedBox(width: 7),
+      ],
+    );
+  }
+
+  Widget _anotherPartnerList(List<PartnerModel> restaurants) {
+    return Column(
+      children: [
+        ...restaurants.map((restaurant) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _RestaurantVerticalCard(
+              imagePath: _restaurantImage(
+                restaurant,
+                'assets/images/gambar_restoran_5.jfif',
+              ),
+              title: restaurant.restaurantName,
+              rating: _ratingFor(restaurant),
+              duration: '25 min',
+              cuisine: restaurant.cuisine,
+              address: restaurant.address,
+              isOpen: _isOpenNow(restaurant),
+              closingTime: restaurant.closeTime,
+              restaurant: restaurant,
+              onTap: () => _openRestaurant(restaurant),
+            ),
+          );
+        }),
+        const SizedBox(height: 42),
+      ],
+    );
+  }
+
+  Widget _emptyRestaurantState({double height = 120}) {
+    return SizedBox(
+      height: height,
+      child: const Center(
+        child: Text(
+          'Belum ada restoran mitra',
+          style: TextStyle(
+            fontFamily: _font,
+            fontSize: 14,
+            color: Color(0xFF888888),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -295,76 +412,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 270,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          _PopularCard(
-                            imagePath: 'assets/images/gambar_restoran_8.jfif',
-                            title: 'Kinan Dapur',
-                            address: 'Jl. Kahuripan No.3, Klojen',
-                            rating: '4.9',
-                            distance: '0.8 km',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail()),
-                            ),
-                          ),
-                          const SizedBox(width: 13),
-                          _PopularCard(
-                            imagePath: 'assets/images/melati_restaurant.png',
-                            title: 'Melati Restaurant',
-                            address: 'Jl. Semeru No.7, Malang',
-                            rating: '4.8',
-                            distance: '1.2 km',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail()),
-                            ),
-                          ),
-                          const SizedBox(width: 13),
-                          _PopularCard(
-                            imagePath: 'assets/images/gambar_restoran_5.jfif',
-                            title: 'Panon Njawi',
-                            address: 'Jl. Ijen Blvd, Malang',
-                            rating: '4.7',
-                            distance: '2.4 km',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail()),
-                            ),
-                          ),
-                          const SizedBox(width: 13),
-                          _PopularCard(
-                            imagePath: 'assets/images/gambar_restoran_6.jfif',
-                            title: 'Lakana Restaurant',
-                            address: 'Jl. Veteran No.12, Kota Malang',
-                            rating: '4.6',
-                            distance: '1.8 km',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail()),
-                            ),
-                          ),
-                          const SizedBox(width: 13),
-                          _PopularCard(
-                            imagePath: 'assets/images/gambar_restoran_4.jfif',
-                            title: 'Semaja Menteng',
-                            address: 'Jl. Gereja No.11, Gondangdia',
-                            rating: '4.9',
-                            distance: '3.5 km',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail()),
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                        ],
+                      child: FutureBuilder<List<PartnerModel>>(
+                        future: _restaurantsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: _orange,
+                              ),
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            return _emptyRestaurantState(height: 270);
+                          }
+
+                          final restaurants = snapshot.data ?? [];
+                          if (restaurants.isEmpty) {
+                            return _emptyRestaurantState(height: 270);
+                          }
+
+                          return _popularPartnerList(restaurants);
+                        },
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -407,55 +477,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     const SizedBox(height: 12),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          _RestaurantVerticalCard(
-                            imagePath: 'assets/images/gambar_restoran_5.jfif',
-                            title: 'Panon Njawi',
-                            rating: '4.8',
-                            duration: '25 min',
-                            cuisine: 'Javanese',
-                            address: 'Jl. Kahuripan No.3, Klojen, Kota Malang',
-                            isOpen: true,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail()),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          _RestaurantVerticalCard(
-                            imagePath: 'assets/images/gambar_restoran_6.jfif',
-                            title: 'Lakana Restaurant',
-                            rating: '4.7',
-                            duration: '20 min',
-                            cuisine: 'Indonesian',
-                            address: 'Jl. Veteran No.12, Kota Malang',
-                            isOpen: true,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail()),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          _RestaurantVerticalCard(
-                            imagePath: 'assets/images/gambar_restoran_8.jfif',
-                            title: 'Kinan Dapur',
-                            rating: '4.6',
-                            duration: '30 min',
-                            cuisine: 'Fusion',
-                            address: 'Jl. Kawi No.5, Kota Malang',
-                            isOpen: false,
-                            closingTime: '21:00',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RestaurantDetail()),
-                            ),
-                          ),
-                          const SizedBox(height: 56),
-                        ],
+                      child: FutureBuilder<List<PartnerModel>>(
+                        future: _restaurantsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const SizedBox(
+                              height: 120,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: _orange,
+                                ),
+                              ),
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            return _emptyRestaurantState();
+                          }
+
+                          final restaurants = snapshot.data ?? [];
+                          if (restaurants.isEmpty) {
+                            return _emptyRestaurantState();
+                          }
+
+                          return _anotherPartnerList(restaurants);
+                        },
                       ),
                     ),
                   ],
@@ -488,6 +535,14 @@ class _PopularCard extends StatelessWidget {
 
   static const String _font = 'Inter';
 
+  Widget _image(String path) {
+    final isNetwork = path.startsWith('http://') || path.startsWith('https://');
+    if (isNetwork) {
+      return Image.network(path, fit: BoxFit.cover);
+    }
+    return Image.asset(path, fit: BoxFit.cover);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -516,7 +571,7 @@ class _PopularCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(imagePath, fit: BoxFit.cover),
+              _image(imagePath),
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -708,6 +763,7 @@ class _PopularCard extends StatelessWidget {
 }
 
 class _RestaurantVerticalCard extends StatefulWidget {
+  final PartnerModel restaurant;
   final String imagePath;
   final String title;
   final String rating;
@@ -719,6 +775,7 @@ class _RestaurantVerticalCard extends StatefulWidget {
   final VoidCallback onTap;
 
   const _RestaurantVerticalCard({
+    required this.restaurant,
     required this.imagePath,
     required this.title,
     required this.rating,
@@ -736,10 +793,26 @@ class _RestaurantVerticalCard extends StatefulWidget {
 }
 
 class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
-  bool _saved = false;
-
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
+
+  Widget _image(String path) {
+    final isNetwork = path.startsWith('http://') || path.startsWith('https://');
+    if (isNetwork) {
+      return Image.network(
+        path,
+        width: double.infinity,
+        height: 168,
+        fit: BoxFit.cover,
+      );
+    }
+    return Image.asset(
+      path,
+      width: double.infinity,
+      height: 168,
+      fit: BoxFit.cover,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -770,36 +843,34 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: Stack(
                 children: [
-                  Image.asset(
-                    widget.imagePath,
-                    width: double.infinity,
-                    height: 168,
-                    fit: BoxFit.cover,
-                  ),
+                  _image(widget.imagePath),
                   Positioned(
                     top: 12,
                     right: 12,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _saved = !_saved),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.13),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          _saved
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          size: 20,
-                          color: _saved ? _orange : const Color(0xFF000000),
+                    child: WishlistButton(
+                      restaurant: widget.restaurant,
+                      builder: (context, saved, onTap) => GestureDetector(
+                        onTap: onTap,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.95),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.13),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            saved
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            size: 20,
+                            color: saved ? _orange : const Color(0xFF000000),
+                          ),
                         ),
                       ),
                     ),

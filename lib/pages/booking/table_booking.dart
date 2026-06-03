@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/restaurant_table_model.dart';
 import '../../services/reservation_service.dart';
+import '../../widgets/table_widget.dart';
 import 'booking_detail.dart';
 
 class TableBooking extends StatefulWidget {
@@ -8,6 +9,8 @@ class TableBooking extends StatefulWidget {
   final String restaurantName;
   final String restaurantAddress;
   final String? restaurantPhotoUrl;
+  final List<String> paymentMethods;
+  final Map<dynamic, dynamic> menuRequest;
   final String name;
   final String phone;
   final String occasion;
@@ -21,6 +24,8 @@ class TableBooking extends StatefulWidget {
     this.restaurantName = '',
     this.restaurantAddress = '',
     this.restaurantPhotoUrl,
+    this.paymentMethods = const ['Cash'],
+    this.menuRequest = const {},
     this.name = '',
     this.phone = '',
     this.occasion = '',
@@ -35,12 +40,12 @@ class TableBooking extends StatefulWidget {
 }
 
 class TableBookingState extends State<TableBooking>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
 
   final _reservationService = ReservationService();
-  TabController? _tabController;
+  late TabController _tabController;
   String? _restaurantId;
   List<RestaurantTable> _tables = [];
   RestaurantTable? _selectedTable;
@@ -51,12 +56,13 @@ class TableBookingState extends State<TableBooking>
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 1, vsync: this);
     _loadTables();
   }
 
   @override
   void dispose() {
-    _tabController?.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -81,23 +87,36 @@ class TableBookingState extends State<TableBooking>
       );
 
       final floors = _floorsFrom(tables);
-      _tabController?.dispose();
-      _tabController = TabController(
-        length: floors.isEmpty ? 1 : floors.length,
-        vsync: this,
-      );
 
-      setState(() {
-        _restaurantId = restaurantId;
-        _tables = tables;
-        _selectedTable = tables.isEmpty ? null : tables.first;
-        _loading = false;
-      });
+      if (mounted) {
+        _tabController.dispose();
+        _tabController = TabController(
+          length: floors.isEmpty ? 1 : floors.length,
+          vsync: this,
+        );
+
+        RestaurantTable? selectedTable;
+        for (final table in tables) {
+          if (table.status == TableStatus.available) {
+            selectedTable = table;
+            break;
+          }
+        }
+
+        setState(() {
+          _restaurantId = restaurantId;
+          _tables = tables;
+          _selectedTable = selectedTable;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -116,7 +135,7 @@ class TableBookingState extends State<TableBooking>
 
     setState(() => _booking = true);
     try {
-      await _reservationService.createReservation(
+      final reservationRef = await _reservationService.createReservation(
         restaurantId: _restaurantId!,
         table: _selectedTable!,
         customerName: widget.name,
@@ -125,16 +144,24 @@ class TableBookingState extends State<TableBooking>
         guests: widget.guests,
         date: widget.date,
         time: widget.time,
+        paymentMethods: widget.paymentMethods,
+        restaurantName: widget.restaurantName,
+        restaurantAddress: widget.restaurantAddress,
+        restaurantPhotoUrl: widget.restaurantPhotoUrl,
+        menuRequest: widget.menuRequest,
       );
 
       if (mounted) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => BookingDetail(
+              reservationId: reservationRef.id,
               restaurantName: widget.restaurantName,
               restaurantAddress: widget.restaurantAddress,
               restaurantPhotoUrl: widget.restaurantPhotoUrl,
+              paymentMethods: widget.paymentMethods,
+              menuRequest: widget.menuRequest,
               customerName: widget.name,
               phone: widget.phone,
               occasion: widget.occasion,
@@ -307,83 +334,42 @@ class TableBookingState extends State<TableBooking>
 
   Widget _tableCard(RestaurantTable table) {
     final selected = _selectedTable?.id == table.id;
-    final isRect = table.shape == TableShape.rectangle;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTable = table),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              isRect ? 2 : 1,
-              (_) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: _chair(selected),
-              ),
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TableShapeWidget(
+          tableName: table.tableNumber,
+          capacity: table.capacity,
+          shape: table.shape,
+          orientation: table.orientation,
+          status: table.status,
+          isSelected: selected,
+          onTap: () => setState(() => _selectedTable = table),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _formatRupiah(table.price),
+          style: TextStyle(
+            fontFamily: _font,
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            color: selected ? _orange : const Color(0xFF555555),
           ),
-          const SizedBox(height: 4),
-          Container(
-            width: isRect ? 112 : 82,
-            height: 80,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color:
-                  selected ? const Color(0xFF43EA3B) : const Color(0xFFEDEDED),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF878787), width: 1.5),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  table.tableNumber,
-                  style: const TextStyle(
-                    fontFamily: _font,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${table.capacity} kursi',
-                  style: const TextStyle(
-                    fontFamily: _font,
-                    fontSize: 10,
-                    color: Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              isRect ? 2 : 1,
-              (_) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: _chair(selected),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _chair(bool selected) {
-    return Container(
-      width: 16,
-      height: 16,
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xFF43EA3B) : const Color(0xFFEDEDED),
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF878787), width: 1),
-      ),
-    );
+  String _formatRupiah(int value) {
+    if (value <= 0) return 'Gratis';
+    final text = value.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final remaining = text.length - i;
+      buffer.write(text[i]);
+      if (remaining > 1 && remaining % 3 == 1) buffer.write('.');
+    }
+    return 'Rp $buffer';
   }
 
   Widget _legend(Color color, String label) {

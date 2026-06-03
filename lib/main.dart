@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 
 // Auth
@@ -33,10 +34,6 @@ import 'pages/booking/booking_detail.dart';
 import 'pages/booking/booking_cancelled.dart';
 import 'pages/booking/table_booking.dart';
 
-// Payment
-import 'pages/payment/payment_page.dart';
-import 'pages/payment/payment_success.dart';
-
 // Orders
 import 'pages/orders/orders_page.dart';
 import 'pages/orders/review_page.dart';
@@ -54,13 +51,16 @@ import 'pages/partner/partner_register_page.dart';
 
 // Navigate
 import 'pages/navigate/navigate_page.dart';
+import 'services/auth_service.dart';
 import 'services/location_service.dart';
+import 'services/session_service.dart';
 
 // Widgets
 import 'widgets/bottom_navbar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -101,12 +101,10 @@ class MyApp extends StatelessWidget {
         '/search-results': (context) => const SearchResults(),
         '/filter': (context) => const FilterPage(),
         '/booking-data': (context) => const BookingData(menuRequest: {}),
-        '/booking-add': (context) => BookingAddPage(),
+        '/booking-add': (context) => const BookingAddPage(),
         '/booking-detail': (context) => const BookingDetail(),
         '/booking-cancelled': (context) => const BookingCancelled(),
         '/table-booking': (context) => TableBooking(),
-        '/payment': (context) => const PaymentPage(),
-        '/payment-success': (context) => const PaymentSuccess(),
         // '/orders' didaftarkan sebagai named route agar popUntil bisa menemukannya
         '/orders': (context) => const OrdersPage(),
         '/review': (context) => const ReviewPage(),
@@ -154,7 +152,16 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       LocationService.instance.clearManualCity();
+      _redirectIfLoggedOut();
     }
+  }
+
+  Future<void> _redirectIfLoggedOut() async {
+    final hasSession = await SessionService().hasActiveSession();
+    final hasAuthUser = AuthService().isLoggedIn;
+    if (!mounted || hasSession && hasAuthUser) return;
+
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override

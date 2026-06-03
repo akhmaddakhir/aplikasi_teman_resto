@@ -1,7 +1,14 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class CloudinaryConfig {
-  static const cloudName = 'dh0slmjul';
-  static const uploadPreset = 'teman_resto_profile';
-  static const folder = 'teman_resto/profile_images';
+  static String get cloudName => dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
+  static String get uploadPreset =>
+      dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '';
+  static const folder = '';
+  static const profileFolder = 'profile';
+  static const restaurantPhotoFolder = 'foto_resto';
+  static const restaurantGalleryFolder = 'foto_resto/gallery';
+  static const menuPhotoFolder = 'foto_menu';
 
   static bool get isConfigured =>
       cloudName.trim().isNotEmpty &&

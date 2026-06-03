@@ -5,7 +5,7 @@ import '../../services/session_service.dart';
 import './login_page.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({super.key});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -53,14 +53,7 @@ class _RegisterPageState extends State<RegisterPage> {
         // Simpan session lokal
         await _sessionService.saveUserSession(user);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registrasi berhasil! Selamat datang'),
-            backgroundColor: Color(0xFF16A34A),
-          ),
-        );
-
-        // Navigate ke complete profile
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/complete-profile');
       }
     } catch (e) {
@@ -68,6 +61,39 @@ class _RegisterPageState extends State<RegisterPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleRegister() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.loginWithGoogle();
+      if (result == null) return;
+
+      if (!result.needsProfileCompletion) {
+        await _sessionService.saveUserSession(result.user);
+      }
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(
+        context,
+        result.needsProfileCompletion ? '/complete-profile' : '/home',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: Colors.red,
           ),
         );
@@ -247,7 +273,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5722),
                     disabledBackgroundColor:
-                        const Color(0xFFFF5722).withOpacity(0.6),
+                        const Color(0xFFFF5722).withValues(alpha: 0.6),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
@@ -296,7 +322,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     _buildSocialButton(
                       assetPath: 'assets/icons/google.svg',
-                      onPressed: () => _handleSocialLogin('Google'),
+                      onPressed: _handleGoogleRegister,
                     ),
                     const SizedBox(width: 12),
                     _buildSocialButton(

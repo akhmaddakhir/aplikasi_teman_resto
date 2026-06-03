@@ -1216,8 +1216,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
+                      await _authService.logout();
+                      await _sessionService.clearUserSession();
+                      if (!mounted) return;
                       Navigator.pushNamedAndRemoveUntil(
                         context,
                         '/login',

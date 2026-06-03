@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../models/partner_model.dart';
 import '../models/user_model.dart';
 
 class SessionService {
@@ -7,6 +8,8 @@ class SessionService {
   static const String _userKey = 'logged_in_user';
   static const String _loginHistoryKey = 'login_history';
   static const String _selectedLocationKey = 'selected_location';
+  static const String _recentViewedRestaurantsKey = 'recent_viewed_restaurants';
+  static const String _recentSearchesKey = 'recent_searches';
 
   factory SessionService() {
     return _instance;
@@ -77,6 +80,87 @@ class SessionService {
       return location?.isNotEmpty == true ? location : null;
     } catch (e) {
       throw Exception('Get selected location failed: ${e.toString()}');
+    }
+  }
+
+  Future<void> saveRecentViewedRestaurant(PartnerModel restaurant) async {
+    try {
+      if (restaurant.id.trim().isEmpty) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      final current = await getRecentViewedRestaurants();
+      final updated = [
+        restaurant,
+        ...current.where((item) => item.id != restaurant.id),
+      ].take(6).toList();
+
+      final payload = updated.map((item) => item.toFirestore()).toList();
+      await prefs.setString(_recentViewedRestaurantsKey, jsonEncode(payload));
+    } catch (e) {
+      throw Exception('Save recent viewed restaurant failed: ${e.toString()}');
+    }
+  }
+
+  Future<List<PartnerModel>> getRecentViewedRestaurants() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final json = prefs.getString(_recentViewedRestaurantsKey);
+      if (json == null) return [];
+
+      final decoded = jsonDecode(json) as List<dynamic>;
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(PartnerModel.fromFirestore)
+          .where((item) => item.id.trim().isNotEmpty)
+          .toList();
+    } catch (e) {
+      throw Exception('Get recent viewed restaurants failed: ${e.toString()}');
+    }
+  }
+
+  /// Save recent search
+  Future<void> saveRecentSearch(String query) async {
+    try {
+      if (query.trim().isEmpty) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      final current = await getRecentSearches();
+
+      // Remove duplicate if exists
+      current.removeWhere((item) => item == query.trim());
+
+      // Add to beginning
+      current.insert(0, query.trim());
+
+      // Keep only last 10 searches
+      if (current.length > 10) {
+        current.removeRange(10, current.length);
+      }
+
+      await prefs.setStringList(_recentSearchesKey, current);
+    } catch (e) {
+      throw Exception('Save recent search failed: ${e.toString()}');
+    }
+  }
+
+  /// Get recent searches
+  Future<List<String>> getRecentSearches() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final searches = prefs.getStringList(_recentSearchesKey) ?? [];
+      return searches;
+    } catch (e) {
+      throw Exception('Get recent searches failed: ${e.toString()}');
+    }
+  }
+
+  /// Clear recent searches
+  Future<void> clearRecentSearches() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_recentSearchesKey);
+    } catch (e) {
+      throw Exception('Clear recent searches failed: ${e.toString()}');
     }
   }
 

@@ -52,11 +52,13 @@ class ImageService {
   Future<String?> uploadProfileImage({
     required String uid,
     required File imageFile,
+    String folder = CloudinaryConfig.folder,
+    String publicIdPrefix = 'image',
   }) async {
     try {
       if (!CloudinaryConfig.isConfigured) {
         throw Exception(
-          'Cloudinary belum dikonfigurasi. Isi lib/config/cloudinary_config.dart.',
+          'Cloudinary belum dikonfigurasi. Isi file .env.',
         );
       }
 
@@ -74,17 +76,20 @@ class ImageService {
 
       print('[ImageService] Starting Cloudinary upload...');
       print('[ImageService] User ID: $uid');
+      print(
+          '[ImageService] Folder: ${folder.trim().isEmpty ? '(root)' : folder}');
       print('[ImageService] File path: ${imageFile.path}');
       print('[ImageService] File size: ${fileBytes.length} bytes');
 
       final body = <int>[
         ..._fieldPart(boundary, 'upload_preset', CloudinaryConfig.uploadPreset),
-        ..._fieldPart(boundary, 'folder', CloudinaryConfig.folder),
-        ..._fieldPart(boundary, 'public_id', 'profile_${uid}_$timestamp'),
+        if (folder.trim().isNotEmpty) ..._fieldPart(boundary, 'folder', folder),
+        ..._fieldPart(
+            boundary, 'public_id', '${publicIdPrefix}_${uid}_$timestamp'),
         ..._filePart(
           boundary: boundary,
           fieldName: 'file',
-          fileName: 'profile_$uid.jpg',
+          fileName: '${publicIdPrefix}_$uid.jpg',
           contentType: 'image/jpeg',
           bytes: fileBytes,
         ),

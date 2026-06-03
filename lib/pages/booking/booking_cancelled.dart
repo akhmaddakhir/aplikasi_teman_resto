@@ -1,15 +1,51 @@
 import 'package:flutter/material.dart';
+import '../../services/reservation_service.dart';
 
 class BookingCancelled extends StatefulWidget {
-  const BookingCancelled({super.key});
+  final String? reservationId;
+
+  const BookingCancelled({super.key, this.reservationId});
 
   @override
   State<BookingCancelled> createState() => _BookingCancelledState();
 }
 
 class _BookingCancelledState extends State<BookingCancelled> {
+  final _reservationService = ReservationService();
   String? selectedReason;
   TextEditingController otherReasonController = TextEditingController();
+  bool _submitting = false;
+
+  Future<void> _cancelBooking() async {
+    if (widget.reservationId == null || widget.reservationId!.isEmpty) {
+      Navigator.maybePop(context);
+      return;
+    }
+
+    final reason = selectedReason == 'Other'
+        ? otherReasonController.text
+        : selectedReason ?? otherReasonController.text;
+
+    setState(() => _submitting = true);
+    try {
+      await _reservationService.cancelReservation(
+        widget.reservationId!,
+        reason: reason,
+      );
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking berhasil dibatalkan')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +191,7 @@ class _BookingCancelledState extends State<BookingCancelled> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _submitting ? null : _cancelBooking,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFFF4F0F),
                         padding: EdgeInsets.symmetric(vertical: 16),
@@ -163,14 +199,23 @@ class _BookingCancelledState extends State<BookingCancelled> {
                           borderRadius: BorderRadius.circular(50),
                         ),
                       ),
-                      child: Text(
-                        'Cancel Order',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _submitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Cancel Order',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ],

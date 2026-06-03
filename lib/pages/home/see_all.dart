@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../models/partner_model.dart';
+import '../../services/partner_service.dart';
+import '../../widgets/wishlist_button.dart';
 import '../restaurant/restaurant_detail.dart';
 
 /// SeeAllPage — halaman daftar restoran lengkap
@@ -17,6 +20,8 @@ class SeeAllPage extends StatefulWidget {
 class _SeeAllPageState extends State<SeeAllPage> {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
+  final _partnerService = PartnerService();
+  late Future<List<PartnerModel>> _restaurantsFuture;
 
   String _selectedFilter = 'All';
   final List<String> _filters = [
@@ -27,8 +32,14 @@ class _SeeAllPageState extends State<SeeAllPage> {
     'New'
   ];
 
-  List<Map<String, dynamic>> get _filtered {
-    List<Map<String, dynamic>> list = List.from(_restaurants);
+  @override
+  void initState() {
+    super.initState();
+    _restaurantsFuture = _partnerService.getApprovedRestaurants();
+  }
+
+  List<Map<String, dynamic>> _filtered(List<Map<String, dynamic>> source) {
+    List<Map<String, dynamic>> list = List.from(source);
     switch (_selectedFilter) {
       case 'Nearest':
         list.sort((a, b) {
@@ -61,193 +72,210 @@ class _SeeAllPageState extends State<SeeAllPage> {
     return list;
   }
 
-  // Data dummy — ganti dengan data asli dari API/DB
-  final List<Map<String, dynamic>> _restaurants = [
-    {
-      'image': 'assets/images/gambar_restoran_5.jfif',
-      'title': 'Panon Njawi',
-      'rating': '4.8',
-      'duration': '25 min',
-      'cuisine': 'Javanese',
-      'address': 'Jl. Kahuripan No.3, Klojen, Malang',
-      'distance': '0.8 km',
-      'isOpen': true,
-    },
-    {
-      'image': 'assets/images/melati_restaurant.png',
-      'title': 'Melati Restaurant',
-      'rating': '4.7',
-      'duration': '20 min',
-      'cuisine': 'Indonesian',
-      'address': 'Jl. Semeru No.7, Klojen, Malang',
-      'distance': '1.2 km',
-      'isOpen': true,
-    },
-    {
-      'image': 'assets/images/gambar_restoran_6.jfif',
-      'title': 'Lakana Restaurant',
-      'rating': '4.6',
-      'duration': '30 min',
-      'cuisine': 'Fusion',
-      'address': 'Jl. Veteran No.12, Kota Malang',
-      'distance': '2.1 km',
-      'isOpen': true,
-    },
-    {
-      'image': 'assets/images/gambar_restoran_8.jfif',
-      'title': 'Kinan Dapur',
-      'rating': '4.5',
-      'duration': '35 min',
-      'cuisine': 'Local',
-      'address': 'Jl. Kawi No.5, Kota Malang',
-      'distance': '2.8 km',
-      'isOpen': false,
-    },
-    {
-      'image': 'assets/images/gambar_restoran_5.jfif',
-      'title': 'Warung Sari',
-      'rating': '4.4',
-      'duration': '15 min',
-      'cuisine': 'Sundanese',
-      'address': 'Jl. Kertanegara No.1, Malang',
-      'distance': '3.0 km',
-      'isOpen': true,
-    },
-    {
-      'image': 'assets/images/gambar_restoran_6.jfif',
-      'title': 'Semaja Menteng',
-      'rating': '4.9',
-      'duration': '40 min',
-      'cuisine': 'International',
-      'address': 'Jl. Gereja No.11, Gondangdia, Jakarta',
-      'distance': '3.5 km',
-      'isOpen': true,
-    },
-  ];
+  List<Map<String, dynamic>> _fromPartners(List<PartnerModel> partners) {
+    return partners
+        .map(
+          (p) => {
+            'image': p.restaurantPhotoUrl?.trim().isNotEmpty == true
+                ? p.restaurantPhotoUrl!.trim()
+                : 'assets/images/gambar_restoran_5.jfif',
+            'title': p.restaurantName,
+            'rating': '4.8',
+            'duration': '25 min',
+            'cuisine': p.cuisine,
+            'address': p.address,
+            'distance': '0.8 km',
+            'isOpen': _isOpenNow(p),
+            'partner': p,
+            'restaurantId': p.id,
+            'partnerId': p.ownerId,
+            'latitude': null,
+            'longitude': null,
+          },
+        )
+        .toList();
+  }
+
+  bool _isOpenNow(PartnerModel restaurant) {
+    final now = TimeOfDay.now();
+    final open = _parseTime(restaurant.openTime);
+    final close = _parseTime(restaurant.closeTime);
+    if (open == null || close == null) return true;
+
+    final nowMinutes = now.hour * 60 + now.minute;
+    final openMinutes = open.hour * 60 + open.minute;
+    final closeMinutes = close.hour * 60 + close.minute;
+    if (closeMinutes < openMinutes) {
+      return nowMinutes >= openMinutes || nowMinutes <= closeMinutes;
+    }
+    return nowMinutes >= openMinutes && nowMinutes <= closeMinutes;
+  }
+
+  TimeOfDay? _parseTime(String value) {
+    final parts = value.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── App Bar ──────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Row(
-                  children: [
-                    // Back button
-                    Row(
+    return FutureBuilder<List<PartnerModel>>(
+      future: _restaurantsFuture,
+      builder: (context, snapshot) {
+        final hasError = snapshot.hasError;
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+        final partnerRestaurants = hasError
+            ? const <Map<String, dynamic>>[]
+            : _fromPartners(snapshot.data ?? const <PartnerModel>[]);
+        final source = partnerRestaurants;
+        final filtered = _filtered(source);
+
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.dark,
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── App Bar ──────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Row(
                       children: [
-                        InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () => Navigator.pop(context),
-                          child: const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Icon(
-                              Icons.arrow_back_ios,
-                              size: 20,
+                        // Back button
+                        Row(
+                          children: [
+                            InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () => Navigator.pop(context),
+                              child: const SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: Icon(
+                                  Icons.arrow_back_ios,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.title,
+                          style: const TextStyle(
+                            fontFamily: _font,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0A0A0A),
+                          ),
+                        ),
+                        const Spacer(),
+                        // Count badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF0EB),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Text(
+                            '${source.length} places',
+                            style: const TextStyle(
+                              fontFamily: _font,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _orange,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.title,
-                      style: const TextStyle(
-                        fontFamily: _font,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                    ),
-                    const Spacer(),
-                    // Count badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF0EB),
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      child: Text(
-                        '${_restaurants.length} places',
-                        style: const TextStyle(
-                          fontFamily: _font,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: _orange,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
 
-              const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-              // ── Filter chips ─────────────────────────────────────
-              SizedBox(
-                height: 36,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  itemCount: _filters.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (_, i) {
-                    final active = _selectedFilter == _filters[i];
-                    return GestureDetector(
-                      onTap: () =>
-                          setState(() => _selectedFilter = _filters[i]),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: active ? _orange : Colors.white,
-                          borderRadius: BorderRadius.circular(50),
-                          border: Border.all(
-                            color: active ? _orange : const Color(0xFFF3F3F3),
-                            width: 1.2,
+                  // ── Filter chips ─────────────────────────────────────
+                  SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: _filters.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (_, i) {
+                        final active = _selectedFilter == _filters[i];
+                        return GestureDetector(
+                          onTap: () =>
+                              setState(() => _selectedFilter = _filters[i]),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: active ? _orange : Colors.white,
+                              borderRadius: BorderRadius.circular(50),
+                              border: Border.all(
+                                color:
+                                    active ? _orange : const Color(0xFFF3F3F3),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Text(
+                              _filters[i],
+                              style: TextStyle(
+                                fontFamily: _font,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: active
+                                    ? Colors.white
+                                    : const Color(0xFF4A4A4A),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          _filters[i],
-                          style: TextStyle(
-                            fontFamily: _font,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                active ? Colors.white : const Color(0xFF4A4A4A),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                        );
+                      },
+                    ),
+                  ),
 
-              const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-              // ── List ─────────────────────────────────────────────
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                  itemCount: _filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 14),
-                  itemBuilder: (_, i) => _SeeAllCard(data: _filtered[i]),
-                ),
+                  // ── List ─────────────────────────────────────────────
+                  Expanded(
+                    child: isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(color: _orange),
+                          )
+                        : filtered.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Belum ada restoran mitra',
+                                  style: TextStyle(
+                                    fontFamily: _font,
+                                    fontSize: 14,
+                                    color: Color(0xFF888888),
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                padding:
+                                    const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                                itemCount: filtered.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 14),
+                                itemBuilder: (_, i) =>
+                                    _SeeAllCard(data: filtered[i]),
+                              ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -264,7 +292,6 @@ class _SeeAllCard extends StatefulWidget {
 }
 
 class _SeeAllCardState extends State<_SeeAllCard> {
-  bool _saved = false;
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
 
@@ -272,6 +299,10 @@ class _SeeAllCardState extends State<_SeeAllCard> {
   Widget build(BuildContext context) {
     final d = widget.data;
     final bool isOpen = d['isOpen'] as bool;
+    final image = d['image'] as String;
+    final isNetwork =
+        image.startsWith('http://') || image.startsWith('https://');
+    final partner = d['partner'] as PartnerModel?;
 
     return Container(
       decoration: BoxDecoration(
@@ -288,7 +319,9 @@ class _SeeAllCardState extends State<_SeeAllCard> {
       child: InkWell(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const RestaurantDetail()),
+          MaterialPageRoute(
+            builder: (_) => RestaurantDetail(partner: partner),
+          ),
         ),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
@@ -300,12 +333,19 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      d['image'] as String,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
+                    child: isNetwork
+                        ? Image.network(
+                            image,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.asset(
+                            image,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                   // Open/closed badge
                   Positioned(
@@ -371,14 +411,17 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () => setState(() => _saved = !_saved),
-                          child: Icon(
-                            _saved
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: 20,
-                            color: _saved ? _orange : const Color(0xFFD1D1D1),
+                        WishlistButton(
+                          restaurant: partner,
+                          builder: (context, saved, onTap) => GestureDetector(
+                            onTap: onTap,
+                            child: Icon(
+                              saved
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              size: 20,
+                              color: saved ? _orange : const Color(0xFFD1D1D1),
+                            ),
                           ),
                         ),
                       ],

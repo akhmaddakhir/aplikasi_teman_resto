@@ -1,0 +1,159 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users 
+    match /users/{userId} {
+      // User doc memakai custom ID, contoh: USR-0000001.
+      // Akses dicek lewat field firebaseUid.
+      allow create: if request.auth != null
+        && request.resource.data.firebaseUid == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.firebaseUid == request.auth.uid;
+      // Admin bisa read semua users
+      allow read: if request.auth.token.role == 'admin';
+
+      match /wishlist/{wishlistId} {
+        allow read, write: if request.auth != null
+          && get(/databases/$(database)/documents/users/$(userId)).data.firebaseUid == request.auth.uid;
+        allow read, write: if request.auth.token.role == 'admin';
+      }
+
+      match /notifications/{notificationId} {
+        allow read, update, delete: if request.auth != null
+          && (
+            get(/databases/$(database)/documents/users/$(userId)).data.firebaseUid == request.auth.uid ||
+            get(/databases/$(database)/documents/uid_mapping/$(request.auth.uid)).data.userId == userId
+          );
+        allow create: if request.auth != null
+          && (
+            get(/databases/$(database)/documents/users/$(userId)).data.firebaseUid == request.auth.uid ||
+            get(/databases/$(database)/documents/uid_mapping/$(request.auth.uid)).data.userId == userId ||
+            (
+              request.resource.data.type == 'booking' &&
+              request.resource.data.bookingId is string &&
+              get(/databases/$(database)/documents/reservations/$(request.resource.data.bookingId)).data.customUserId == userId &&
+              request.auth.uid == get(/databases/$(database)/documents/restaurants/$(get(/databases/$(database)/documents/reservations/$(request.resource.data.bookingId)).data.restaurantId)).data.ownerId
+            )
+          );
+        allow read, write: if request.auth.token.role == 'admin';
+      }
+    }
+
+    // Uid Mapping
+    match /uid_mapping/{firebaseUid} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == firebaseUid;
+      allow read, write: if request.auth.token.role == 'admin';
+    }
+
+    // Counters
+    match /counters/{counterId} {
+      allow read, write: if request.auth != null
+        && counterId in [
+          'user_counter',
+          'restaurant_counter',
+          'table_counter',
+          'menu_counter',
+          'review_counter',
+          'wishlist_counter',
+          'notification_counter',
+          'reservation_counter',
+        ];
+      allow read, write: if request.auth.token.role == 'admin';
+    }
+
+    // ========== RESTAURANTS (Partner) ==========
+    match /restaurants/{restaurantId} {
+      // User (pemilik) bisa read/write restaurant mereka
+      allow read, write: if request.auth.uid == resource.data.ownerId;
+      // User login bisa melihat restoran mitra yang sudah aktif
+      allow read: if request.auth != null
+        && resource.data.status in ['approved', 'active'];
+      // Admin bisa read semua
+      allow read: if request.auth.token.role == 'admin';
+      // Anyone authenticated bisa create restaurant baru
+      allow create: if request.auth != null;
+      // Admin bisa update/delete
+      allow update, delete: if request.auth.token.role == 'admin';
+
+      // Sub-collection: tables
+      match /tables/{tableId} {
+        allow read, write: if request.auth.uid == get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId;
+        allow read: if request.auth != null;
+      }
+
+      // Sub-collection: menus
+      match /menus/{menuId} {
+        allow read, write: if request.auth.uid == get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId;
+        allow read: if request.auth != null;
+      }
+    }
+
+    // ========== RESERVATIONS ==========
+    match /reservations/{reservationId} {
+      allow read: if request.auth != null
+        && (
+          request.auth.uid == resource.data.userId ||
+          request.auth.uid == get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.ownerId
+        );
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && (
+          request.auth.uid == resource.data.userId ||
+          request.auth.uid == get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.ownerId
+        );
+      allow read, write: if request.auth.token.role == 'admin';
+    }
+
+    // ========== RESERVATION LOCKS ==========
+    match /reservation_locks/{lockId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth != null
+        && (
+          request.auth.uid == resource.data.userId ||
+          request.auth.uid == get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.ownerId
+        );
+      allow read, write: if request.auth.token.role == 'admin';
+    }
+
+    // ========== BOOKINGS ==========
+    match /bookings/{bookingId} {
+      // User bisa baca booking mereka
+      allow read: if request.auth.uid == resource.data.userId || request.auth.uid == get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.ownerId;
+      // User bisa buat booking
+      allow create: if request.auth.uid == request.resource.data.userId;
+      // User/Restaurant bisa update booking mereka
+      allow update: if request.auth.uid == resource.data.userId || request.auth.uid == get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.ownerId;
+      // Admin bisa do anything
+      allow read, write: if request.auth.token.role == 'admin';
+    }
+
+    // ========== REVIEWS ==========
+    match /reviews/{reviewId} {
+      // Anyone authenticated bisa read
+      allow read: if request.auth != null;
+      // User bisa create/update review mereka
+      allow create, update: if request.auth.uid == request.resource.data.userId;
+      // Admin bisa delete
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // ========== NOTIFICATIONS ==========
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId
+        && request.resource.data.userId == resource.data.userId;
+    }
+
+    // Default: deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

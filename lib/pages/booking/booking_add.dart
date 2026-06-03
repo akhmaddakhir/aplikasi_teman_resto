@@ -6,6 +6,8 @@ class BookingAddPage extends StatefulWidget {
   final String restaurantName;
   final String restaurantAddress;
   final String? restaurantPhotoUrl;
+  final List<String> paymentMethods;
+  final Map<dynamic, dynamic> menuRequest;
   final String name;
   final String phone;
   final String occasion;
@@ -16,6 +18,8 @@ class BookingAddPage extends StatefulWidget {
     this.restaurantName = '',
     this.restaurantAddress = '',
     this.restaurantPhotoUrl,
+    this.paymentMethods = const ['Cash'],
+    this.menuRequest = const {},
     this.name = '',
     this.phone = '',
     this.occasion = '',
@@ -132,6 +136,8 @@ class _BookingAddPageState extends State<BookingAddPage> {
           restaurantName: widget.restaurantName,
           restaurantAddress: widget.restaurantAddress,
           restaurantPhotoUrl: widget.restaurantPhotoUrl,
+          paymentMethods: widget.paymentMethods,
+          menuRequest: widget.menuRequest,
           name: widget.name,
           phone: widget.phone,
           occasion: widget.occasion,

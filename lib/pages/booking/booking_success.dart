@@ -1,15 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:teman_resto/main.dart'; // ganti dari home_page.dart ke main.dart
 
-class PaymentSuccess extends StatefulWidget {
-  const PaymentSuccess({super.key});
+import '../../models/restaurant_table_model.dart';
+
+class BookingSuccessPage extends StatefulWidget {
+  final String reservationId;
+  final String restaurantName;
+  final String restaurantAddress;
+  final String? restaurantPhotoUrl;
+  final String customerName;
+  final String phone;
+  final String occasion;
+  final int guests;
+  final DateTime date;
+  final String time;
+  final RestaurantTable table;
+  final List<String> paymentMethods;
+  final Map<dynamic, dynamic> menuRequest;
+
+  const BookingSuccessPage({
+    super.key,
+    required this.reservationId,
+    required this.restaurantName,
+    required this.restaurantAddress,
+    this.restaurantPhotoUrl,
+    required this.customerName,
+    required this.phone,
+    required this.occasion,
+    required this.guests,
+    required this.date,
+    required this.time,
+    required this.table,
+    this.paymentMethods = const ['Cash'],
+    this.menuRequest = const {},
+  });
 
   @override
-  State<PaymentSuccess> createState() => _PaymentSuccessState();
+  State<BookingSuccessPage> createState() => _BookingSuccessPageState();
 }
 
-class _PaymentSuccessState extends State<PaymentSuccess>
+class _BookingSuccessPageState extends State<BookingSuccessPage>
     with SingleTickerProviderStateMixin {
+  static const Color _orange = Color(0xFFFF4F0F);
+  static const String _font = 'Inter';
+
   late AnimationController _controller;
   late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
@@ -34,6 +67,11 @@ class _PaymentSuccessState extends State<PaymentSuccess>
 
   @override
   Widget build(BuildContext context) {
+    final customerName =
+        widget.customerName.trim().isNotEmpty ? widget.customerName : '-';
+    final bookingId =
+        widget.reservationId.trim().isNotEmpty ? widget.reservationId : '-';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -46,8 +84,6 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                   child: Column(
                     children: [
                       const SizedBox(height: 60),
-
-                      // ── Animated success icon ──
                       ScaleTransition(
                         scale: _scaleAnim,
                         child: Container(
@@ -55,7 +91,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                           height: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFFFF4F0F).withOpacity(0.08),
+                            color: _orange.withOpacity(0.08),
                           ),
                           child: Center(
                             child: Container(
@@ -63,7 +99,7 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                               height: 88,
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Color(0xFFFF4F0F),
+                                color: _orange,
                               ),
                               child: const Icon(
                                 Icons.check_rounded,
@@ -74,40 +110,35 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 32),
-
                       FadeTransition(
                         opacity: _fadeAnim,
-                        child: Column(
+                        child: const Column(
                           children: [
                             Text(
                               'Booking Confirmed!',
                               style: TextStyle(
-                                fontFamily: 'Inter',
+                                fontFamily: _font,
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF1A1A1A),
+                                color: Color(0xFF1A1A1A),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             Text(
                               'Your table has been reserved.\nSee you at the restaurant!',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'Inter',
+                                fontFamily: _font,
                                 fontSize: 14,
-                                color: const Color(0xFF888888),
+                                color: Color(0xFF888888),
                                 height: 1.6,
                               ),
                             ),
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
-                      // ── Info card ──
                       FadeTransition(
                         opacity: _fadeAnim,
                         child: Container(
@@ -121,40 +152,39 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                               _infoTile(
                                 Icons.person_outline_rounded,
                                 'Name',
-                                'Floyd Miles',
+                                customerName,
                                 true,
                               ),
                               _infoTile(
                                 Icons.calendar_today_outlined,
                                 'Date',
-                                'Oct 10, 2025',
+                                _formatDate(widget.date),
                                 true,
                               ),
                               _infoTile(
                                 Icons.access_time_rounded,
                                 'Time',
-                                '09:00 AM',
+                                widget.time.isNotEmpty ? widget.time : '-',
                                 true,
                               ),
                               _infoTile(
                                 Icons.people_outline_rounded,
                                 'Guests',
-                                '8 persons',
+                                '${widget.guests} persons',
                                 false,
                               ),
                             ],
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 32),
-
-                      // ── Booking ID badge ──
                       FadeTransition(
                         opacity: _fadeAnim,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF1A1A1A),
                             borderRadius: BorderRadius.circular(10),
@@ -162,40 +192,44 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.confirmation_number_outlined,
-                                  color: Color(0xFFFF4F0F), size: 18),
+                              const Icon(
+                                Icons.confirmation_number_outlined,
+                                color: _orange,
+                                size: 18,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'Booking ID: ',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
+                                  fontFamily: _font,
                                   fontSize: 14,
                                   color: Colors.white.withOpacity(0.6),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              Text(
-                                '#BK20251010',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                              Flexible(
+                                child: Text(
+                                  bookingId,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontFamily: _font,
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 40),
                     ],
                   ),
                 ),
               ),
             ),
-
-            // ── Bottom buttons ──
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: BoxDecoration(
@@ -215,27 +249,23 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                     height: 52,
                     child: ElevatedButton(
                       onPressed: () {
-                        // FIX: navigate ke MainPage bukan HomePage
-                        // supaya BottomNavbar tetap muncul
-                        Navigator.pushAndRemoveUntil(
+                        Navigator.pushNamedAndRemoveUntil(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const MainPage(),
-                          ),
+                          '/home',
                           (route) => false,
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF4F0F),
+                        backgroundColor: _orange,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(50),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Back to Home',
                         style: TextStyle(
-                          fontFamily: 'Inter',
+                          fontFamily: _font,
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -249,11 +279,13 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                     height: 48,
                     child: TextButton(
                       onPressed: () {
-                        // Push ke home terlebih dahulu, kemudian ke orders
-                        // Sehingga ketika user klik back di orders, kembali ke home
-                        Navigator.pushNamed(context, '/home');
+                        final navigator = Navigator.of(context);
+                        navigator.pushNamedAndRemoveUntil(
+                          '/home',
+                          (route) => false,
+                        );
                         Future.delayed(const Duration(milliseconds: 300), () {
-                          Navigator.pushNamed(context, '/orders');
+                          navigator.pushNamed('/orders');
                         });
                       },
                       style: TextButton.styleFrom(
@@ -262,13 +294,13 @@ class _PaymentSuccessState extends State<PaymentSuccess>
                           borderRadius: BorderRadius.circular(50),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'View My Bookings',
                         style: TextStyle(
-                          fontFamily: 'Inter',
+                          fontFamily: _font,
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A1A1A),
+                          color: Color(0xFF1A1A1A),
                         ),
                       ),
                     ),
@@ -302,21 +334,26 @@ class _PaymentSuccessState extends State<PaymentSuccess>
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
+                  style: const TextStyle(
+                    fontFamily: _font,
                     fontSize: 14,
-                    color: const Color(0xFF888888),
+                    color: Color(0xFF888888),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A1A1A),
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontFamily: _font,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
               ),
             ],
@@ -332,5 +369,23 @@ class _PaymentSuccessState extends State<PaymentSuccess>
           ),
       ],
     );
+  }
+
+  String _formatDate(DateTime value) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[value.month - 1]} ${value.day}, ${value.year}';
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/review_service.dart';
 
 class ReviewCard extends StatefulWidget {
   final Map<String, dynamic> review;
@@ -10,11 +11,60 @@ class ReviewCard extends StatefulWidget {
 }
 
 class _ReviewCardState extends State<ReviewCard> {
-  bool _helpful = false;
+  late bool _helpful;
+  bool _isUpdating = false;
+  final _reviewService = ReviewService();
+
+  @override
+  void initState() {
+    super.initState();
+    _helpful = false;
+    _loadUserLikeStatus();
+  }
+
+  Future<void> _loadUserLikeStatus() async {
+    try {
+      final hasLiked =
+          await _reviewService.hasUserLikedReview(widget.review['id']);
+      if (mounted) {
+        setState(() => _helpful = hasLiked);
+      }
+    } catch (_) {
+      // Default to false if error
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_isUpdating) return;
+
+    setState(() => _isUpdating = true);
+
+    try {
+      final newState =
+          await _reviewService.toggleReviewLike(widget.review['id']);
+      if (mounted) {
+        setState(() => _helpful = newState);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdating = false);
+      }
+    }
+  }
 
   String get _initials {
-    final name = widget.review['name'] as String;
-    final parts = name.trim().split(' ');
+    final name = (widget.review['name'] as String? ?? 'User').trim();
+    final safeName = name.isEmpty ? 'User' : name;
+    final parts = safeName.split(' ');
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
@@ -120,9 +170,7 @@ class _ReviewCardState extends State<ReviewCard> {
         Text(
           rating.toString(),
           style: const TextStyle(
-              fontSize: 12,
-              color: Colors.black45,
-              fontWeight: FontWeight.w500),
+              fontSize: 12, color: Colors.black45, fontWeight: FontWeight.w500),
         ),
       ],
     );
@@ -143,21 +191,31 @@ class _ReviewCardState extends State<ReviewCard> {
     return Row(
       children: [
         GestureDetector(
-          onTap: () => setState(() => _helpful = !_helpful),
+          onTap: _isUpdating ? null : _toggleLike,
           child: Row(
             children: [
-              Icon(
-                _helpful
-                    ? Icons.thumb_up_rounded
-                    : Icons.thumb_up_outlined,
-                size: 15,
-                color: _helpful
-                    ? const Color(0xFFFF4F0F)
-                    : Colors.black45,
-              ),
+              _isUpdating
+                  ? SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _helpful ? const Color(0xFFFF4F0F) : Colors.black45,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      _helpful
+                          ? Icons.thumb_up_rounded
+                          : Icons.thumb_up_outlined,
+                      size: 15,
+                      color:
+                          _helpful ? const Color(0xFFFF4F0F) : Colors.black45,
+                    ),
               const SizedBox(width: 5),
               Text(
-                'Helpful (${_helpful ? likes + 1 : likes})',
+                'Helpful ($likes)',
                 style: TextStyle(
                   fontSize: 12,
                   color: _helpful ? const Color(0xFFFF4F0F) : Colors.black45,

@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -40,49 +41,51 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDnodVsitSe8H9ubw0ra4EWMXD_CKg0f_A',
-    appId: '1:749004572344:web:5f2ebc7ebbc0f5b47c564d',
-    messagingSenderId: '749004572344',
-    projectId: 'teman-resto',
-    authDomain: 'teman-resto.firebaseapp.com',
-    storageBucket: 'teman-resto.firebasestorage.app',
-    measurementId: 'G-K4ZSL88S74',
-  );
+  static String _env(String key) => dotenv.env[key] ?? '';
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBYHQ8oAqYZVK284ALfO6tTNkQB9T60ZV0',
-    appId: '1:749004572344:android:630ad1759844a7c97c564d',
-    messagingSenderId: '749004572344',
-    projectId: 'teman-resto',
-    storageBucket: 'teman-resto.firebasestorage.app',
-  );
+  static FirebaseOptions get web => FirebaseOptions(
+        apiKey: _env('FIREBASE_WEB_API_KEY'),
+        appId: '1:749004572344:web:5f2ebc7ebbc0f5b47c564d',
+        messagingSenderId: '749004572344',
+        projectId: 'teman-resto',
+        authDomain: 'teman-resto.firebaseapp.com',
+        storageBucket: 'teman-resto.firebasestorage.app',
+        measurementId: 'G-K4ZSL88S74',
+      );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBcsuXbbgIF-LEZa1qUOG8fjZUWFlRX-co',
-    appId: '1:749004572344:ios:ff353432deacc00b7c564d',
-    messagingSenderId: '749004572344',
-    projectId: 'teman-resto',
-    storageBucket: 'teman-resto.firebasestorage.app',
-    iosBundleId: 'com.example.temanRestoPjbl',
-  );
+  static FirebaseOptions get android => FirebaseOptions(
+        apiKey: _env('FIREBASE_ANDROID_API_KEY'),
+        appId: '1:749004572344:android:630ad1759844a7c97c564d',
+        messagingSenderId: '749004572344',
+        projectId: 'teman-resto',
+        storageBucket: 'teman-resto.firebasestorage.app',
+      );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBcsuXbbgIF-LEZa1qUOG8fjZUWFlRX-co',
-    appId: '1:749004572344:ios:ff353432deacc00b7c564d',
-    messagingSenderId: '749004572344',
-    projectId: 'teman-resto',
-    storageBucket: 'teman-resto.firebasestorage.app',
-    iosBundleId: 'com.example.temanRestoPjbl',
-  );
+  static FirebaseOptions get ios => FirebaseOptions(
+        apiKey: _env('FIREBASE_IOS_API_KEY'),
+        appId: '1:749004572344:ios:ff353432deacc00b7c564d',
+        messagingSenderId: '749004572344',
+        projectId: 'teman-resto',
+        storageBucket: 'teman-resto.firebasestorage.app',
+        iosBundleId: 'com.example.temanRestoPjbl',
+      );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDnodVsitSe8H9ubw0ra4EWMXD_CKg0f_A',
-    appId: '1:749004572344:web:ab87bd036958b8e97c564d',
-    messagingSenderId: '749004572344',
-    projectId: 'teman-resto',
-    authDomain: 'teman-resto.firebaseapp.com',
-    storageBucket: 'teman-resto.firebasestorage.app',
-    measurementId: 'G-ZBCSP9BMMV',
-  );
+  static FirebaseOptions get macos => FirebaseOptions(
+        apiKey: _env('FIREBASE_MACOS_API_KEY'),
+        appId: '1:749004572344:ios:ff353432deacc00b7c564d',
+        messagingSenderId: '749004572344',
+        projectId: 'teman-resto',
+        storageBucket: 'teman-resto.firebasestorage.app',
+        iosBundleId: 'com.example.temanRestoPjbl',
+      );
+
+  static FirebaseOptions get windows => FirebaseOptions(
+        apiKey: _env('FIREBASE_WINDOWS_API_KEY'),
+        appId: '1:749004572344:web:ab87bd036958b8e97c564d',
+        messagingSenderId: '749004572344',
+        projectId: 'teman-resto',
+        authDomain: 'teman-resto.firebaseapp.com',
+        storageBucket: 'teman-resto.firebasestorage.app',
+        measurementId: 'G-ZBCSP9BMMV',
+      );
 }

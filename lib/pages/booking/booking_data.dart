@@ -6,14 +6,17 @@ class BookingData extends StatelessWidget {
   final String restaurantName;
   final String restaurantAddress;
   final String? restaurantPhotoUrl;
+  final List<String> paymentMethods;
+  final Map<dynamic, dynamic> menuRequest;
 
   const BookingData({
     Key? key,
-    required Map<dynamic, dynamic> menuRequest,
+    required this.menuRequest,
     this.restaurantId = '',
     this.restaurantName = '',
     this.restaurantAddress = '',
     this.restaurantPhotoUrl,
+    this.paymentMethods = const ['Cash'],
   }) : super(key: key);
 
   @override
@@ -23,6 +26,8 @@ class BookingData extends StatelessWidget {
       restaurantName: restaurantName,
       restaurantAddress: restaurantAddress,
       restaurantPhotoUrl: restaurantPhotoUrl,
+      paymentMethods: paymentMethods,
+      menuRequest: menuRequest,
     );
   }
 }
@@ -32,6 +37,8 @@ class BookingFormPage extends StatefulWidget {
   final String restaurantName;
   final String restaurantAddress;
   final String? restaurantPhotoUrl;
+  final List<String> paymentMethods;
+  final Map<dynamic, dynamic> menuRequest;
 
   const BookingFormPage({
     Key? key,
@@ -39,6 +46,8 @@ class BookingFormPage extends StatefulWidget {
     this.restaurantName = '',
     this.restaurantAddress = '',
     this.restaurantPhotoUrl,
+    this.paymentMethods = const ['Cash'],
+    this.menuRequest = const {},
   }) : super(key: key);
 
   @override
@@ -221,6 +230,8 @@ class _BookingFormPageState extends State<BookingFormPage> {
                           restaurantName: widget.restaurantName,
                           restaurantAddress: widget.restaurantAddress,
                           restaurantPhotoUrl: widget.restaurantPhotoUrl,
+                          paymentMethods: widget.paymentMethods,
+                          menuRequest: widget.menuRequest,
                           name: _nameController.text,
                           phone:
                               '$_selectedCountryCode ${_phoneController.text}',

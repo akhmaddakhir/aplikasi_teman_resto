@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../config/cloudinary_config.dart';
 import '../../models/partner_model.dart';
 import '../../services/image_service.dart';
+import 'partner_theme.dart';
 
 class MenuManagePage extends StatefulWidget {
   final PartnerModel partner;
@@ -14,32 +16,56 @@ class MenuManagePage extends StatefulWidget {
 }
 
 class _MenuManagePageState extends State<MenuManagePage> {
-  static const Color _orange = Color(0xFFFF4F0F);
-  static const String _font = 'Inter';
+  static const Color _orange = PartnerTheme.orange;
+  static const String _font = PartnerTheme.font;
 
   final _firestore = FirebaseFirestore.instance;
   final _imageService = ImageService();
 
   Stream<QuerySnapshot<Map<String, dynamic>>> get _menuStream => _firestore
+      .collection('restaurants')
+      .doc(widget.partner.id)
       .collection('menus')
-      .where('restaurantId', isEqualTo: widget.partner.id)
       .snapshots();
+
+  String _formatPriceIndonesian(int price) {
+    final priceStr = price.toString();
+    final reversed = priceStr.split('').reversed.join();
+    final chunks = <String>[];
+
+    for (int i = 0; i < reversed.length; i += 3) {
+      chunks.add(reversed.substring(
+          i, i + 3 > reversed.length ? reversed.length : i + 3));
+    }
+
+    return chunks.join('.').split('').reversed.join();
+  }
 
   Future<void> _showMenuSheet(
       {DocumentSnapshot<Map<String, dynamic>>? doc}) async {
     final data = doc?.data() ?? {};
     final nameCtrl = TextEditingController(text: data['name'] as String? ?? '');
-    final priceCtrl = TextEditingController(
-      text: data['price'] == null ? '' : data['price'].toString(),
-    );
-    final categoryCtrl =
-        TextEditingController(text: data['category'] as String? ?? '');
+    // Remove dots from formatted price for editing
+    final priceText = data['price'] == null
+        ? ''
+        : (data['price'] as String).replaceAll('.', '');
+    final priceCtrl = TextEditingController(text: priceText);
     final descCtrl =
         TextEditingController(text: data['description'] as String? ?? '');
     final formKey = GlobalKey<FormState>();
     File? pickedImage;
     String? imageUrl = data['imageUrl'] as String?;
     bool saving = false;
+
+    const List<String> categoryOptions = [
+      'Makanan Utama',
+      'Minuman',
+      'Snack',
+      'Dessert',
+      'Paket',
+    ];
+
+    String selectedCategory = data['category'] as String? ?? 'Makanan Utama';
 
     await showModalBottomSheet(
       context: context,
@@ -51,22 +77,35 @@ class _MenuManagePageState extends State<MenuManagePage> {
             if (!formKey.currentState!.validate()) return;
             setModal(() => saving = true);
             try {
+              // Generate custom ID for new menu
+              String menuId = doc?.id ?? await _generateMenuId();
+
               if (pickedImage != null) {
                 imageUrl = await _imageService.uploadProfileImage(
-                  uid:
-                      'menu_${widget.partner.id}_${doc?.id ?? DateTime.now().millisecondsSinceEpoch}',
+                  uid: 'menu_${widget.partner.id}_$menuId',
                   imageFile: pickedImage!,
+                  folder: CloudinaryConfig.menuPhotoFolder,
+                  publicIdPrefix: 'menu',
                 );
               }
 
-              final ref =
-                  doc?.reference ?? _firestore.collection('menus').doc();
+              final ref = doc?.reference ??
+                  _firestore
+                      .collection('restaurants')
+                      .doc(widget.partner.id)
+                      .collection('menus')
+                      .doc(menuId);
+
+              // Remove dots from price input before parsing
+              final priceStr = priceCtrl.text.trim().replaceAll('.', '');
+              final priceNum = int.tryParse(priceStr) ?? 0;
+              final formattedPrice = _formatPriceIndonesian(priceNum);
+
               await ref.set({
-                'id': ref.id,
-                'restaurantId': widget.partner.id,
+                'id': menuId,
                 'name': nameCtrl.text.trim(),
-                'price': int.tryParse(priceCtrl.text.trim()) ?? 0,
-                'category': categoryCtrl.text.trim(),
+                'price': formattedPrice,
+                'category': selectedCategory,
                 'description': descCtrl.text.trim(),
                 'imageUrl': imageUrl,
                 'updatedAt': DateTime.now().toIso8601String(),
@@ -132,27 +171,112 @@ class _MenuManagePageState extends State<MenuManagePage> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      _field(nameCtrl, 'Nama Menu'),
+                      _buildField(
+                        label: 'Nama Menu',
+                        hint: 'Contoh: Nasi Goreng',
+                        controller: nameCtrl,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                                ? 'Wajib diisi'
+                                : null,
+                      ),
                       const SizedBox(height: 12),
-                      _field(priceCtrl, 'Harga',
-                          keyboard: TextInputType.number),
+                      _buildField(
+                        label: 'Harga',
+                        hint: 'Contoh: 50000',
+                        controller: priceCtrl,
+                        keyboard: TextInputType.number,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                                ? 'Wajib diisi'
+                                : null,
+                      ),
                       const SizedBox(height: 12),
-                      _field(categoryCtrl, 'Kategori'),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Kategori',
+                            style: TextStyle(
+                              fontFamily: _font,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            value: selectedCategory,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFFF0F0F0),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Colors.red, width: 1.5),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: _orange, width: 1.5),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Colors.red, width: 1.5),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                            items: categoryOptions
+                                .map(
+                                  (category) => DropdownMenuItem(
+                                    value: category,
+                                    child: Text(
+                                      category,
+                                      style: const TextStyle(
+                                        fontFamily: _font,
+                                        color: Color(0xFF1A1A1A),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setModal(() => selectedCategory = value);
+                              }
+                            },
+                            validator: (value) => value == null || value.isEmpty
+                                ? 'Wajib diisi'
+                                : null,
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 12),
-                      _field(descCtrl, 'Deskripsi', maxLines: 3),
+                      _buildField(
+                        label: 'Deskripsi',
+                        hint: 'Deskripsi singkat menu Anda',
+                        controller: descCtrl,
+                        maxLines: 3,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                                ? 'Wajib diisi'
+                                : null,
+                      ),
                       const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
                           onPressed: saving ? null : save,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _orange,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                          ),
+                          style: PartnerTheme.primaryButtonStyle(),
                           child: saving
                               ? const CircularProgressIndicator(
                                   color: Colors.white,
@@ -179,31 +303,67 @@ class _MenuManagePageState extends State<MenuManagePage> {
     );
   }
 
-  Widget _field(
-    TextEditingController controller,
-    String label, {
+  Widget _buildField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
     TextInputType keyboard = TextInputType.text,
     int maxLines = 1,
+    String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboard,
-      maxLines: maxLines,
-      validator: (value) =>
-          value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: const Color(0xFFF5F5F5),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: _font,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1A1A1A),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _orange, width: 1.5),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboard,
+          maxLines: maxLines,
+          validator: validator,
+          style: const TextStyle(
+            fontFamily: _font,
+            fontSize: 15,
+            color: Color(0xFF1A1A1A),
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              fontFamily: _font,
+              color: Colors.grey.shade400,
+              fontSize: 14,
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF0F0F0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _orange, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -236,154 +396,434 @@ class _MenuManagePageState extends State<MenuManagePage> {
   }
 
   Future<void> _deleteMenu(String id) async {
-    await _firestore.collection('menus').doc(id).delete();
+    await _firestore
+        .collection('restaurants')
+        .doc(widget.partner.id)
+        .collection('menus')
+        .doc(id)
+        .delete();
+  }
+
+  void _confirmDeleteMenu(
+      BuildContext context, DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? {};
+    final menuName = data['name'] as String? ?? 'menu';
+
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFEEEE),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_outline_rounded,
+                    color: Color(0xFFE24B4A), size: 26),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Hapus Menu?',
+                style: TextStyle(
+                  fontFamily: _font,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Apakah Anda yakin ingin menghapus menu "$menuName"?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: _font,
+                  fontSize: 14,
+                  color: const Color(0xFF888888),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFFF7F6F2),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        'Batal',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _deleteMenu(doc.id);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE24B4A),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        'Hapus',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<String> _generateMenuId() async {
+    final counterRef = _firestore.collection('counters').doc('menu_counter');
+
+    return await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(counterRef);
+
+      int nextCount = 1;
+      if (snapshot.exists) {
+        final count = snapshot.data()?['count'];
+        if (count is num) {
+          nextCount = count.toInt() + 1;
+        }
+      }
+
+      if (nextCount < 1) nextCount = 1;
+
+      final menuId = 'MENU-${nextCount.toString().padLeft(7, '0')}';
+      transaction.set(
+        counterRef,
+        {'count': nextCount},
+        SetOptions(merge: true),
+      );
+
+      return menuId;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: _orange,
-        onPressed: () => _showMenuSheet(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _topBar(context),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _menuStream,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator(color: _orange));
-                  }
-                  final docs = snapshot.data?.docs ?? [];
-                  if (docs.isEmpty) {
-                    return const Center(child: Text('Belum ada menu'));
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 90),
-                    itemCount: docs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) {
-                      final doc = docs[i];
-                      final data = doc.data();
-                      return Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 12,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
+    return PartnerTheme.wrap(
+      context,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _topBar(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showMenuSheet(),
+                    icon: const Icon(Icons.add_rounded, color: Colors.white),
+                    label: const Text(
+                      'Tambah Menu',
+                      style: TextStyle(
+                        fontFamily: _font,
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: PartnerTheme.primaryButtonStyle(),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: _menuStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                          child: CircularProgressIndicator(color: _orange));
+                    }
+                    final docs = snapshot.data?.docs ?? [];
+                    if (docs.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: (data['imageUrl'] as String?)
-                                          ?.isNotEmpty ==
-                                      true
-                                  ? Image.network(
-                                      data['imageUrl'],
-                                      width: 64,
-                                      height: 64,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      width: 64,
-                                      height: 64,
-                                      color: const Color(0xFFFFF1EC),
-                                      child: const Icon(Icons.restaurant_menu,
-                                          color: _orange),
-                                    ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    data['name'] as String? ?? '-',
-                                    style: const TextStyle(
-                                      fontFamily: _font,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Rp ${data['price'] ?? 0}',
-                                    style: const TextStyle(
-                                      fontFamily: _font,
-                                      color: _orange,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  Text(
-                                    data['category'] as String? ?? '',
-                                    style: const TextStyle(
-                                      fontFamily: _font,
-                                      color: Color(0xFF888888),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: _orange.withOpacity(0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.restaurant_menu_rounded,
+                                color: _orange,
+                                size: 32,
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined,
-                                  color: _orange),
-                              onPressed: () => _showMenuSheet(doc: doc),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Belum ada menu',
+                              style: TextStyle(
+                                fontFamily: _font,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1A1A1A),
+                              ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  color: Color(0xFFE24B4A)),
-                              onPressed: () => _deleteMenu(doc.id),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tambahkan menu untuk restoran Anda',
+                              style: TextStyle(
+                                fontFamily: _font,
+                                fontSize: 14,
+                                color: Colors.grey.shade500,
+                              ),
                             ),
                           ],
                         ),
                       );
-                    },
-                  );
-                },
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                      itemCount: docs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, i) {
+                        final doc = docs[i];
+                        final data = doc.data();
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.28),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header row: Foto + Nama Menu
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 8, 0),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: (data['imageUrl'] as String?)
+                                                  ?.isNotEmpty ==
+                                              true
+                                          ? Image.network(
+                                              data['imageUrl'],
+                                              width: 80,
+                                              height: 80,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Container(
+                                              width: 80,
+                                              height: 80,
+                                              color: const Color(0xFFFFF1EC),
+                                              child: const Icon(
+                                                Icons.restaurant_menu,
+                                                color: _orange,
+                                                size: 32,
+                                              ),
+                                            ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            data['name'] as String? ?? '-',
+                                            style: const TextStyle(
+                                              fontFamily: _font,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFF1A1A1A),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(Icons.more_vert_rounded,
+                                          color: Color(0xFFBBBBBB), size: 20),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      onSelected: (value) {
+                                        if (value == 'edit') {
+                                          _showMenuSheet(doc: doc);
+                                        } else if (value == 'delete') {
+                                          _confirmDeleteMenu(context, doc);
+                                        }
+                                      },
+                                      itemBuilder: (BuildContext context) => [
+                                        PopupMenuItem<String>(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.edit_outlined,
+                                                  size: 18,
+                                                  color: Color(0xFF1A1A1A)),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Edit',
+                                                style: TextStyle(
+                                                  fontFamily: _font,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                  Icons.delete_outline_rounded,
+                                                  size: 18,
+                                                  color: Color(0xFFE24B4A)),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Hapus',
+                                                style: TextStyle(
+                                                  fontFamily: _font,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                      const Color(0xFFE24B4A),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Menu details: Harga & Kategori
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.local_offer_outlined,
+                                        size: 16, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'Rp ${data['price'] ?? 0}  ·  ${data['category'] as String? ?? ''}',
+                                        style: TextStyle(
+                                          fontFamily: _font,
+                                          fontSize: 14,
+                                          color: const Color(0xFF555555),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Deskripsi
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Icon(Icons.description_outlined,
+                                          size: 14,
+                                          color: Colors.grey.shade500),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        data['description'] as String? ?? '',
+                                        style: TextStyle(
+                                          fontFamily: _font,
+                                          fontSize: 14,
+                                          color: const Color(0xFF777777),
+                                          height: 1.5,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _topBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 16, 16, 8),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const Expanded(
-            child: Text(
-              'Kelola Menu',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: _font,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(width: 44),
-        ],
-      ),
+    return const PartnerPageHeader(
+      title: 'Kelola Menu',
+      subtitle: 'Tambah dan ubah menu',
     );
   }
 }

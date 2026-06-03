@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+
+import '../../models/partner_model.dart';
+import '../../models/wishlist_item_model.dart';
+import '../../services/wishlist_service.dart';
 import '../restaurant/restaurant_detail.dart';
 
 class WishlistPage extends StatefulWidget {
   const WishlistPage({super.key});
+
   @override
   State<WishlistPage> createState() => WishlistState();
 }
@@ -10,93 +15,33 @@ class WishlistPage extends StatefulWidget {
 class WishlistState extends State<WishlistPage> {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
+  final _wishlistService = WishlistService();
 
   String selectedCuisine = 'All';
 
   final List<String> cuisineFilters = [
     'All',
     'Javanese',
-    'Balinese',
     'Sundanese',
-    'Minang',
-  ];
-
-  final List<Map<String, dynamic>> wishlistItems = [
-    {
-      'title': 'Solaria',
-      'image': 'assets/images/melati_restaurant.png',
-      'cuisine': 'Javanese',
-      'rating': '4.8',
-      'address': 'Jl. Kahuripan No.3, Klojen, Kota Malang',
-      'duration': '25 min',
-      'isOpen': true,
-      'closingTime': '',
-    },
-    {
-      'title': 'Melati Restaurant',
-      'image': 'assets/images/gambar_restoran_4.jfif',
-      'cuisine': 'Balinese',
-      'rating': '4.6',
-      'address': 'Jl. Soekarno-Hatta No.12, Lowokwaru, Kota Malang',
-      'duration': '30 min',
-      'isOpen': true,
-      'closingTime': '',
-    },
-    {
-      'title': 'Panon Njawi',
-      'image': 'assets/images/gambar_restoran_5.jfif',
-      'cuisine': 'Javanese',
-      'rating': '4.7',
-      'address': 'Jl. Veteran No.5, Sukun, Kota Malang',
-      'duration': '20 min',
-      'isOpen': false,
-      'closingTime': '9 PM',
-    },
-    {
-      'title': 'Warung Sunda Asri',
-      'image': 'assets/images/melati_restaurant.png',
-      'cuisine': 'Sundanese',
-      'rating': '4.5',
-      'address': 'Jl. Bandung No.9, Blimbing, Kota Malang',
-      'duration': '35 min',
-      'isOpen': true,
-      'closingTime': '',
-    },
-    {
-      'title': 'Betawi Corner',
-      'image': 'assets/images/gambar_restoran_4.jfif',
-      'cuisine': 'Betawi',
-      'rating': '4.4',
-      'address': 'Jl. Jakarta No.7, Kedungkandang, Kota Malang',
-      'duration': '28 min',
-      'isOpen': false,
-      'closingTime': '10 PM',
-    },
-    {
-      'title': 'Rumah Makan Minang',
-      'image': 'assets/images/gambar_restoran_5.jfif',
-      'cuisine': 'Minang',
-      'rating': '4.9',
-      'address': 'Jl. Padang No.2, Klojen, Kota Malang',
-      'duration': '22 min',
-      'isOpen': true,
-      'closingTime': '',
-    },
+    'Padang',
+    'Betawi',
+    'Balinese',
+    'Japanese',
+    'Korean',
+    'Chinese',
+    'Western',
+    'Italian',
+    'Thai',
   ];
 
   @override
   Widget build(BuildContext context) {
-    final filtered = selectedCuisine == 'All'
-        ? wishlistItems
-        : wishlistItems.where((i) => i['cuisine'] == selectedCuisine).toList();
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ── Header ──────────────────────────────────────────
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 24, 16, 0),
               child: Center(
@@ -111,10 +56,7 @@ class WishlistState extends State<WishlistPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // ── Filter Chips ─────────────────────────────────────
             SizedBox(
               height: 36,
               child: ListView.separated(
@@ -153,20 +95,39 @@ class WishlistState extends State<WishlistPage> {
                 },
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // ── Card List ────────────────────────────────────────
             Expanded(
-              child: filtered.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 56),
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) =>
-                          _WishlistCard(item: filtered[index]),
-                    ),
+              child: StreamBuilder<List<WishlistItemModel>>(
+                stream: _wishlistService.streamWishlistItems(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: _orange),
+                    );
+                  }
+
+                  final wishlistItems =
+                      snapshot.data ?? const <WishlistItemModel>[];
+                  final filtered = selectedCuisine == 'All'
+                      ? wishlistItems
+                      : wishlistItems
+                          .where(
+                            (item) =>
+                                item.restaurant.cuisine == selectedCuisine,
+                          )
+                          .toList();
+
+                  if (filtered.isEmpty) return _buildEmptyState();
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 56),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) =>
+                        _WishlistCard(item: filtered[index]),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -187,7 +148,7 @@ class WishlistState extends State<WishlistPage> {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.bookmark_border_rounded,
+              Icons.favorite,
               size: 40,
               color: Color(0xFFCCCCCC),
             ),
@@ -218,32 +179,27 @@ class WishlistState extends State<WishlistPage> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Card — identik dengan gaya _RecommendedCard di home_page.dart
-// ═══════════════════════════════════════════════════════════════
-class _WishlistCard extends StatefulWidget {
-  final Map<String, dynamic> item;
+class _WishlistCard extends StatelessWidget {
+  final WishlistItemModel item;
+
   const _WishlistCard({required this.item});
 
-  @override
-  State<_WishlistCard> createState() => _WishlistCardState();
-}
-
-class _WishlistCardState extends State<_WishlistCard> {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
 
-  bool _saved = true;
-
   @override
   Widget build(BuildContext context) {
-    final item = widget.item;
-    final bool isOpen = item['isOpen'] as bool;
+    final restaurant = item.restaurant;
+    final isOpen = _isOpenNow(restaurant);
+    final image = restaurant.restaurantPhotoUrl?.trim().isNotEmpty == true
+        ? restaurant.restaurantPhotoUrl!.trim()
+        : 'assets/images/gambar_restoran_5.jfif';
 
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const RestaurantDetail()),
+        MaterialPageRoute(
+            builder: (_) => RestaurantDetail(partner: restaurant)),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -270,17 +226,12 @@ class _WishlistCardState extends State<_WishlistCard> {
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: Stack(
                 children: [
-                  Image.asset(
-                    item['image'],
-                    width: double.infinity,
-                    height: 168,
-                    fit: BoxFit.cover,
-                  ),
+                  _image(image),
                   Positioned(
                     top: 12,
                     right: 12,
                     child: GestureDetector(
-                      onTap: () => setState(() => _saved = !_saved),
+                      onTap: () => WishlistService().toggleWishlist(restaurant),
                       child: Container(
                         width: 32,
                         height: 32,
@@ -294,12 +245,10 @@ class _WishlistCardState extends State<_WishlistCard> {
                             ),
                           ],
                         ),
-                        child: Icon(
-                          _saved
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
+                        child: const Icon(
+                          Icons.favorite_rounded,
                           size: 20,
-                          color: _saved ? _orange : const Color(0xFF000000),
+                          color: _orange,
                         ),
                       ),
                     ),
@@ -309,7 +258,9 @@ class _WishlistCardState extends State<_WishlistCard> {
                     left: 12,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: isOpen
                             ? const Color(0xFF16A34A)
@@ -331,7 +282,7 @@ class _WishlistCardState extends State<_WishlistCard> {
                           Text(
                             isOpen
                                 ? 'Open now'
-                                : 'Closes ${item['closingTime']}',
+                                : 'Closes ${restaurant.closeTime}',
                             style: const TextStyle(
                               fontFamily: _font,
                               fontSize: 12,
@@ -356,7 +307,7 @@ class _WishlistCardState extends State<_WishlistCard> {
                     children: [
                       Expanded(
                         child: Text(
-                          item['title'],
+                          restaurant.restaurantName,
                           style: const TextStyle(
                             fontFamily: _font,
                             fontSize: 16,
@@ -368,20 +319,21 @@ class _WishlistCardState extends State<_WishlistCard> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF3EE),
                           borderRadius: BorderRadius.circular(50),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star_rounded,
-                                size: 14, color: _orange),
-                            const SizedBox(width: 4),
+                            Icon(Icons.star_rounded, size: 14, color: _orange),
+                            SizedBox(width: 4),
                             Text(
-                              item['rating'],
-                              style: const TextStyle(
+                              '4.8',
+                              style: TextStyle(
                                 fontFamily: _font,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -396,14 +348,14 @@ class _WishlistCardState extends State<_WishlistCard> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _InfoChip(
+                      const _InfoChip(
                         icon: Icons.access_time_rounded,
-                        label: item['duration'],
+                        label: '25 min',
                       ),
                       const SizedBox(width: 8),
                       _InfoChip(
                         icon: Icons.restaurant_rounded,
-                        label: item['cuisine'],
+                        label: restaurant.cuisine,
                       ),
                     ],
                   ),
@@ -416,12 +368,15 @@ class _WishlistCardState extends State<_WishlistCard> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_rounded,
-                          size: 14, color: Color(0xFFC0C0C0)),
+                      const Icon(
+                        Icons.location_on_rounded,
+                        size: 14,
+                        color: Color(0xFFC0C0C0),
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          item['address'],
+                          restaurant.address,
                           style: const TextStyle(
                             fontFamily: _font,
                             fontSize: 12,
@@ -442,11 +397,50 @@ class _WishlistCardState extends State<_WishlistCard> {
       ),
     );
   }
+
+  Widget _image(String path) {
+    final isNetwork = path.startsWith('http://') || path.startsWith('https://');
+    if (isNetwork) {
+      return Image.network(
+        path,
+        width: double.infinity,
+        height: 168,
+        fit: BoxFit.cover,
+      );
+    }
+    return Image.asset(
+      path,
+      width: double.infinity,
+      height: 168,
+      fit: BoxFit.cover,
+    );
+  }
+
+  static bool _isOpenNow(PartnerModel restaurant) {
+    final now = TimeOfDay.now();
+    final open = _parseTime(restaurant.openTime);
+    final close = _parseTime(restaurant.closeTime);
+    if (open == null || close == null) return true;
+
+    final nowMinutes = now.hour * 60 + now.minute;
+    final openMinutes = open.hour * 60 + open.minute;
+    final closeMinutes = close.hour * 60 + close.minute;
+    if (closeMinutes < openMinutes) {
+      return nowMinutes >= openMinutes || nowMinutes <= closeMinutes;
+    }
+    return nowMinutes >= openMinutes && nowMinutes <= closeMinutes;
+  }
+
+  static TimeOfDay? _parseTime(String value) {
+    final parts = value.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Info chip helper — sama persis dengan home_page.dart
-// ─────────────────────────────────────────────────────────────
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;

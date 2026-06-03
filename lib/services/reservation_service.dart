@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/restaurant_table_model.dart';
+import 'notification_service.dart';
 
 class ReservationService {
   static final ReservationService _instance = ReservationService._internal();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final NotificationService _notificationService = NotificationService();
 
   factory ReservationService() => _instance;
   ReservationService._internal();
@@ -37,11 +41,17 @@ class ReservationService {
   }) async {
     final dateKey = formatDate(date);
     final tablesQuery = await _firestore
+        .collection('restaurants')
+        .doc(restaurantId)
         .collection('tables')
-        .where('restaurantId', isEqualTo: restaurantId)
         .get();
     final tables = tablesQuery.docs
-        .map((doc) => RestaurantTable.fromFirestore(doc.data()))
+        .map((doc) => RestaurantTable.fromFirestore({
+              ...doc.data(),
+              'id': doc.id,
+              'tableId': doc.id,
+              'restaurantId': restaurantId,
+            }))
         .where((table) => table.capacity >= guests)
         .toList();
 
@@ -67,11 +77,11 @@ class ReservationService {
     required String time,
   }) async {
     final query = await _firestore
-        .collection('reservations')
+        .collection('reservation_locks')
         .where('restaurantId', isEqualTo: restaurantId)
         .where('date', isEqualTo: dateKey)
         .where('time', isEqualTo: time)
-        .where('status', whereIn: ['pending', 'confirmed']).get();
+        .get();
 
     return query.docs
         .map((doc) => doc.data()['tableId'] as String?)
@@ -88,11 +98,25 @@ class ReservationService {
     required int guests,
     required DateTime date,
     required String time,
+    List<String> paymentMethods = const ['Cash'],
+    String restaurantName = '',
+    String restaurantAddress = '',
+    String? restaurantPhotoUrl,
+    Map<dynamic, dynamic> menuRequest = const {},
   }) async {
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) {
+      throw Exception('Silakan login untuk membuat booking.');
+    }
+
     final dateKey = formatDate(date);
-    final reservationRef = _firestore.collection('reservations').doc();
     final lockId = _lockId(restaurantId, table.id, dateKey, time);
     final lockRef = _firestore.collection('reservation_locks').doc(lockId);
+    final counterRef =
+        _firestore.collection('counters').doc('reservation_counter');
+    final customUserId = await _resolveCustomUserId(firebaseUser.uid);
+    late final String reservationId;
+    late final DocumentReference<Map<String, dynamic>> reservationRef;
 
     await _firestore.runTransaction((transaction) async {
       final lockSnap = await transaction.get(lockRef);
@@ -100,32 +124,47 @@ class ReservationService {
         throw Exception('Meja sudah dipesan untuk tanggal dan jam ini.');
       }
 
-      final conflictQuery = await _firestore
-          .collection('reservations')
-          .where('restaurantId', isEqualTo: restaurantId)
-          .where('tableId', isEqualTo: table.id)
-          .where('date', isEqualTo: dateKey)
-          .where('time', isEqualTo: time)
-          .where('status', whereIn: ['pending', 'confirmed']).get();
+      final counterSnap = await transaction.get(counterRef);
+      final currentCount = counterSnap.data()?['count'];
+      var safeCount = currentCount is num ? currentCount.toInt() + 1 : 1;
+      if (safeCount < 1) safeCount = 1;
 
-      if (conflictQuery.docs.isNotEmpty) {
-        throw Exception('Meja sudah dipesan untuk tanggal dan jam ini.');
-      }
+      reservationId = 'BKG-${safeCount.toString().padLeft(7, '0')}';
+      reservationRef = _firestore.collection('reservations').doc(reservationId);
+      final now = DateTime.now().toIso8601String();
 
+      transaction.set(
+        counterRef,
+        {'count': safeCount},
+        SetOptions(merge: true),
+      );
       transaction.set(lockRef, {
         'restaurantId': restaurantId,
         'tableId': table.id,
         'date': dateKey,
         'time': time,
-        'reservationId': reservationRef.id,
-        'createdAt': DateTime.now().toIso8601String(),
+        'reservationId': reservationId,
+        'userId': firebaseUser.uid,
+        'customUserId': customUserId,
+        'createdAt': now,
       });
       transaction.set(reservationRef, {
-        'id': reservationRef.id,
+        'id': reservationId,
+        'userId': firebaseUser.uid,
+        'customUserId': customUserId,
         'restaurantId': restaurantId,
+        'restaurantName': restaurantName,
+        'restaurantAddress': restaurantAddress,
+        'restaurantPhotoUrl': restaurantPhotoUrl,
         'tableId': table.id,
         'tableNumber': table.tableNumber,
         'tableCapacity': table.capacity,
+        'tablePrice': table.price,
+        'totalPrice': table.price,
+        'tableShape': table.shape == TableShape.longRectangle
+            ? 'long_rectangle'
+            : table.shape.name,
+        'tableOrientation': table.orientation.name,
         'floor': table.floor,
         'customerName': customerName,
         'phone': phone,
@@ -134,13 +173,39 @@ class ReservationService {
         'date': dateKey,
         'time': time,
         'status': 'pending',
-        'createdAt': DateTime.now().toIso8601String(),
-        'updatedAt': DateTime.now().toIso8601String(),
+        'paymentMethods': paymentMethods,
+        'menuRequest': _stringKeyedMap(menuRequest),
+        'createdAt': now,
+        'updatedAt': now,
         'lockId': lockId,
       });
     });
 
+    final notificationUserId =
+        customUserId ?? await _notificationService.currentUserDocId() ?? '';
+    await _tryCreateBookingNotification(
+      userId: notificationUserId,
+      reservationId: reservationId,
+      booking: {
+        'restaurantName': restaurantName,
+        'date': dateKey,
+        'time': time,
+      },
+    );
+
     return reservationRef;
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> streamCurrentUserReservations() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return const Stream.empty();
+    }
+
+    return _firestore
+        .collection('reservations')
+        .where('userId', isEqualTo: user.uid)
+        .snapshots();
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> streamReservations(
@@ -155,17 +220,124 @@ class ReservationService {
   Future<void> updateStatus(String reservationId, String status) async {
     final ref = _firestore.collection('reservations').doc(reservationId);
     final snap = await ref.get();
-    final lockId = snap.data()?['lockId'] as String?;
+    final data = snap.data();
+    if (data == null) return;
+
+    final normalizedStatus = status.toLowerCase();
+    final currentStatus = (data['status'] as String? ?? '').toLowerCase();
+    final lockId = data['lockId'] as String?;
 
     final batch = _firestore.batch();
     batch.update(ref, {
-      'status': status,
+      'status': normalizedStatus,
       'updatedAt': DateTime.now().toIso8601String(),
     });
-    if ((status == 'cancelled' || status == 'completed') && lockId != null) {
+    if ((normalizedStatus == 'cancelled' || normalizedStatus == 'completed') &&
+        lockId != null) {
       batch.delete(_firestore.collection('reservation_locks').doc(lockId));
     }
     await batch.commit();
+
+    if (currentStatus != normalizedStatus) {
+      final userId = data['customUserId'] as String?;
+      if (userId != null && userId.trim().isNotEmpty) {
+        await _tryCreateBookingStatusNotification(
+          userId: userId,
+          reservationId: reservationId,
+          status: normalizedStatus,
+          booking: data,
+        );
+      }
+    }
+  }
+
+  Future<void> cancelReservation(
+    String reservationId, {
+    String? reason,
+  }) async {
+    final ref = _firestore.collection('reservations').doc(reservationId);
+    final snap = await ref.get();
+    final data = snap.data();
+    if (data == null) return;
+
+    final currentStatus = (data['status'] as String? ?? '').toLowerCase();
+    final lockId = data['lockId'] as String?;
+
+    final updates = <String, dynamic>{
+      'status': 'cancelled',
+      'updatedAt': DateTime.now().toIso8601String(),
+      'cancelledAt': DateTime.now().toIso8601String(),
+    };
+    final trimmedReason = reason?.trim();
+    if (trimmedReason != null && trimmedReason.isNotEmpty) {
+      updates['cancellationReason'] = trimmedReason;
+    }
+
+    final batch = _firestore.batch();
+    batch.update(ref, updates);
+    if (lockId != null) {
+      batch.delete(_firestore.collection('reservation_locks').doc(lockId));
+    }
+    await batch.commit();
+
+    if (currentStatus != 'cancelled') {
+      final userId = data['customUserId'] as String?;
+      if (userId != null && userId.trim().isNotEmpty) {
+        await _tryCreateBookingStatusNotification(
+          userId: userId,
+          reservationId: reservationId,
+          status: 'cancelled',
+          booking: data,
+        );
+      }
+    }
+  }
+
+  Future<String?> _resolveCustomUserId(String firebaseUid) async {
+    final mappingDoc =
+        await _firestore.collection('uid_mapping').doc(firebaseUid).get();
+    final mappedUserId = mappingDoc.data()?['userId'];
+    return mappedUserId is String && mappedUserId.trim().isNotEmpty
+        ? mappedUserId
+        : null;
+  }
+
+  Map<String, dynamic> _stringKeyedMap(Map<dynamic, dynamic> source) {
+    return source.map((key, value) => MapEntry(key.toString(), value));
+  }
+
+  Future<void> _tryCreateBookingNotification({
+    required String userId,
+    required String reservationId,
+    required Map<String, dynamic> booking,
+  }) async {
+    try {
+      await _notificationService.createBookingCreatedNotification(
+        userId: userId,
+        bookingId: reservationId,
+        booking: booking,
+      );
+    } catch (_) {
+      // Booking tidak boleh gagal hanya karena rules notifikasi belum aktif.
+    }
+  }
+
+  Future<void> _tryCreateBookingStatusNotification({
+    required String userId,
+    required String reservationId,
+    required String status,
+    required Map<String, dynamic> booking,
+  }) async {
+    try {
+      await _notificationService.createBookingStatusNotification(
+        userId: userId,
+        bookingId: reservationId,
+        status: status,
+        booking: booking,
+      );
+    } catch (_) {
+      // Status booking tetap tersimpan walau write notifikasi gagal.
+    }
   }
 
   String _lockId(

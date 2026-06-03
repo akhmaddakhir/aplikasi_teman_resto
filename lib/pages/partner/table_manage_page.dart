@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/partner_model.dart';
 import '../../models/restaurant_table_model.dart';
 import '../../services/partner_service.dart';
+import '../../widgets/table_widget.dart';
+import 'partner_theme.dart';
 
 class TableManagePage extends StatefulWidget {
   final PartnerModel partner;
@@ -13,10 +15,9 @@ class TableManagePage extends StatefulWidget {
 }
 
 class _TableManagePageState extends State<TableManagePage>
-    with SingleTickerProviderStateMixin {
-  static const Color _orange = Color(0xFFFF4F0F);
-  static const Color _green = Color(0xFF43EA3B);
-  static const String _font = 'Inter';
+    with TickerProviderStateMixin {
+  static const Color _orange = PartnerTheme.orange;
+  static const String _font = PartnerTheme.font;
 
   final _partnerService = PartnerService();
   late TabController _tabController;
@@ -28,6 +29,68 @@ class _TableManagePageState extends State<TableManagePage>
 
   // floor → list of tables
   final Map<int, List<RestaurantTable>> _floorTables = {};
+  static const List<_TableTypeOption> _tableTypes = [
+    _TableTypeOption(
+      label: 'Kotak 2 kursi',
+      capacity: 2,
+      shape: TableShape.square,
+      orientation: TableOrientation.none,
+    ),
+    _TableTypeOption(
+      label: 'Kotak 4 kursi',
+      capacity: 4,
+      shape: TableShape.square,
+      orientation: TableOrientation.none,
+    ),
+    _TableTypeOption(
+      label: 'Kotak 6 kursi',
+      capacity: 6,
+      shape: TableShape.square,
+      orientation: TableOrientation.none,
+    ),
+    _TableTypeOption(
+      label: 'Bulat 4 kursi',
+      capacity: 4,
+      shape: TableShape.round,
+      orientation: TableOrientation.none,
+    ),
+    _TableTypeOption(
+      label: 'Bulat 6 kursi',
+      capacity: 6,
+      shape: TableShape.round,
+      orientation: TableOrientation.none,
+    ),
+    _TableTypeOption(
+      label: 'Bulat 8 kursi',
+      capacity: 8,
+      shape: TableShape.round,
+      orientation: TableOrientation.none,
+    ),
+    _TableTypeOption(
+      label: 'Panjang horizontal 6 kursi',
+      capacity: 6,
+      shape: TableShape.longRectangle,
+      orientation: TableOrientation.horizontal,
+    ),
+    _TableTypeOption(
+      label: 'Panjang horizontal 8 kursi',
+      capacity: 8,
+      shape: TableShape.longRectangle,
+      orientation: TableOrientation.horizontal,
+    ),
+    _TableTypeOption(
+      label: 'Panjang vertikal 8 kursi',
+      capacity: 8,
+      shape: TableShape.longRectangle,
+      orientation: TableOrientation.vertical,
+    ),
+    _TableTypeOption(
+      label: 'Panjang vertikal 12 kursi',
+      capacity: 12,
+      shape: TableShape.longRectangle,
+      orientation: TableOrientation.vertical,
+    ),
+  ];
 
   @override
   void initState() {
@@ -44,26 +107,39 @@ class _TableManagePageState extends State<TableManagePage>
 
   Future<void> _loadTables() async {
     setState(() => _isLoading = true);
-    final tables =
-        await _partnerService.getTablesByRestaurant(widget.partner.id);
-    _floorTables.clear();
-    if (tables.isEmpty) {
-      _floorTables[1] = [];
-      _totalFloors = 1;
-    } else {
-      for (final t in tables) {
-        _floorTables.putIfAbsent(t.floor, () => []).add(t);
+    try {
+      final tables = await _partnerService
+          .getTablesByRestaurant(widget.partner.id)
+          .timeout(const Duration(seconds: 10), onTimeout: () => []);
+
+      if (!mounted) return;
+
+      _floorTables.clear();
+      if (tables.isEmpty) {
+        _floorTables[1] = [];
+        _totalFloors = 1;
+      } else {
+        for (final t in tables) {
+          _floorTables.putIfAbsent(t.floor, () => []).add(t);
+        }
+        _totalFloors = _floorTables.keys.reduce((a, b) => a > b ? a : b);
       }
-      _totalFloors = _floorTables.keys.reduce((a, b) => a > b ? a : b);
+      _rebuildTabController();
+      setState(() => _isLoading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading tables: $e')),
+        );
+      }
     }
-    _rebuildTabController();
-    setState(() => _isLoading = false);
   }
 
   void _rebuildTabController() {
     _tabController.dispose();
-    _tabController =
-        TabController(length: _totalFloors, vsync: this, initialIndex: _activeFloor - 1);
+    _tabController = TabController(
+        length: _totalFloors, vsync: this, initialIndex: _activeFloor - 1);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() => _activeFloor = _tabController.index + 1);
@@ -114,8 +190,8 @@ class _TableManagePageState extends State<TableManagePage>
 
   void _showAddTableDialog(int floor) {
     final numberCtrl = TextEditingController();
-    int capacity = 2;
-    TableShape shape = TableShape.square;
+    final priceCtrl = TextEditingController();
+    _TableTypeOption selectedType = _tableTypes.first;
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -124,243 +200,224 @@ class _TableManagePageState extends State<TableManagePage>
       backgroundColor: Colors.transparent,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setModal) => Padding(
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Container(
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'Tambah Meja',
-                    style: TextStyle(
-                      fontFamily: _font,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Nomor Meja',
-                    style: TextStyle(
-                      fontFamily: _font,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: numberCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'Contoh: T-01',
-                      filled: true,
-                      fillColor: const Color(0xFFF0F0F0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: _orange, width: 1.5),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                    ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Kapasitas Kursi',
-                    style: TextStyle(
-                        fontFamily: _font,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _circleButton(
-                        Icons.remove,
-                        () => setModal(
-                            () => capacity = (capacity - 1).clamp(1, 20)),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          margin: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0F0F0),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '$capacity orang',
-                            style: const TextStyle(
-                              fontFamily: _font,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      _circleButton(
-                        Icons.add,
-                        () => setModal(
-                            () => capacity = (capacity + 1).clamp(1, 20)),
+                    ),
+                    const Text(
+                      'Tambah Meja',
+                      style: TextStyle(
+                        fontFamily: _font,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1A1A),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Bentuk Meja',
-                    style: TextStyle(
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Nomor Meja',
+                      style: TextStyle(
                         fontFamily: _font,
                         fontSize: 14,
-                        fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _shapeChip(
-                        label: 'Persegi',
-                        icon: Icons.crop_square_rounded,
-                        selected: shape == TableShape.square,
-                        onTap: () =>
-                            setModal(() => shape = TableShape.square),
+                        fontWeight: FontWeight.w500,
                       ),
-                      const SizedBox(width: 10),
-                      _shapeChip(
-                        label: 'Persegi Panjang',
-                        icon: Icons.crop_16_9_rounded,
-                        selected: shape == TableShape.rectangle,
-                        onTap: () =>
-                            setModal(() => shape = TableShape.rectangle),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: numberCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Contoh: T-01',
+                        filled: true,
+                        fillColor: const Color(0xFFF0F0F0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: _orange, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (!formKey.currentState!.validate()) return;
-                        final table = RestaurantTable(
-                          id: '${widget.partner.id}_${floor}_${numberCtrl.text.trim().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
-                          restaurantId: widget.partner.id,
-                          floor: floor,
-                          tableNumber: numberCtrl.text.trim(),
-                          capacity: capacity,
-                          shape: shape,
-                        );
-                        setState(() {
-                          _floorTables
-                              .putIfAbsent(floor, () => [])
-                              .add(table);
-                        });
-                        Navigator.pop(context);
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Harga Booking',
+                      style: TextStyle(
+                        fontFamily: _font,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: priceCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Contoh: 50000',
+                        prefixText: 'Rp ',
+                        filled: true,
+                        fillColor: const Color(0xFFF0F0F0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: _orange, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                      ),
+                      validator: (v) {
+                        final text = (v ?? '').trim().replaceAll('.', '');
+                        if (text.isEmpty) return null;
+                        if (int.tryParse(text) == null) {
+                          return 'Masukkan angka yang valid';
+                        }
+                        return null;
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _orange,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                      ),
-                      child: const Text(
-                        'Tambah Meja',
-                        style: TextStyle(
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Jenis Meja',
+                      style: TextStyle(
                           fontFamily: _font,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<_TableTypeOption>(
+                      value: selectedType,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF0F0F0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: _orange, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                      ),
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                      items: _tableTypes
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(
+                                type.label,
+                                style: const TextStyle(
+                                  fontFamily: _font,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setModal(() => selectedType = value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Kapasitas Kursi',
+                      style: TextStyle(
+                          fontFamily: _font,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${selectedType.capacity} orang',
+                        style: const TextStyle(
+                          fontFamily: _font,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _circleButton(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: const BoxDecoration(
-          color: _orange,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: Colors.white, size: 20),
-      ),
-    );
-  }
-
-  Widget _shapeChip({
-    required String label,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFFFFF1EC) : const Color(0xFFF4F4F4),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected ? _orange : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: selected ? _orange : Colors.grey),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: _font,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: selected ? _orange : const Color(0xFF4A4A4A),
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!formKey.currentState!.validate()) return;
+                          final table = RestaurantTable(
+                            id: '${widget.partner.id}_${floor}_${numberCtrl.text.trim().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
+                            restaurantId: widget.partner.id,
+                            floor: floor,
+                            tableNumber: numberCtrl.text.trim(),
+                            capacity: selectedType.capacity,
+                            price: _parsePrice(priceCtrl.text),
+                            shape: selectedType.shape,
+                            orientation: selectedType.orientation,
+                          );
+                          setState(() {
+                            _floorTables
+                                .putIfAbsent(floor, () => [])
+                                .add(table);
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: PartnerTheme.primaryButtonStyle(),
+                        child: const Text(
+                          'Tambah Meja',
+                          style: TextStyle(
+                            fontFamily: _font,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -372,6 +429,7 @@ class _TableManagePageState extends State<TableManagePage>
     try {
       final allTables = _floorTables.values.expand((t) => t).toList();
       await _partnerService.saveTables(widget.partner.id, allTables);
+      await _loadTables();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -393,91 +451,72 @@ class _TableManagePageState extends State<TableManagePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(),
-            if (_isLoading)
-              const Expanded(
-                child: Center(
-                  child: CircularProgressIndicator(color: _orange),
+    return PartnerTheme.wrap(
+      context,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildTopBar(),
+              if (_isLoading)
+                const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(color: _orange),
+                  ),
+                )
+              else ...[
+                _buildTableActions(),
+                _buildFloorSelector(),
+                _buildLegend(),
+                Expanded(
+                  child: _totalFloors > 0
+                      ? TabBarView(
+                          physics: const NeverScrollableScrollPhysics(),
+                          controller: _tabController,
+                          children: List.generate(
+                            _totalFloors,
+                            (i) => _buildFloorContent(i + 1),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
-              )
-            else ...[
-              _buildFloorSelector(),
-              _buildLegend(),
-              Expanded(
-                child: _totalFloors > 0
-                    ? TabBarView(
-                        controller: _tabController,
-                        children: List.generate(
-                          _totalFloors,
-                          (i) => _buildFloorContent(i + 1),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              _buildBottomBar(),
+                _buildBottomBar(),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildTopBar() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(4, 16, 16, 8),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            color: const Color(0xFF0D0D0D),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const Expanded(
-            child: Text(
-              'Kelola Meja',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: _font,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0D0D0D),
-              ),
+    return PartnerPageHeader(
+      title: 'Kelola Meja',
+      subtitle: widget.partner.restaurantName,
+    );
+  }
+
+  Widget _buildTableActions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: ElevatedButton.icon(
+          onPressed: _addFloor,
+          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          label: const Text(
+            'Tambah Lantai',
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
           ),
-          GestureDetector(
-            onTap: _addFloor,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF1EC),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add_rounded, color: _orange, size: 16),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Lantai',
-                    style: TextStyle(
-                      fontFamily: _font,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: _orange,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          style: PartnerTheme.primaryButtonStyle(),
+        ),
       ),
     );
   }
@@ -546,6 +585,7 @@ class _TableManagePageState extends State<TableManagePage>
     final tables = _floorTables[floor] ?? [];
 
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -592,9 +632,8 @@ class _TableManagePageState extends State<TableManagePage>
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: tables
-                  .map((table) => _buildTableCard(table, floor))
-                  .toList(),
+              children:
+                  tables.map((table) => _buildTableCard(table, floor)).toList(),
             ),
           const SizedBox(height: 24),
           SizedBox(
@@ -606,7 +645,7 @@ class _TableManagePageState extends State<TableManagePage>
                 'Tambah Meja',
                 style: TextStyle(
                   fontFamily: _font,
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: _orange,
                 ),
@@ -626,93 +665,167 @@ class _TableManagePageState extends State<TableManagePage>
   }
 
   Widget _buildTableCard(RestaurantTable table, int floor) {
-    final bool isReserved = table.status == TableStatus.reserved;
-    Color bgColor = isReserved ? _orange : const Color(0xFFEDEDED);
-    Color textColor = isReserved ? Colors.white : Colors.black87;
-    Color borderColor = isReserved ? Colors.white : const Color(0xFF878787);
-
-    final isRect = table.shape == TableShape.rectangle;
-    final double w = isRect ? 110.0 : 80.0;
-    final double h = 80.0;
-
-    return GestureDetector(
-      onLongPress: () => _showDeleteTableDialog(table, floor),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Top chairs
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              isRect ? 2 : 1,
-              (_) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: _buildChair(bgColor, borderColor),
-              ),
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TableShapeWidget(
+          tableName: table.tableNumber,
+          capacity: table.capacity,
+          shape: table.shape,
+          orientation: table.orientation,
+          status: table.status,
+          onTap: () => _showEditTableDialog(table, floor),
+          onLongPress: () => _showDeleteTableDialog(table, floor),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _formatRupiah(table.price),
+          style: const TextStyle(
+            fontFamily: _font,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF555555),
           ),
-          const SizedBox(height: 4),
-          Container(
-            width: w,
-            height: h,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor, width: 1.5),
-            ),
+        ),
+      ],
+    );
+  }
+
+  void _showEditTableDialog(RestaurantTable table, int floor) {
+    final priceCtrl = TextEditingController(
+      text: table.price > 0 ? table.price.toString() : '',
+    );
+    final formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          child: Form(
+            key: formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  table.tableNumber,
-                  style: TextStyle(
-                    fontFamily: _font,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  '${table.capacity} kursi',
+                  'Atur Harga ${table.tableNumber}',
+                  style: const TextStyle(
+                    fontFamily: _font,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Harga Booking',
                   style: TextStyle(
                     fontFamily: _font,
-                    fontSize: 10,
-                    color: textColor.withOpacity(0.8),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: priceCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: 'Contoh: 50000',
+                    prefixText: 'Rp ',
+                    filled: true,
+                    fillColor: const Color(0xFFF0F0F0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _orange, width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                  ),
+                  validator: (v) {
+                    final text = (v ?? '').trim().replaceAll('.', '');
+                    if (text.isEmpty) return null;
+                    if (int.tryParse(text) == null) {
+                      return 'Masukkan angka yang valid';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (!formKey.currentState!.validate()) return;
+                      setState(() {
+                        final tables = _floorTables[floor] ?? [];
+                        final index =
+                            tables.indexWhere((item) => item.id == table.id);
+                        if (index >= 0) {
+                          tables[index] = table.copyWith(
+                              price: _parsePrice(priceCtrl.text));
+                        }
+                      });
+                      Navigator.pop(context);
+                    },
+                    style: PartnerTheme.primaryButtonStyle(),
+                    child: const Text(
+                      'Simpan Harga',
+                      style: TextStyle(
+                        fontFamily: _font,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              isRect ? 2 : 1,
-              (_) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: _buildChair(bgColor, borderColor),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildChair(Color bg, Color border) {
-    return Container(
-      width: 16,
-      height: 16,
-      decoration: BoxDecoration(
-        color: bg,
-        shape: BoxShape.circle,
-        border: Border.all(color: border, width: 1),
-      ),
-    );
+  int _parsePrice(String value) {
+    return int.tryParse(value.trim().replaceAll('.', '')) ?? 0;
+  }
+
+  String _formatRupiah(int value) {
+    if (value <= 0) return 'Gratis';
+    final text = value.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final remaining = text.length - i;
+      buffer.write(text[i]);
+      if (remaining > 1 && remaining % 3 == 1) buffer.write('.');
+    }
+    return 'Rp $buffer';
   }
 
   void _showDeleteTableDialog(RestaurantTable table, int floor) {
@@ -778,8 +891,7 @@ class _TableManagePageState extends State<TableManagePage>
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
               : const Text(
@@ -795,4 +907,18 @@ class _TableManagePageState extends State<TableManagePage>
       ),
     );
   }
+}
+
+class _TableTypeOption {
+  final String label;
+  final int capacity;
+  final TableShape shape;
+  final TableOrientation orientation;
+
+  const _TableTypeOption({
+    required this.label,
+    required this.capacity,
+    required this.shape,
+    required this.orientation,
+  });
 }
