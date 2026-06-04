@@ -257,7 +257,7 @@ class OrdersPageState extends State<OrdersPage>
       };
       return _emptyState(Icons.event_note_rounded, label, subtitle);
     }
-
+ 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       itemCount: orders.length,
