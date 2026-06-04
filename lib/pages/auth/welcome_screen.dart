@@ -8,7 +8,8 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -16,7 +17,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    
+
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -76,7 +77,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                       child: Column(
                         children: [
                           const Text(
-                            'Find your table for any occasion',
+                            'Find your seating area for any occasion',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: 'Alexandria',
@@ -111,12 +112,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/register',
-                    );
-                  },
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/register',
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFFFF5722),

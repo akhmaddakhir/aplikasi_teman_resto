@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:teman_resto/pages/restaurant/restaurant_detail.dart';
+import 'package:teman_resto/utils/restaurant_card_data.dart';
 import 'package:teman_resto/widgets/wishlist_button.dart';
 import '../../models/partner_model.dart';
 import '../../services/session_service.dart';
@@ -22,6 +24,7 @@ class _SearchPageState extends State<SearchPage> {
   String _query = '';
   List<_RecentItem> _recentViewed = [];
   late List<String> _recentSearches;
+  Position? _currentPosition;
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _SearchPageState extends State<SearchPage> {
     _searchController = TextEditingController();
     _recentSearches = [];
     _loadRecentViewed();
+    _loadCurrentPosition();
     _loadRecentSearches();
   }
 
@@ -91,7 +95,6 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> _removeRecentSearch(int index) async {
     if (index < 0 || index >= _recentSearches.length) return;
 
-    final query = _recentSearches[index];
     _recentSearches.removeAt(index);
 
     // Update SharedPreferences
@@ -108,17 +111,44 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {});
   }
 
+  Future<void> _removeRecentViewed(String restaurantId) async {
+    try {
+      await _sessionService.removeRecentViewedRestaurant(restaurantId);
+      if (!mounted) return;
+      await _loadRecentViewed();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _recentViewed = []);
+    }
+  }
+
   Future<void> _loadRecentViewed() async {
     try {
       final restaurants = await _sessionService.getRecentViewedRestaurants();
       if (!mounted) return;
       setState(() {
-        _recentViewed = restaurants.map(_RecentItem.fromPartner).toList();
+        _recentViewed = restaurants
+            .map((restaurant) =>
+                _RecentItem.fromPartner(restaurant, _currentPosition))
+            .toList();
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _recentViewed = []);
     }
+  }
+
+  Future<void> _loadCurrentPosition() async {
+    final position = await RestaurantCardData.currentPosition();
+    if (!mounted || position == null) return;
+    setState(() {
+      _currentPosition = position;
+      _recentViewed = _recentViewed
+          .map((item) => item.partner == null
+              ? item
+              : _RecentItem.fromPartner(item.partner!, _currentPosition))
+          .toList();
+    });
   }
 
   @override
@@ -387,6 +417,8 @@ class _SearchPageState extends State<SearchPage> {
                                   ),
                                 ),
                               ),
+                              onDelete: () => _removeRecentViewed(
+                                  entry.value.partner?.id ?? ''),
                             ),
                           ))
                       .toList(),
@@ -400,12 +432,13 @@ class _SearchPageState extends State<SearchPage> {
 }
 
 class _RecentItem {
-  final String imagePath, name, duration, cuisine, address, rating;
+  final String imagePath, name, distance, duration, cuisine, address, rating;
   final PartnerModel? partner;
 
   const _RecentItem({
     required this.imagePath,
     required this.name,
+    required this.distance,
     required this.duration,
     required this.cuisine,
     required this.address,
@@ -413,17 +446,18 @@ class _RecentItem {
     this.partner,
   });
 
-  factory _RecentItem.fromPartner(PartnerModel partner) {
-    final photo = partner.restaurantPhotoUrl?.trim();
+  factory _RecentItem.fromPartner(
+    PartnerModel partner,
+    Position? currentPosition,
+  ) {
     return _RecentItem(
-      imagePath: photo?.isNotEmpty == true
-          ? photo!
-          : 'assets/images/gambar_restoran_5.jfif',
+      imagePath: RestaurantCardData.imageFor(partner),
       name: partner.restaurantName,
-      duration: '25 min',
-      cuisine: partner.cuisine,
+      distance: RestaurantCardData.distanceLabel(partner, currentPosition),
+      duration: RestaurantCardData.durationLabel(partner, currentPosition),
+      cuisine: RestaurantCardData.cuisineFor(partner),
       address: partner.address,
-      rating: '4.8',
+      rating: RestaurantCardData.ratingFor(partner),
       partner: partner,
     );
   }
@@ -432,7 +466,12 @@ class _RecentItem {
 class _HorizontalRestaurantCard extends StatefulWidget {
   final _RecentItem item;
   final VoidCallback onTap;
-  const _HorizontalRestaurantCard({required this.item, required this.onTap});
+  final VoidCallback onDelete;
+  const _HorizontalRestaurantCard({
+    required this.item,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   @override
   State<_HorizontalRestaurantCard> createState() =>
@@ -508,18 +547,33 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        WishlistButton(
-                          restaurant: widget.item.partner,
-                          builder: (context, saved, onTap) => GestureDetector(
-                            onTap: onTap,
-                            child: Icon(
-                              saved
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              size: 22,
-                              color: saved ? _orange : const Color(0xFFD1D1D1),
+                        Row(
+                          children: [
+                            WishlistButton(
+                              restaurant: widget.item.partner,
+                              builder: (context, saved, onTap) =>
+                                  GestureDetector(
+                                onTap: onTap,
+                                child: Icon(
+                                  saved
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 22,
+                                  color:
+                                      saved ? _orange : const Color(0xFFD1D1D1),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: widget.onDelete,
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 22,
+                                color: Color(0xFFD1D1D1),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -555,12 +609,12 @@ class _HorizontalRestaurantCardState extends State<_HorizontalRestaurantCard> {
                               isHighlight: true),
                           const SizedBox(width: 8),
                           _MiniChip(
-                              icon: Icons.access_time_rounded,
-                              label: widget.item.duration),
+                              icon: Icons.location_on_rounded,
+                              label: widget.item.distance),
                           const SizedBox(width: 8),
                           _MiniChip(
-                              icon: Icons.restaurant_rounded,
-                              label: widget.item.cuisine),
+                              icon: Icons.access_time_rounded,
+                              label: widget.item.duration),
                         ],
                       ),
                     ),

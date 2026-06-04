@@ -601,10 +601,10 @@ class _PartnerReservationsPageState extends State<PartnerReservationsPage> {
     final phone = data['phone'] as String? ?? '-';
     final date = data['date'] as String? ?? '-';
     final time = data['time'] as String? ?? '-';
-    final guests = (data['guests'] as num?)?.toInt() ?? 0;
-    final tableNumber = data['tableNumber'] as String? ?? '-';
-    final floor = (data['floor'] as num?)?.toInt() ?? 1;
-    final price = (data['tablePrice'] as num?)?.toInt() ?? 0;
+    final guestCount = (data['guestCount'] as num?)?.toInt() ??
+        (data['guests'] as num?)?.toInt() ??
+        0;
+    final seatingAreaName = data['seatingAreaName'] as String? ?? '-';
     final occasion = data['occasion'] as String? ?? '-';
     return Container(
       decoration: BoxDecoration(
@@ -673,23 +673,22 @@ class _PartnerReservationsPageState extends State<PartnerReservationsPage> {
                 const SizedBox(height: 8),
                 _info(Icons.event_rounded, '$date - $time'),
                 const SizedBox(height: 8),
-                _info(Icons.group_rounded, '$guests orang - $occasion'),
+                _info(Icons.group_rounded, '$guestCount orang - $occasion'),
                 const SizedBox(height: 8),
                 _info(
-                  Icons.table_restaurant_rounded,
-                  'Meja $tableNumber, Lantai $floor',
+                  Icons.event_seat_outlined,
+                  'Area $seatingAreaName',
                 ),
-                const SizedBox(height: 8),
-                _info(Icons.payments_outlined, _formatRupiah(price)),
               ],
             ),
           ),
           if (_showLegacyReservationActions()) ...[
             const SizedBox(height: 8),
             _info(Icons.event_rounded, '${data['date']} · ${data['time']}'),
-            _info(Icons.group_rounded, '${data['guests']} orang'),
-            _info(Icons.table_restaurant_rounded,
-                'Meja ${data['tableNumber']} · Lantai ${data['floor']}'),
+            _info(Icons.group_rounded,
+                '${data['guestCount'] ?? data['guests']} orang'),
+            _info(Icons.event_seat_outlined,
+                'Area ${data['seatingAreaName'] ?? '-'}'),
             _info(Icons.phone_rounded, data['phone'] as String? ?? '-'),
             const SizedBox(height: 12),
             Row(
@@ -839,18 +838,6 @@ class _PartnerReservationsPageState extends State<PartnerReservationsPage> {
       default:
         return status;
     }
-  }
-
-  String _formatRupiah(int value) {
-    if (value <= 0) return 'Gratis';
-    final text = value.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < text.length; i++) {
-      final remaining = text.length - i;
-      buffer.write(text[i]);
-      if (remaining > 1 && remaining % 3 == 1) buffer.write('.');
-    }
-    return 'Rp $buffer';
   }
 
   Future<void> _refreshReservations() async {

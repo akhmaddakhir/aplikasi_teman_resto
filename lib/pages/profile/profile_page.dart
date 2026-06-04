@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../config/cloudinary_config.dart';
+import '../../models/partner_model.dart';
 import '../../services/image_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
 import '../../services/partner_service.dart';
 import '../partner/partner_dashboard_page.dart';
-import '../partner/partner_status_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -35,6 +35,8 @@ class _ProfilePageState extends State<ProfilePage> {
   int _reviewsCount = 0;
   int _favoritesCount = 0;
   bool _isLoadingImage = false;
+  String? _partnerRole;
+  bool _hasPartnerRestaurant = false;
 
   @override
   void initState() {
@@ -76,6 +78,10 @@ class _ProfilePageState extends State<ProfilePage> {
             firebaseUid: currentUser.uid,
             customUserId: userData.uid,
           );
+          await _loadPartnerProfileState(
+            firebaseUid: currentUser.uid,
+            customUserId: userData.uid,
+          );
 
           if (profileLocation == null || profileLocation.isEmpty) {
             await _sessionService.saveSelectedLocation(_userLocation);
@@ -89,6 +95,52 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       print('[ProfilePage] Error loading user data: $e');
     }
+  }
+
+  Future<PartnerModel?> _loadPartnerProfileState({
+    required String firebaseUid,
+    required String customUserId,
+  }) async {
+    PartnerModel? request;
+    try {
+      final userQuery = await _firestore
+          .collection('users')
+          .where('firebaseUid', isEqualTo: firebaseUid)
+          .limit(1)
+          .get();
+      final userDoc = userQuery.docs.isNotEmpty ? userQuery.docs.first : null;
+      final userData = userDoc?.data();
+
+      debugPrint('[ProfilePage] firebase uid: $firebaseUid');
+      debugPrint('[ProfilePage] custom user id: ${userData?['uid']}');
+      debugPrint('[ProfilePage] user doc id: ${userDoc?.id}');
+      debugPrint('[ProfilePage] role: ${userData?['role']}');
+      debugPrint('[ProfilePage] partnerId: ${userData?['partnerId']}');
+      debugPrint(
+          '[ProfilePage] users.restaurantId: ${userData?['restaurantId']}');
+
+      final partnerId = userData?['partnerId'] as String?;
+
+      final restaurants = await _partnerService.getRestaurantsForUser(
+        firebaseUid: firebaseUid,
+        customUserId: customUserId,
+        email: userData?['email']?.toString(),
+        restaurantId: userData?['restaurantId']?.toString(),
+        restaurantIds: List<String>.from(
+          userData?['restaurantIds'] ?? const [],
+        ),
+        partnerId: partnerId,
+      );
+
+      if (!mounted) return request;
+      setState(() {
+        _partnerRole = userData?['role']?.toString();
+        _hasPartnerRestaurant = restaurants.isNotEmpty;
+      });
+    } catch (e) {
+      print('[ProfilePage] Error loading partner state: $e');
+    }
+    return request;
   }
 
   Future<void> _loadProfileStats({
@@ -263,9 +315,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (!mounted) return;
 
+    final buildContext = context;
+
     // Show loading indicator
     showDialog(
-      context: context,
+      context: buildContext,
       barrierDismissible: false,
       builder: (_) => const Center(
         child: CircularProgressIndicator(
@@ -275,57 +329,67 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     try {
-      final partners =
-          await _partnerService.getPartnersByOwnerId(currentUser.uid);
+      final userData = await _authService.getUserData(currentUser.uid);
+      if (userData != null) {
+        await _loadPartnerProfileState(
+          firebaseUid: currentUser.uid,
+          customUserId: userData.uid,
+        );
+      }
 
       if (!mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(buildContext);
         return;
       }
 
-      // Close loading dialog
-      Navigator.pop(context);
+      Navigator.pop(buildContext);
 
-      if (partners.isEmpty) {
+      final userContext = await _partnerService.getPartnerUserContext(
+        currentUser.uid,
+      );
+      final partners = await _partnerService.getRestaurantsForUser(
+        firebaseUid: currentUser.uid,
+        customUserId: userContext?.customUserId,
+        email: userContext?.email ?? currentUser.email,
+        restaurantId: userContext?.restaurantId,
+        restaurantIds: userContext?.restaurantIds ?? const [],
+        partnerId: userContext?.partnerId,
+      );
+      final hasPartnerAccess = _partnerRole?.toLowerCase() == 'partner' ||
+          userContext?.hasPartnerRole == true ||
+          partners.isNotEmpty;
+
+      if (!hasPartnerAccess) {
         if (mounted) {
-          Navigator.pushNamed(context, '/partner-register');
+          Navigator.pushNamed(buildContext, '/partner-register');
         }
         return;
       }
 
-      // Get approved and other partners
-      final approvedPartners =
-          partners.where((p) => p.status.name == 'approved').toList();
-      final targetPartner =
-          approvedPartners.isNotEmpty ? approvedPartners.first : partners.first;
-
       if (!mounted) return;
 
-      if (approvedPartners.isNotEmpty) {
-        // Navigate to dashboard for approved partner
+      if (hasPartnerAccess) {
+        PartnerModel? targetPartner;
+        if (partners.isNotEmpty) {
+          targetPartner = partners.first;
+        }
+
+        final PartnerModel dashboardPartner =
+            targetPartner ?? _emptyApprovedPartner(currentUser.uid);
         Navigator.push(
-          context,
+          buildContext,
           MaterialPageRoute(
-            builder: (_) => PartnerDashboardPage(partner: targetPartner),
+            builder: (_) => PartnerDashboardPage(partner: dashboardPartner),
           ),
         );
       } else {
-        // Navigate to status page for pending/rejected partner
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PartnerStatusPage(partner: targetPartner),
-          ),
-        );
+        Navigator.pushNamed(buildContext, '/partner-register');
       }
     } catch (e) {
       print('[ProfilePage] Error opening partner page: $e');
       if (mounted) {
-        // Close loading dialog first
-        Navigator.pop(context);
-
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
+        Navigator.pop(buildContext);
+        ScaffoldMessenger.of(buildContext).showSnackBar(
           SnackBar(
             content: Text('Gagal memuat data mitra: ${e.toString()}'),
             backgroundColor: Colors.red,
@@ -334,6 +398,24 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       }
     }
+  }
+
+  PartnerModel _emptyApprovedPartner(String ownerId) {
+    return PartnerModel(
+      id: '',
+      ownerId: ownerId,
+      restaurantName: 'Belum ada restoran',
+      ownerName: _userName,
+      phone: '',
+      email: _userEmail,
+      address: 'Restoran belum tersedia',
+      openTime: '08:00',
+      closeTime: '22:00',
+      description: '',
+      cuisine: 'Indonesian',
+      status: PartnerStatus.approved,
+      createdAt: DateTime.now(),
+    );
   }
 
   @override
@@ -382,8 +464,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     _MenuItemData(
                       icon: Icons.storefront_outlined,
-                      title: 'Mitra Restoran',
-                      subtitle: 'Daftar atau kelola restoran Anda',
+                      title: _partnerMenuTitle,
+                      subtitle: _partnerMenuSubtitle,
                       onTap: _openPartnerPage,
                     ),
                   ], context),
@@ -584,6 +666,19 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_ordersCount == 0) return 'Belum ada booking';
     if (_activeOrdersCount == 0) return 'Tidak ada booking aktif';
     return '$_activeOrdersCount booking aktif';
+  }
+
+  String get _partnerMenuTitle {
+    final role = _partnerRole?.toLowerCase();
+    if (role == 'partner' || _hasPartnerRestaurant) return 'Dashboard Mitra';
+    return 'Daftar Menjadi Mitra';
+  }
+
+  String? get _partnerMenuSubtitle {
+    if (_partnerRole?.toLowerCase() == 'partner' || _hasPartnerRestaurant) {
+      return 'Kelola restoran Anda';
+    }
+    return 'Daftarkan restoran Anda';
   }
 
   Widget _buildStatDivider() {

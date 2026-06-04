@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/partner_model.dart';
+import '../../services/auth_service.dart';
 import '../../services/partner_service.dart';
 import 'edit_restaurant_page.dart';
 import 'menu_manage_page.dart';
@@ -24,28 +25,104 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
   static const String _font = PartnerTheme.font;
 
   final _partnerService = PartnerService();
+  final _authService = AuthService();
   late PartnerModel _partner;
   List<PartnerModel> _restaurants = [];
-  Map<String, int> _stats = {'total': 0, 'pending': 0, 'today': 0};
+  Map<String, int> _stats = {
+    'total': 0,
+    'pending': 0,
+    'today': 0,
+    'activeAreas': 0,
+    'totalCapacity': 0,
+  };
   bool _loadingStats = true;
   bool _deletingRestaurant = false;
+  bool _checkingAccess = true;
+  bool _hasRestaurant = false;
+  PartnerUserContext? _userContext;
+
+  bool get _hasDisplayableRestaurant =>
+      _hasRestaurant || _isDisplayableRestaurant(_partner);
+
+  bool _isDisplayableRestaurant(PartnerModel partner) {
+    return partner.id.trim().isNotEmpty &&
+        partner.restaurantName.trim().isNotEmpty &&
+        partner.restaurantName.trim().toLowerCase() != 'belum ada restoran';
+  }
 
   @override
   void initState() {
     super.initState();
     _partner = widget.partner;
     _restaurants = [widget.partner];
-    _loadRestaurants();
-    _loadStats();
+    _verifyAccessThenLoad();
+  }
+
+  Future<void> _verifyAccessThenLoad() async {
+    final currentUser = _authService.currentUser;
+    if (currentUser != null) {
+      _userContext =
+          await _partnerService.getPartnerUserContext(currentUser.uid);
+    }
+
+    debugPrint('[PartnerDashboard] firebase uid: ${currentUser?.uid}');
+    debugPrint(
+        '[PartnerDashboard] custom user id: ${_userContext?.customUserId}');
+    debugPrint('[PartnerDashboard] user doc id: ${_userContext?.userDocId}');
+    debugPrint('[PartnerDashboard] role: ${_userContext?.role}');
+    debugPrint(
+        '[PartnerDashboard] users.restaurantId: ${_userContext?.restaurantId}');
+
+    await _loadRestaurants();
+
+    if (!mounted) return;
+    setState(() => _checkingAccess = false);
+    await _loadStats();
   }
 
   Future<void> _loadRestaurants() async {
-    final restaurants =
-        await _partnerService.getPartnersByOwnerId(_partner.ownerId);
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) return;
+
+    _userContext ??= await _partnerService.getPartnerUserContext(
+      currentUser.uid,
+    );
+
+    debugPrint(
+        '[PartnerDashboard._loadRestaurants] firebaseUid: ${currentUser.uid}');
+    debugPrint(
+        '[PartnerDashboard._loadRestaurants] customUserId: ${_userContext?.customUserId}');
+    debugPrint(
+        '[PartnerDashboard._loadRestaurants] email: ${_userContext?.email}');
+
+    final restaurants = await _partnerService.getRestaurantsForUser(
+      firebaseUid: currentUser.uid,
+      customUserId: _userContext?.customUserId,
+      email: _userContext?.email ?? currentUser.email,
+      restaurantId: _userContext?.restaurantId,
+      restaurantIds: _userContext?.restaurantIds ?? const [],
+      partnerId: _userContext?.partnerId,
+    );
+
+    debugPrint(
+        '[PartnerDashboard._loadRestaurants] found ${restaurants.length} restaurants');
+    for (var r in restaurants) {
+      debugPrint(
+          '[PartnerDashboard._loadRestaurants] restaurant: ${r.id} - ${r.restaurantName} (ownerId: ${r.ownerId})');
+    }
+
     if (!mounted) return;
 
     if (restaurants.isEmpty) {
-      setState(() => _restaurants = []);
+      setState(() {
+        if (_isDisplayableRestaurant(_partner)) {
+          _restaurants = [_partner];
+          _hasRestaurant = true;
+        } else {
+          _restaurants = [];
+          _hasRestaurant = false;
+        }
+      });
       return;
     }
 
@@ -56,10 +133,27 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
     setState(() {
       _restaurants = restaurants;
       _partner = current;
+      _hasRestaurant = true;
     });
   }
 
   Future<void> _loadStats() async {
+    if (!_hasDisplayableRestaurant || _partner.id.trim().isEmpty) {
+      if (mounted) {
+        setState(() {
+          _stats = {
+            'total': 0,
+            'pending': 0,
+            'today': 0,
+            'activeAreas': 0,
+            'totalCapacity': 0,
+          };
+          _loadingStats = false;
+        });
+      }
+      return;
+    }
+
     setState(() => _loadingStats = true);
     final stats = await _partnerService.getBookingStats(_partner.id);
     if (mounted) {
@@ -71,6 +165,10 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
   }
 
   Future<void> _refreshPartner() async {
+    if (_partner.id.trim().isEmpty) {
+      await _loadRestaurants();
+      return;
+    }
     final partner = await _partnerService.getPartnerByRestaurantId(_partner.id);
     if (partner != null && mounted) setState(() => _partner = partner);
     await _loadRestaurants();
@@ -89,12 +187,27 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
   }
 
   Future<void> _openAddRestaurant() async {
-    await Navigator.push(
+    final createdRestaurant = await Navigator.push<PartnerModel?>(
       context,
       MaterialPageRoute(
         builder: (_) => const PartnerRegisterPage(isAddingNewRestaurant: true),
       ),
     );
+
+    if (!mounted) return;
+    if (createdRestaurant != null) {
+      setState(() {
+        _partner = createdRestaurant;
+        _restaurants = [
+          createdRestaurant,
+          ..._restaurants.where((r) => r.id != createdRestaurant.id),
+        ];
+        _hasRestaurant = true;
+      });
+    }
+
+    // Force refresh user context and restaurants
+    _userContext = null;
     await _loadRestaurants();
     await _loadStats();
   }
@@ -175,7 +288,7 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Restoran "${_partner.restaurantName}" akan dihapus permanen beserta menu, meja, reservasi, dan kunci reservasinya.',
+                'Restoran "${_partner.restaurantName}" akan dihapus permanen beserta menu, area tempat duduk, reservasi, dan kunci reservasinya.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: _font,
@@ -244,6 +357,20 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingAccess) {
+      return PartnerTheme.wrap(
+        context,
+        child: const Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4F0F)),
+            ),
+          ),
+        ),
+      );
+    }
+
     return PartnerTheme.wrap(
       context,
       child: Scaffold(
@@ -270,6 +397,10 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
                           const SizedBox(height: 12),
                           _restaurantSwitcher(),
                         ],
+                        if (!_hasDisplayableRestaurant) ...[
+                          const SizedBox(height: 16),
+                          _emptyRestaurantState(),
+                        ],
                         const SizedBox(height: 20),
                         Row(
                           children: [
@@ -284,78 +415,38 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        _statCard('Pending', _stats['pending'] ?? 0,
-                            wide: true),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'KELOLA RESTORAN',
-                          style: TextStyle(
-                            fontFamily: _font,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFBBBBBB),
-                            letterSpacing: 1.2,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _statCard(
+                                'Jumlah Area Aktif',
+                                _stats['activeAreas'] ?? 0,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _statCard(
+                                'Total Kapasitas Restoran',
+                                _stats['totalCapacity'] ?? 0,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        _actionCard([
-                          _PartnerActionItem(
-                            icon: Icons.add_business_rounded,
-                            title: 'Tambah restoran',
-                            subtitle: 'Daftarkan cabang atau restoran baru',
-                            onTap: _openAddRestaurant,
-                          ),
-                          _PartnerActionItem(
-                            icon: Icons.event_note_rounded,
-                            title: 'Daftar booking masuk',
-                            subtitle: 'Lihat dan ubah status reservasi',
-                            onTap: () => _open(
-                                PartnerReservationsPage(partner: _partner)),
-                          ),
-                          _PartnerActionItem(
-                            icon: Icons.table_restaurant_rounded,
-                            title: 'Kelola meja',
-                            subtitle: 'Atur lantai, nomor meja, dan kapasitas',
-                            onTap: () =>
-                                _open(TableManagePage(partner: _partner)),
-                          ),
-                          _PartnerActionItem(
-                            icon: Icons.restaurant_menu_rounded,
-                            title: 'Kelola menu',
-                            subtitle:
-                                'Tambah, edit, hapus, dan upload foto menu',
-                            onTap: () =>
-                                _open(MenuManagePage(partner: _partner)),
-                          ),
-                          _PartnerActionItem(
-                            icon: Icons.photo_library_outlined,
-                            title: 'Kelola foto restoran',
-                            subtitle: 'Atur foto utama dan foto gallery',
-                            onTap: () => _open(
-                              RestaurantPhotoManagePage(partner: _partner),
-                              refreshPartner: true,
+                        const SizedBox(height: 24),
+                        if (_hasDisplayableRestaurant) ...[
+                          const Text(
+                            'KELOLA RESTORAN',
+                            style: TextStyle(
+                              fontFamily: _font,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFBBBBBB),
+                              letterSpacing: 1.2,
                             ),
                           ),
-                          _PartnerActionItem(
-                            icon: Icons.edit_location_alt_outlined,
-                            title: 'Edit informasi restoran',
-                            subtitle:
-                                'Nama, alamat, WhatsApp, jam, dan deskripsi',
-                            onTap: () => _open(
-                              EditRestaurantPage(partner: _partner),
-                              refreshPartner: true,
-                            ),
-                          ),
-                          _PartnerActionItem(
-                            icon: Icons.delete_outline_rounded,
-                            title: 'Hapus restoran',
-                            subtitle: 'Hapus restoran dan seluruh data terkait',
-                            isDestructive: true,
-                            onTap: _deletingRestaurant
-                                ? null
-                                : _deleteCurrentRestaurant,
-                          ),
-                        ]),
+                          const SizedBox(height: 12),
+                          _actionCard(_restaurantActions()),
+                        ],
                       ],
                     ),
                   ),
@@ -510,6 +601,118 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
     );
   }
 
+  Widget _emptyRestaurantState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: PartnerTheme.cardDecoration().copyWith(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: _orange, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Anda belum memiliki restoran.',
+                style: TextStyle(
+                  fontFamily: _font,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tambahkan restoran untuk mulai memakai Dashboard Mitra.',
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 13,
+              color: Colors.grey.shade600,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _openAddRestaurant,
+              icon: const Icon(Icons.add_business_rounded, size: 18),
+              label: const Text('Tambah restoran'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _orange,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_PartnerActionItem> _restaurantActions() {
+    return [
+      _PartnerActionItem(
+        icon: Icons.add_business_rounded,
+        title: 'Tambah restoran',
+        subtitle: 'Daftarkan cabang atau restoran baru',
+        onTap: _openAddRestaurant,
+      ),
+      _PartnerActionItem(
+        icon: Icons.event_note_rounded,
+        title: 'Daftar booking masuk',
+        subtitle: 'Lihat dan ubah status reservasi',
+        onTap: () => _open(PartnerReservationsPage(partner: _partner)),
+      ),
+      _PartnerActionItem(
+        icon: Icons.event_seat_outlined,
+        title: 'Kelola area tempat duduk',
+        subtitle: 'Atur area, status, dan kapasitas',
+        onTap: () => _open(TableManagePage(partner: _partner)),
+      ),
+      _PartnerActionItem(
+        icon: Icons.restaurant_menu_rounded,
+        title: 'Kelola menu',
+        subtitle: 'Tambah, edit, hapus, dan upload foto menu',
+        onTap: () => _open(MenuManagePage(partner: _partner)),
+      ),
+      _PartnerActionItem(
+        icon: Icons.photo_library_outlined,
+        title: 'Kelola foto restoran',
+        subtitle: 'Atur foto utama dan foto gallery',
+        onTap: () => _open(
+          RestaurantPhotoManagePage(partner: _partner),
+          refreshPartner: true,
+        ),
+      ),
+      _PartnerActionItem(
+        icon: Icons.edit_location_alt_outlined,
+        title: 'Edit informasi restoran',
+        subtitle: 'Nama, alamat, WhatsApp, jam, dan deskripsi',
+        onTap: () => _open(
+          EditRestaurantPage(partner: _partner),
+          refreshPartner: true,
+        ),
+      ),
+      _PartnerActionItem(
+        icon: Icons.delete_outline_rounded,
+        title: 'Hapus restoran',
+        subtitle: 'Hapus restoran dan seluruh data terkait',
+        isDestructive: true,
+        onTap: _deletingRestaurant ? null : _deleteCurrentRestaurant,
+      ),
+    ];
+  }
+
   Widget _restaurantSwitcher() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -535,9 +738,7 @@ class _PartnerDashboardPageState extends State<PartnerDashboardPage> {
                   child: Row(
                     children: [
                       Icon(
-                        restaurant.status == PartnerStatus.approved
-                            ? Icons.storefront_rounded
-                            : Icons.hourglass_top_rounded,
+                        Icons.storefront_rounded,
                         color: _orange,
                         size: 18,
                       ),

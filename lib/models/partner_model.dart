@@ -21,6 +21,8 @@ class PartnerModel {
   final List<String> galleryPhotos;
   final double? latitude;
   final double? longitude;
+  final double? averageRating;
+  final int reviewCount;
   final PartnerStatus status;
   final String? rejectionReason;
   final DateTime createdAt;
@@ -45,6 +47,8 @@ class PartnerModel {
     this.galleryPhotos = const [],
     this.latitude,
     this.longitude,
+    this.averageRating,
+    this.reviewCount = 0,
     required this.status,
     this.rejectionReason,
     required this.createdAt,
@@ -71,6 +75,8 @@ class PartnerModel {
       'galleryPhotos': galleryPhotos,
       'latitude': latitude,
       'longitude': longitude,
+      'averageRating': averageRating,
+      'reviewCount': reviewCount,
       'status': status.name,
       'rejectionReason': rejectionReason,
       'createdAt': createdAt.toIso8601String(),
@@ -81,25 +87,34 @@ class PartnerModel {
   factory PartnerModel.fromFirestore(Map<String, dynamic> data) {
     return PartnerModel(
       id: (data['id'] as String?) ?? '',
-      ownerId: (data['ownerId'] as String?) ?? '',
+      ownerId: (data['ownerId'] as String?) ??
+          (data['userId'] as String?) ??
+          (data['uid'] as String?) ??
+          '',
       restaurantName: (data['restaurantName'] as String?) ?? '',
       ownerName: (data['ownerName'] as String?) ?? '',
       phone: (data['phone'] as String?) ?? '',
       email: (data['email'] as String?) ?? '',
-      address: (data['address'] as String?) ?? '',
+      address: (data['address'] as String?) ??
+          (data['restaurantAddress'] as String?) ??
+          '',
       openTime: (data['openTime'] as String?) ?? '08:00',
       closeTime: (data['closeTime'] as String?) ?? '22:00',
-      description: (data['description'] as String?) ?? '',
+      description: (data['description'] as String?) ??
+          (data['restaurantDescription'] as String?) ??
+          '',
       cuisine: (data['cuisine'] as String?) ?? 'Indonesian',
       highlights: List<String>.from(data['highlights'] ?? []),
       paymentMethods: List<String>.from(
-        data['paymentMethods'] ?? const ['Cash'],
+        data['paymentMethods'] ?? const ['Online Payment'],
       ),
       restaurantPhotoUrl: data['restaurantPhotoUrl'] as String?,
       menuPhotos: List<String>.from(data['menuPhotos'] ?? []),
       galleryPhotos: List<String>.from(data['galleryPhotos'] ?? []),
       latitude: _parseCoordinate(data['latitude'], min: -90, max: 90),
       longitude: _parseCoordinate(data['longitude'], min: -180, max: 180),
+      averageRating: _parseRating(data['averageRating']),
+      reviewCount: _parseInt(data['reviewCount']),
       status: _parseStatus(data['status'] as String?),
       rejectionReason: data['rejectionReason'] as String?,
       createdAt: _parseDate(data['createdAt']) ?? DateTime.now(),
@@ -112,6 +127,7 @@ class PartnerModel {
       case 'pending':
         return PartnerStatus.pending;
       case 'approved':
+      case 'active':
         return PartnerStatus.approved;
       case 'rejected':
         return PartnerStatus.rejected;
@@ -147,6 +163,18 @@ class PartnerModel {
     }
   }
 
+  static double? _parseRating(dynamic value) {
+    final rating = value is num ? value.toDouble() : double.tryParse('$value');
+    if (rating == null || !rating.isFinite || rating < 0) return null;
+    return rating.clamp(0, 5).toDouble();
+  }
+
+  static int _parseInt(dynamic value) {
+    final number = value is num ? value.toInt() : int.tryParse('$value');
+    if (number == null || number < 0) return 0;
+    return number;
+  }
+
   PartnerModel copyWith({
     String? restaurantName,
     String? ownerName,
@@ -164,6 +192,9 @@ class PartnerModel {
     List<String>? galleryPhotos,
     double? latitude,
     double? longitude,
+    double? averageRating,
+    bool clearAverageRating = false,
+    int? reviewCount,
     PartnerStatus? status,
     String? rejectionReason,
   }) {
@@ -186,6 +217,9 @@ class PartnerModel {
       galleryPhotos: galleryPhotos ?? this.galleryPhotos,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      averageRating:
+          clearAverageRating ? null : averageRating ?? this.averageRating,
+      reviewCount: reviewCount ?? this.reviewCount,
       status: status ?? this.status,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       createdAt: createdAt,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/restaurant_table_model.dart';
+import '../../models/restaurant_area_model.dart';
 
 class BookingSuccessPage extends StatefulWidget {
   final String reservationId;
@@ -10,10 +10,10 @@ class BookingSuccessPage extends StatefulWidget {
   final String customerName;
   final String phone;
   final String occasion;
-  final int guests;
+  final int guestCount;
   final DateTime date;
   final String time;
-  final RestaurantTable table;
+  final RestaurantArea seatingArea;
   final List<String> paymentMethods;
   final Map<dynamic, dynamic> menuRequest;
 
@@ -26,11 +26,11 @@ class BookingSuccessPage extends StatefulWidget {
     required this.customerName,
     required this.phone,
     required this.occasion,
-    required this.guests,
+    required this.guestCount,
     required this.date,
     required this.time,
-    required this.table,
-    this.paymentMethods = const ['Cash'],
+    required this.seatingArea,
+    this.paymentMethods = const ['Online Payment'],
     this.menuRequest = const {},
   });
 
@@ -116,7 +116,7 @@ class _BookingSuccessPageState extends State<BookingSuccessPage>
                         child: const Column(
                           children: [
                             Text(
-                              'Booking Confirmed!',
+                              'Payment Successful!',
                               style: TextStyle(
                                 fontFamily: _font,
                                 fontSize: 24,
@@ -126,7 +126,7 @@ class _BookingSuccessPageState extends State<BookingSuccessPage>
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Your table has been reserved.\nSee you at the restaurant!',
+                              'Your booking and online payment are confirmed.\nSee you at the restaurant!',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontFamily: _font,
@@ -170,7 +170,13 @@ class _BookingSuccessPageState extends State<BookingSuccessPage>
                               _infoTile(
                                 Icons.people_outline_rounded,
                                 'Guests',
-                                '${widget.guests} persons',
+                                '${widget.guestCount} persons',
+                                false,
+                              ),
+                              _infoTile(
+                                Icons.event_seat_outlined,
+                                'Area',
+                                widget.seatingArea.areaName,
                                 false,
                               ),
                             ],

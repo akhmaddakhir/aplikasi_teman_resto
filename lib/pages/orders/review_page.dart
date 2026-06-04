@@ -14,6 +14,8 @@ class ReviewPage extends StatefulWidget {
   final String? restaurantPhotoUrl;
   final String? restaurantCuisine;
   final String? restaurantRating;
+  final String? restaurantDistance;
+  final String? restaurantDuration;
 
   const ReviewPage({
     super.key,
@@ -24,6 +26,8 @@ class ReviewPage extends StatefulWidget {
     this.restaurantPhotoUrl,
     this.restaurantCuisine,
     this.restaurantRating,
+    this.restaurantDistance,
+    this.restaurantDuration,
   });
 
   @override
@@ -56,7 +60,9 @@ class _ReviewPageState extends State<ReviewPage> {
   String get _restaurantAddress =>
       widget.restaurantAddress ?? 'Jl Mangan III 216 Psr II Mabar...';
   String get _restaurantCuisine => widget.restaurantCuisine ?? 'Javanese';
-  String get _restaurantRating => widget.restaurantRating ?? '4.8';
+  String get _restaurantRating => widget.restaurantRating ?? '-';
+  String get _restaurantDistance => widget.restaurantDistance ?? 'Jarak -';
+  String get _restaurantDuration => widget.restaurantDuration ?? 'Waktu -';
   String get _restaurantImage =>
       widget.restaurantPhotoUrl ?? 'assets/images/melati_restaurant.png';
 
@@ -282,12 +288,12 @@ class _ReviewPageState extends State<ReviewPage> {
                                           isHighlight: true),
                                       const SizedBox(width: 8),
                                       _MiniChip(
-                                          icon: Icons.access_time_rounded,
-                                          label: '20 min'),
+                                          icon: Icons.location_on_rounded,
+                                          label: _restaurantDistance),
                                       const SizedBox(width: 8),
                                       _MiniChip(
-                                          icon: Icons.restaurant_rounded,
-                                          label: _restaurantCuisine),
+                                          icon: Icons.access_time_rounded,
+                                          label: _restaurantDuration),
                                     ],
                                   ),
                                 ),

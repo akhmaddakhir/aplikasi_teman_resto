@@ -84,7 +84,38 @@ class ReviewService {
     };
 
     await docRef.set(data);
+    await _syncRestaurantRating(restaurantId);
     return _reviewCardData(reviewId, data);
+  }
+
+  Future<void> _syncRestaurantRating(String restaurantId) async {
+    try {
+      final reviews = await _firestore
+          .collection('reviews')
+          .where('restaurantId', isEqualTo: restaurantId)
+          .get();
+
+      var total = 0.0;
+      var count = 0;
+      for (final doc in reviews.docs) {
+        final rating = doc.data()['rating'];
+        if (rating is num) {
+          total += rating.toDouble();
+          count++;
+        }
+      }
+
+      await _firestore.collection('restaurants').doc(restaurantId).set(
+        {
+          'averageRating': count == 0 ? null : total / count,
+          'reviewCount': count,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      print('[ReviewService] sync restaurant rating failed: $e');
+    }
   }
 
   Map<String, dynamic> _reviewCardData(String id, Map<String, dynamic> data) {

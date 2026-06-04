@@ -118,6 +118,21 @@ class SessionService {
     }
   }
 
+  /// Remove restaurant from recent viewed
+  Future<void> removeRecentViewedRestaurant(String restaurantId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final current = await getRecentViewedRestaurants();
+      final updated = current.where((item) => item.id != restaurantId).toList();
+
+      final payload = updated.map((item) => item.toFirestore()).toList();
+      await prefs.setString(_recentViewedRestaurantsKey, jsonEncode(payload));
+    } catch (e) {
+      throw Exception(
+          'Remove recent viewed restaurant failed: ${e.toString()}');
+    }
+  }
+
   /// Save recent search
   Future<void> saveRecentSearch(String query) async {
     try {

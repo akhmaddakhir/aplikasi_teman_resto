@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:teman_resto/pages/restaurant/restaurant_detail.dart';
+import 'package:teman_resto/utils/restaurant_card_data.dart';
 import 'package:teman_resto/widgets/wishlist_button.dart';
 import '../../models/partner_model.dart';
 import '../../services/partner_service.dart';
@@ -36,6 +38,7 @@ class _SearchResultsState extends State<SearchResults> {
   List<Map<String, dynamic>> _restaurantResults = [];
   bool _loadingRestaurants = true;
   String _query = '';
+  Position? _currentPosition;
 
   // ── Filter state ───────────────────────────────────────────────
   late String? _filterCuisine;
@@ -47,15 +50,14 @@ class _SearchResultsState extends State<SearchResults> {
     return partners
         .map(
           (p) => {
-            'image': p.restaurantPhotoUrl?.trim().isNotEmpty == true
-                ? p.restaurantPhotoUrl!.trim()
-                : 'assets/images/gambar_restoran_5.jfif',
+            'image': RestaurantCardData.imageFor(p),
             'title': p.restaurantName,
-            'rating': '4.8',
-            'duration': '25 min',
-            'cuisine': p.cuisine,
+            'rating': RestaurantCardData.ratingFor(p),
+            'distance': RestaurantCardData.distanceLabel(p, _currentPosition),
+            'distanceKm': RestaurantCardData.distanceKm(p, _currentPosition),
+            'duration': RestaurantCardData.durationLabel(p, _currentPosition),
+            'cuisine': RestaurantCardData.cuisineFor(p),
             'address': p.address,
-            'distance': '0.8 km',
             'isOpen': _isOpenNow(p),
             'partner': p,
           },
@@ -123,9 +125,8 @@ class _SearchResultsState extends State<SearchResults> {
     // Filter by distance
     if (_filterDistance != null) {
       filtered = filtered.where((r) {
-        final distStr = (r['distance'] as String).replaceAll(' km', '').trim();
-        final dist = double.tryParse(distStr) ?? 0.0;
-        return dist <= _filterDistance!;
+        final distanceKm = r['distanceKm'] as double?;
+        return distanceKm != null && distanceKm <= _filterDistance!;
       }).toList();
     }
 
@@ -152,9 +153,15 @@ class _SearchResultsState extends State<SearchResults> {
 
   Future<void> _loadRestaurants() async {
     try {
-      final restaurants = await _partnerService.getApprovedRestaurants();
+      final results = await Future.wait<Object?>([
+        _partnerService.getRestaurants(),
+        RestaurantCardData.currentPosition(),
+      ]);
+      final restaurants = results[0] as List<PartnerModel>;
+      final position = results[1] as Position?;
       if (!mounted) return;
       setState(() {
+        _currentPosition = position;
         _restaurantResults = _fromPartners(restaurants);
         _loadingRestaurants = false;
       });
@@ -587,13 +594,13 @@ class _ResultCardState extends State<_ResultCard> {
                           ),
                           const SizedBox(width: 8),
                           _MiniChip(
-                            icon: Icons.access_time_rounded,
-                            label: d['duration'] as String,
+                            icon: Icons.location_on_rounded,
+                            label: d['distance'] as String,
                           ),
                           const SizedBox(width: 8),
                           _MiniChip(
-                            icon: Icons.restaurant_rounded,
-                            label: d['cuisine'] as String,
+                            icon: Icons.access_time_rounded,
+                            label: d['duration'] as String,
                           ),
                         ],
                       ),

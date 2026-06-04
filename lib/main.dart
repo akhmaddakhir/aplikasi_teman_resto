@@ -34,6 +34,9 @@ import 'pages/booking/booking_detail.dart';
 import 'pages/booking/booking_cancelled.dart';
 import 'pages/booking/table_booking.dart';
 
+// Payment
+import 'pages/payment/payment_page.dart';
+
 // Orders
 import 'pages/orders/orders_page.dart';
 import 'pages/orders/review_page.dart';
@@ -105,6 +108,7 @@ class MyApp extends StatelessWidget {
         '/booking-detail': (context) => const BookingDetail(),
         '/booking-cancelled': (context) => const BookingCancelled(),
         '/table-booking': (context) => TableBooking(),
+        '/payment': (context) => PaymentPage(),
         // '/orders' didaftarkan sebagai named route agar popUntil bisa menemukannya
         '/orders': (context) => const OrdersPage(),
         '/review': (context) => const ReviewPage(),

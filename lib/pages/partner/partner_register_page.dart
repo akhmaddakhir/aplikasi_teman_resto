@@ -76,7 +76,7 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
     'Thai',
   ];
   static const List<String> _paymentMethodOptions = [
-    'Cash',
+    'Online Payment',
     'Debit Card',
     'Credit Card',
     'QRIS',
@@ -91,7 +91,7 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
 
   File? _restaurantPhoto;
   List<String> _highlights = [];
-  List<String> _paymentMethods = ['Cash'];
+  List<String> _paymentMethods = ['Online Payment'];
   bool _isLoading = false;
 
   bool get _isEditMode => widget.existingPartner != null;
@@ -108,9 +108,9 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
       _addressCtrl.text = p.address;
       _descriptionCtrl.text = p.description;
       _highlights = List<String>.from(p.highlights);
-      _paymentMethods = p.paymentMethods.isNotEmpty
-          ? List<String>.from(p.paymentMethods)
-          : ['Cash'];
+      _paymentMethods =
+          p.paymentMethods.where(_paymentMethodOptions.contains).toList();
+      if (_paymentMethods.isEmpty) _paymentMethods = ['Online Payment'];
       _openTime = p.openTime;
       _closeTime = p.closeTime;
       _selectedCuisine = _cuisineOptions.contains(p.cuisine)
@@ -299,7 +299,23 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
 
       PartnerModel? result;
 
-      if (_isEditMode) {
+      if (widget.isAddingNewRestaurant) {
+        result = await _partnerService.createRestaurantForPartner(
+          firebaseUid: currentUser.uid,
+          restaurantName: _restaurantNameCtrl.text.trim(),
+          ownerName: _ownerNameCtrl.text.trim(),
+          phone: _fullPhoneNumber,
+          email: _emailCtrl.text.trim(),
+          address: _addressCtrl.text.trim(),
+          openTime: _openTime,
+          closeTime: _closeTime,
+          description: _descriptionCtrl.text.trim(),
+          cuisine: _selectedCuisine,
+          highlights: _highlights,
+          paymentMethods: _paymentMethods,
+          restaurantPhoto: _restaurantPhoto,
+        );
+      } else if (_isEditMode) {
         await _partnerService.updateRegistration(
           restaurantId: widget.existingPartner!.id,
           ownerId: currentUser.uid,
@@ -345,6 +361,21 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
 
       if (!mounted) return;
 
+      if (widget.isAddingNewRestaurant) {
+        Navigator.pop(context, result);
+        return;
+      }
+
+      await _authService.getUserData(currentUser.uid);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Restoran berhasil dibuat.'),
+          backgroundColor: Color(0xFF16A34A),
+        ),
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -355,7 +386,7 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
+            content: Text(_friendlySubmitError(e)),
             backgroundColor: Colors.red,
           ),
         );
@@ -363,6 +394,16 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _friendlySubmitError(Object error) {
+    final message = error.toString().replaceAll('Exception: ', '');
+    if (message.contains('permission-denied')) {
+      return widget.isAddingNewRestaurant
+          ? 'Restoran belum bisa dibuat. Periksa akun dan coba lagi.'
+          : 'Restoran belum bisa dibuat. Periksa akun dan coba lagi.';
+    }
+    return message;
   }
 
   @override
@@ -1175,7 +1216,7 @@ class _PartnerRegisterPageState extends State<PartnerRegisterPage> {
                 ),
               )
             : Text(
-                _isEditMode ? 'Kirim Ulang Pengajuan' : 'Kirim Pengajuan',
+                _isEditMode ? 'Simpan Perubahan' : 'Buat Restoran',
                 style: const TextStyle(
                   fontFamily: _font,
                   fontSize: 16,

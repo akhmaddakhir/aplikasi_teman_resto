@@ -39,7 +39,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     'Thai',
   ];
   static const List<String> _paymentMethodOptions = [
-    'Cash',
+    'Online Payment',
     'Debit Card',
     'Credit Card',
     'QRIS',
@@ -69,9 +69,10 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     _openTime = widget.partner.openTime;
     _closeTime = widget.partner.closeTime;
     _highlights = List<String>.from(widget.partner.highlights);
-    _paymentMethods = widget.partner.paymentMethods.isNotEmpty
-        ? List<String>.from(widget.partner.paymentMethods)
-        : ['Cash'];
+    _paymentMethods = widget.partner.paymentMethods
+        .where(_paymentMethodOptions.contains)
+        .toList();
+    if (_paymentMethods.isEmpty) _paymentMethods = ['Online Payment'];
     _selectedCuisine = _cuisineOptions.contains(widget.partner.cuisine)
         ? widget.partner.cuisine
         : _cuisineOptions.first;

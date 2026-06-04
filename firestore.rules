@@ -1,6 +1,46 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function mappedUserId() {
+      return signedIn() && exists(/databases/$(database)/documents/uid_mapping/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/uid_mapping/$(request.auth.uid)).data.userId
+        : null;
+    }
+
+    function currentUserDocId() {
+      return mappedUserId() != null ? mappedUserId() : request.auth.uid;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && (
+          request.auth.token.role == 'admin' ||
+          (
+            exists(/databases/$(database)/documents/users/$(currentUserDocId()))
+            && get(/databases/$(database)/documents/users/$(currentUserDocId())).data.role == 'admin'
+          )
+        );
+    }
+
+    function isApprovedPartner() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(currentUserDocId()))
+        && get(/databases/$(database)/documents/users/$(currentUserDocId())).data.role == 'partner';
+    }
+
+    function isRestaurantOwner(restaurantId) {
+      return signedIn()
+        && restaurantId is string
+        && exists(/databases/$(database)/documents/restaurants/$(restaurantId))
+        && (
+          get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId == request.auth.uid ||
+          get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId == mappedUserId()
+        );
+    }
     
     // Users 
     match /users/{userId} {
@@ -53,7 +93,7 @@ service cloud.firestore {
         && counterId in [
           'user_counter',
           'restaurant_counter',
-          'table_counter',
+          'area_counter',
           'menu_counter',
           'review_counter',
           'wishlist_counter',
@@ -64,30 +104,78 @@ service cloud.firestore {
     }
 
     // ========== RESTAURANTS (Partner) ==========
-    match /restaurants/{restaurantId} {
-      // User (pemilik) bisa read/write restaurant mereka
-      allow read, write: if request.auth.uid == resource.data.ownerId;
-      // User login bisa melihat restoran mitra yang sudah aktif
-      allow read: if request.auth != null
-        && resource.data.status in ['approved', 'active'];
-      // Admin bisa read semua
-      allow read: if request.auth.token.role == 'admin';
-      // Anyone authenticated bisa create restaurant baru
-      allow create: if request.auth != null;
-      // Admin bisa update/delete
-      allow update, delete: if request.auth.token.role == 'admin';
+    match /partners/{partnerId} {
+      allow create: if signedIn()
+        && (
+          request.resource.data.userId == request.auth.uid ||
+          request.resource.data.uid == request.auth.uid ||
+          request.resource.data.ownerId == request.auth.uid ||
+          request.resource.data.userId == currentUserDocId() ||
+          request.resource.data.uid == currentUserDocId() ||
+          request.resource.data.ownerId == currentUserDocId()
+        )
+        && request.resource.data.status in ['pending', 'approved', 'active'];
+      allow read: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          resource.data.ownerId == request.auth.uid ||
+          resource.data.userId == currentUserDocId() ||
+          resource.data.uid == currentUserDocId() ||
+          resource.data.ownerId == currentUserDocId()
+        );
+      allow update: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          resource.data.ownerId == request.auth.uid ||
+          resource.data.userId == currentUserDocId() ||
+          resource.data.uid == currentUserDocId() ||
+          resource.data.ownerId == currentUserDocId()
+        )
+        && request.resource.data.status in ['pending', 'approved', 'active'];
+      allow read, write: if isAdmin();
+    }
 
-      // Sub-collection: tables
-      match /tables/{tableId} {
-        allow read, write: if request.auth.uid == get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId;
-        allow read: if request.auth != null;
-      }
+    match /restaurants/{restaurantId} {
+      allow read: if signedIn();
+      allow create: if isAdmin()
+        || (
+          signedIn()
+          && (
+            request.resource.data.ownerId == request.auth.uid ||
+            request.resource.data.ownerId == currentUserDocId()
+          )
+        );
+      allow update, delete: if isAdmin()
+        || (
+          signedIn()
+          && (
+            resource.data.ownerId == request.auth.uid ||
+            resource.data.ownerId == currentUserDocId()
+          )
+        );
 
       // Sub-collection: menus
       match /menus/{menuId} {
         allow read, write: if request.auth.uid == get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId;
         allow read: if request.auth != null;
       }
+    }
+
+    // ========== RESTAURANT AREAS ==========
+    match /restaurant_areas/{areaId} {
+      allow read: if signedIn()
+        && (
+          resource.data.isActive == true ||
+          isRestaurantOwner(resource.data.restaurantId) ||
+          isAdmin()
+        );
+      allow create: if isRestaurantOwner(request.resource.data.restaurantId);
+      allow update: if isRestaurantOwner(resource.data.restaurantId)
+        && request.resource.data.restaurantId == resource.data.restaurantId;
+      allow delete: if isRestaurantOwner(resource.data.restaurantId);
+      allow read, write: if isAdmin();
     }
 
     // ========== RESERVATIONS ==========
@@ -153,7 +241,7 @@ service cloud.firestore {
 
     // Default: deny all
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }

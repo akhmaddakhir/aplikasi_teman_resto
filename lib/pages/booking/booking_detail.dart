@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/restaurant_table_model.dart';
-import 'booking_success.dart';
+import '../../models/restaurant_area_model.dart';
+import '../payment/payment_page.dart';
 
 class BookingDetail extends StatefulWidget {
   final String reservationId;
@@ -10,10 +10,10 @@ class BookingDetail extends StatefulWidget {
   final String customerName;
   final String phone;
   final String occasion;
-  final int guests;
+  final int guestCount;
   final DateTime? date;
   final String time;
-  final RestaurantTable? table;
+  final RestaurantArea? seatingArea;
   final List<String> paymentMethods;
   final Map<dynamic, dynamic> menuRequest;
 
@@ -27,11 +27,11 @@ class BookingDetail extends StatefulWidget {
     this.customerName = 'Floyd Miles',
     this.phone = '',
     this.occasion = 'Breakfast',
-    this.guests = 8,
+    this.guestCount = 8,
     this.date,
     this.time = '06:00 PM',
-    this.table,
-    this.paymentMethods = const ['Cash'],
+    this.seatingArea,
+    this.paymentMethods = const ['Online Payment'],
     this.menuRequest = const {},
   });
 
@@ -42,15 +42,17 @@ class BookingDetail extends StatefulWidget {
 class _BookingDetailState extends State<BookingDetail> {
   bool isOn = false;
 
-  RestaurantTable get _selectedTable {
-    return widget.table ??
-        RestaurantTable(
+  RestaurantArea get _selectedArea {
+    return widget.seatingArea ??
+        RestaurantArea(
           id: '',
           restaurantId: '',
-          floor: 1,
-          tableNumber: 'G-07',
-          capacity: widget.guests,
-          shape: TableShape.square,
+          areaName: 'Indoor',
+          description: '',
+          maxCapacity: widget.guestCount,
+          isActive: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
   }
 
@@ -204,12 +206,12 @@ class _BookingDetailState extends State<BookingDetail> {
                                   const SizedBox(width: 8),
                                   _buildHeroChip(
                                     Icons.group,
-                                    '${widget.guests} person',
+                                    '${widget.guestCount} person',
                                   ),
                                   const SizedBox(width: 8),
                                   _buildHeroChip(
-                                    Icons.layers,
-                                    'Floor ${widget.table?.floor ?? 1}',
+                                    Icons.event_seat_outlined,
+                                    _selectedArea.areaName,
                                   ),
                                 ],
                               ),
@@ -277,29 +279,25 @@ class _BookingDetailState extends State<BookingDetail> {
                             _buildDivider(),
                             _buildInfoRow('Booking for', _dateLabel),
                             _buildDivider(),
-                            _buildInfoRow('Guests', '${widget.guests} person'),
+                            _buildInfoRow(
+                                'Guests', '${widget.guestCount} person'),
                             _buildDivider(),
                             _buildInfoRow(
-                              'Table',
-                              widget.table?.tableNumber ?? 'G-07',
+                              'Area',
+                              _selectedArea.areaName,
                               isHighlight: true,
                             ),
                             _buildDivider(),
                             _buildInfoRow(
-                              'Floor',
-                              'Floor ${widget.table?.floor ?? 1}',
-                            ),
-                            _buildDivider(),
-                            _buildInfoRow(
-                              'Harga Booking',
-                              _formatRupiah(widget.table?.price ?? 0),
+                              'Kapasitas Area',
+                              '${_selectedArea.maxCapacity} orang',
                             ),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _buildPaymentAtRestaurantSection(),
+                    _buildOnlinePaymentSection(),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -318,10 +316,10 @@ class _BookingDetailState extends State<BookingDetail> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pushReplacement(
+                    Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => BookingSuccessPage(
+                        builder: (context) => PaymentPage(
                           reservationId: widget.reservationId,
                           restaurantName: restaurantName,
                           restaurantAddress: restaurantAddress,
@@ -331,10 +329,10 @@ class _BookingDetailState extends State<BookingDetail> {
                           customerName: widget.customerName,
                           phone: widget.phone,
                           occasion: widget.occasion,
-                          guests: widget.guests,
+                          guestCount: widget.guestCount,
                           date: widget.date ?? DateTime.now(),
                           time: widget.time,
-                          table: _selectedTable,
+                          seatingArea: _selectedArea,
                         ),
                       ),
                     );
@@ -349,7 +347,7 @@ class _BookingDetailState extends State<BookingDetail> {
                     ),
                   ),
                   child: const Text(
-                    'Lanjut',
+                    'Bayar Online',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -391,10 +389,7 @@ class _BookingDetailState extends State<BookingDetail> {
     );
   }
 
-  Widget _buildPaymentAtRestaurantSection() {
-    final methods =
-        widget.paymentMethods.isNotEmpty ? widget.paymentMethods : ['Cash'];
-
+  Widget _buildOnlinePaymentSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -417,7 +412,7 @@ class _BookingDetailState extends State<BookingDetail> {
                 ),
                 SizedBox(width: 8),
                 Text(
-                  'Pembayaran di Restoran',
+                  'Pembayaran Online',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -428,57 +423,17 @@ class _BookingDetailState extends State<BookingDetail> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tidak ada pembayaran di aplikasi. Silakan bayar langsung di restoran dengan metode yang tersedia.',
+              'Reservasi akan dilanjutkan ke halaman pembayaran online. Ini hanya tampilan frontend untuk simulasi pembayaran.',
               style: TextStyle(
                 fontSize: 13,
                 height: 1.45,
                 color: Colors.grey.shade700,
               ),
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: methods
-                  .map(
-                    (method) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(50),
-                        border: Border.all(color: const Color(0xFFFFD8C8)),
-                      ),
-                      child: Text(
-                        method,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFFF4F0F),
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
           ],
         ),
       ),
     );
-  }
-
-  String _formatRupiah(int value) {
-    if (value <= 0) return 'Gratis';
-    final text = value.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < text.length; i++) {
-      final remaining = text.length - i;
-      buffer.write(text[i]);
-      if (remaining > 1 && remaining % 3 == 1) buffer.write('.');
-    }
-    return 'Rp $buffer';
   }
 
   Widget _buildDivider() {

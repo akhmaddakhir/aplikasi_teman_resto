@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/restaurant_table_model.dart';
+import '../models/restaurant_area_model.dart';
 import 'notification_service.dart';
 
 class ReservationService {
@@ -24,81 +24,39 @@ class ReservationService {
       return restaurantId.trim();
     }
 
-    final query = await _firestore
-        .collection('restaurants')
-        .where('status', isEqualTo: 'approved')
-        .limit(1)
-        .get();
+    final query = await _firestore.collection('restaurants').limit(1).get();
     if (query.docs.isEmpty) return null;
     return query.docs.first.id;
   }
 
-  Future<List<RestaurantTable>> getAvailableTables({
+  Future<List<RestaurantArea>> getAvailableAreas({
     required String restaurantId,
-    required int guests,
-    required DateTime date,
-    required String time,
   }) async {
-    final dateKey = formatDate(date);
-    final tablesQuery = await _firestore
-        .collection('restaurants')
-        .doc(restaurantId)
-        .collection('tables')
+    final areasQuery = await _firestore
+        .collection('restaurant_areas')
+        .where('restaurantId', isEqualTo: restaurantId)
+        .where('isActive', isEqualTo: true)
         .get();
-    final tables = tablesQuery.docs
-        .map((doc) => RestaurantTable.fromFirestore({
+    return areasQuery.docs
+        .map((doc) => RestaurantArea.fromFirestore({
               ...doc.data(),
               'id': doc.id,
-              'tableId': doc.id,
               'restaurantId': restaurantId,
             }))
-        .where((table) => table.capacity >= guests)
-        .toList();
-
-    final reservedIds = await _reservedTableIds(
-      restaurantId: restaurantId,
-      dateKey: dateKey,
-      time: time,
-    );
-
-    return tables.where((table) => !reservedIds.contains(table.id)).toList()
-      ..sort((a, b) {
-        final capacityCompare = a.capacity.compareTo(b.capacity);
-        if (capacityCompare != 0) return capacityCompare;
-        final floorCompare = a.floor.compareTo(b.floor);
-        if (floorCompare != 0) return floorCompare;
-        return a.tableNumber.compareTo(b.tableNumber);
-      });
-  }
-
-  Future<Set<String>> _reservedTableIds({
-    required String restaurantId,
-    required String dateKey,
-    required String time,
-  }) async {
-    final query = await _firestore
-        .collection('reservation_locks')
-        .where('restaurantId', isEqualTo: restaurantId)
-        .where('date', isEqualTo: dateKey)
-        .where('time', isEqualTo: time)
-        .get();
-
-    return query.docs
-        .map((doc) => doc.data()['tableId'] as String?)
-        .whereType<String>()
-        .toSet();
+        .toList()
+      ..sort((a, b) => a.areaName.compareTo(b.areaName));
   }
 
   Future<DocumentReference<Map<String, dynamic>>> createReservation({
     required String restaurantId,
-    required RestaurantTable table,
+    required RestaurantArea seatingArea,
     required String customerName,
     required String phone,
     required String occasion,
-    required int guests,
+    required int guestCount,
     required DateTime date,
     required String time,
-    List<String> paymentMethods = const ['Cash'],
+    List<String> paymentMethods = const ['Online Payment'],
     String restaurantName = '',
     String restaurantAddress = '',
     String? restaurantPhotoUrl,
@@ -110,7 +68,11 @@ class ReservationService {
     }
 
     final dateKey = formatDate(date);
-    final lockId = _lockId(restaurantId, table.id, dateKey, time);
+    if (guestCount > seatingArea.maxCapacity) {
+      throw Exception('Kapasitas area tidak mencukupi.');
+    }
+
+    final lockId = _lockId(restaurantId, seatingArea.id, dateKey, time);
     final lockRef = _firestore.collection('reservation_locks').doc(lockId);
     final counterRef =
         _firestore.collection('counters').doc('reservation_counter');
@@ -121,7 +83,7 @@ class ReservationService {
     await _firestore.runTransaction((transaction) async {
       final lockSnap = await transaction.get(lockRef);
       if (lockSnap.exists) {
-        throw Exception('Meja sudah dipesan untuk tanggal dan jam ini.');
+        throw Exception('Area sudah dipesan untuk tanggal dan jam ini.');
       }
 
       final counterSnap = await transaction.get(counterRef);
@@ -140,7 +102,7 @@ class ReservationService {
       );
       transaction.set(lockRef, {
         'restaurantId': restaurantId,
-        'tableId': table.id,
+        'seatingAreaId': seatingArea.id,
         'date': dateKey,
         'time': time,
         'reservationId': reservationId,
@@ -156,20 +118,12 @@ class ReservationService {
         'restaurantName': restaurantName,
         'restaurantAddress': restaurantAddress,
         'restaurantPhotoUrl': restaurantPhotoUrl,
-        'tableId': table.id,
-        'tableNumber': table.tableNumber,
-        'tableCapacity': table.capacity,
-        'tablePrice': table.price,
-        'totalPrice': table.price,
-        'tableShape': table.shape == TableShape.longRectangle
-            ? 'long_rectangle'
-            : table.shape.name,
-        'tableOrientation': table.orientation.name,
-        'floor': table.floor,
+        'seatingAreaId': seatingArea.id,
+        'seatingAreaName': seatingArea.areaName,
+        'guestCount': guestCount,
         'customerName': customerName,
         'phone': phone,
         'occasion': occasion,
-        'guests': guests,
         'date': dateKey,
         'time': time,
         'status': 'pending',
@@ -341,8 +295,8 @@ class ReservationService {
   }
 
   String _lockId(
-      String restaurantId, String tableId, String date, String time) {
+      String restaurantId, String seatingAreaId, String date, String time) {
     final safeTime = time.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_');
-    return '${restaurantId}_${tableId}_${date}_$safeTime';
+    return '${restaurantId}_${seatingAreaId}_${date}_$safeTime';
   }
 }

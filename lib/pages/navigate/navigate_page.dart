@@ -15,7 +15,20 @@ import '../../services/navigation_service.dart';
 import '../../services/route_service.dart';
 
 class NavigatePage extends StatefulWidget {
-  const NavigatePage({super.key});
+  final String? fixedDestinationName;
+  final String? fixedDestinationAddress;
+  final double? fixedDestinationLatitude;
+  final double? fixedDestinationLongitude;
+  final bool disableSearch;
+
+  const NavigatePage({
+    super.key,
+    this.fixedDestinationName,
+    this.fixedDestinationAddress,
+    this.fixedDestinationLatitude,
+    this.fixedDestinationLongitude,
+    this.disableSearch = false,
+  });
 
   @override
   State<NavigatePage> createState() => _NavigatePageState();
@@ -75,6 +88,12 @@ class _NavigatePageState extends State<NavigatePage>
 
   List<_RestaurantData> _filteredRestaurants = [];
 
+  bool get _usesFixedDestination =>
+      widget.fixedDestinationName != null &&
+      widget.fixedDestinationAddress != null &&
+      widget.fixedDestinationLatitude != null &&
+      widget.fixedDestinationLongitude != null;
+
   String get _mapTilerKey {
     final key = dotenv.env['MAPTILER_API_KEY']?.trim();
     return key == null || key.isEmpty ? _fallbackMapTilerKey : key;
@@ -95,18 +114,32 @@ class _NavigatePageState extends State<NavigatePage>
     super.initState();
 
     final fallbackRestaurants = _fallbackRestaurants;
-    _selectedDestination = fallbackRestaurants.first;
+    final fixedDestination = _usesFixedDestination
+        ? _RestaurantData(
+            name: widget.fixedDestinationName!,
+            address: widget.fixedDestinationAddress!,
+            latLng: LatLng(
+              widget.fixedDestinationLatitude!,
+              widget.fixedDestinationLongitude!,
+            ),
+          )
+        : null;
+    _selectedDestination = fixedDestination ?? fallbackRestaurants.first;
     _routeService = RouteService(
       apiKey: dotenv.env['OPENROUTESERVICE_API_KEY'],
     );
-    _allRestaurants.addAll(fallbackRestaurants);
+    _allRestaurants.addAll(
+      fixedDestination == null ? fallbackRestaurants : [fixedDestination],
+    );
     _filteredRestaurants = List.from(_allRestaurants);
 
-    // Load recent searches
-    _initializePreferences();
+    if (!_usesFixedDestination) {
+      // Load recent searches
+      _initializePreferences();
 
-    // Load restoran dari database
-    _loadRestaurantsFromDatabase();
+      // Load restoran dari database
+      _loadRestaurantsFromDatabase();
+    }
 
     try {
       _pulseController = AnimationController(
@@ -283,10 +316,7 @@ class _NavigatePageState extends State<NavigatePage>
     setState(() => _isLoadingRestaurants = true);
 
     try {
-      final querySnapshot = await _firestore
-          .collection('restaurants')
-          .where('status', isEqualTo: 'approved')
-          .get();
+      final querySnapshot = await _firestore.collection('restaurants').get();
 
       final restaurants = <_RestaurantData>[];
 
@@ -383,6 +413,7 @@ class _NavigatePageState extends State<NavigatePage>
   }
 
   void _toggleSearchDropdown() {
+    if (widget.disableSearch) return;
     setState(() {
       _showDropdown = !_showDropdown;
       if (_showDropdown) {
@@ -438,6 +469,7 @@ class _NavigatePageState extends State<NavigatePage>
   }
 
   void _selectRestaurant(_RestaurantData r) {
+    if (widget.disableSearch) return;
     // Validasi koordinat sebelum select
     if (!_isValidCoordinate(r.latLng)) {
       print('Invalid coordinates for restaurant: ${r.name}');
@@ -630,7 +662,7 @@ class _NavigatePageState extends State<NavigatePage>
     print('GPS UPDATE: '
         '${position.latitude}, '
         '${position.longitude}');
-        print('MARKER LOCATION: $_userLocation');
+    print('MARKER LOCATION: $_userLocation');
     final latestUserLocation = LatLng(position.latitude, position.longitude);
     final route = _route;
 
@@ -1242,7 +1274,7 @@ class _NavigatePageState extends State<NavigatePage>
             // Collapsed bar
             if (!_showDropdown)
               GestureDetector(
-                onTap: _toggleSearchDropdown,
+                onTap: widget.disableSearch ? null : _toggleSearchDropdown,
                 child: Container(
                   color: Colors.white,
                   padding:

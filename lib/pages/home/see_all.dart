@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../models/partner_model.dart';
 import '../../services/partner_service.dart';
+import '../../utils/restaurant_card_data.dart';
 import '../../widgets/wishlist_button.dart';
 import '../restaurant/restaurant_detail.dart';
 
@@ -22,6 +24,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
   static const String _font = 'Inter';
   final _partnerService = PartnerService();
   late Future<List<PartnerModel>> _restaurantsFuture;
+  Position? _currentPosition;
 
   String _selectedFilter = 'All';
   final List<String> _filters = [
@@ -35,7 +38,14 @@ class _SeeAllPageState extends State<SeeAllPage> {
   @override
   void initState() {
     super.initState();
-    _restaurantsFuture = _partnerService.getApprovedRestaurants();
+    _restaurantsFuture = _partnerService.getRestaurants();
+    _loadCurrentPosition();
+  }
+
+  Future<void> _loadCurrentPosition() async {
+    final position = await RestaurantCardData.currentPosition();
+    if (!mounted || position == null) return;
+    setState(() => _currentPosition = position);
   }
 
   List<Map<String, dynamic>> _filtered(List<Map<String, dynamic>> source) {
@@ -43,12 +53,8 @@ class _SeeAllPageState extends State<SeeAllPage> {
     switch (_selectedFilter) {
       case 'Nearest':
         list.sort((a, b) {
-          final da = double.tryParse(
-                  (a['distance'] as String).replaceAll(' km', '')) ??
-              99;
-          final db = double.tryParse(
-                  (b['distance'] as String).replaceAll(' km', '')) ??
-              99;
+          final da = a['distanceKm'] as double? ?? double.infinity;
+          final db = b['distanceKm'] as double? ?? double.infinity;
           return da.compareTo(db);
         });
         break;
@@ -76,21 +82,20 @@ class _SeeAllPageState extends State<SeeAllPage> {
     return partners
         .map(
           (p) => {
-            'image': p.restaurantPhotoUrl?.trim().isNotEmpty == true
-                ? p.restaurantPhotoUrl!.trim()
-                : 'assets/images/gambar_restoran_5.jfif',
+            'image': RestaurantCardData.imageFor(p),
             'title': p.restaurantName,
-            'rating': '4.8',
-            'duration': '25 min',
-            'cuisine': p.cuisine,
+            'rating': RestaurantCardData.ratingFor(p),
+            'distance': RestaurantCardData.distanceLabel(p, _currentPosition),
+            'distanceKm': RestaurantCardData.distanceKm(p, _currentPosition),
+            'duration': RestaurantCardData.durationLabel(p, _currentPosition),
+            'cuisine': RestaurantCardData.cuisineFor(p),
             'address': p.address,
-            'distance': '0.8 km',
             'isOpen': _isOpenNow(p),
             'partner': p,
             'restaurantId': p.id,
             'partnerId': p.ownerId,
-            'latitude': null,
-            'longitude': null,
+            'latitude': p.latitude,
+            'longitude': p.longitude,
           },
         )
         .toList();
@@ -449,7 +454,7 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Chips: rating, duration, cuisine
+                    // Chips: rating, distance, cuisine
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -461,13 +466,13 @@ class _SeeAllCardState extends State<_SeeAllCard> {
                           ),
                           const SizedBox(width: 8),
                           _MiniChip(
-                            icon: Icons.access_time_rounded,
-                            label: d['duration'] as String,
+                            icon: Icons.location_on_rounded,
+                            label: d['distance'] as String,
                           ),
                           const SizedBox(width: 8),
                           _MiniChip(
-                            icon: Icons.restaurant_rounded,
-                            label: d['cuisine'] as String,
+                            icon: Icons.access_time_rounded,
+                            label: d['duration'] as String,
                           ),
                         ],
                       ),

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/partner_model.dart';
 import '../models/wishlist_item_model.dart';
+import 'partner_service.dart';
 import 'session_service.dart';
 
 class WishlistService {
@@ -10,7 +11,9 @@ class WishlistService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final SessionService _sessionService = SessionService();
+  final PartnerService _partnerService = PartnerService();
   String? _cachedUserDocId;
+  String? _cachedFirebaseUid;
 
   factory WishlistService() => _instance;
   WishlistService._internal();
@@ -24,21 +27,45 @@ class WishlistService {
   Future<String?> _currentUserDocId() async {
     final firebaseUid = _auth.currentUser?.uid;
     if (firebaseUid == null) return null;
+    if (_cachedFirebaseUid != firebaseUid) {
+      _cachedFirebaseUid = firebaseUid;
+      _cachedUserDocId = null;
+    }
     if (_cachedUserDocId != null) return _cachedUserDocId;
 
     final sessionUser = await _sessionService.getUserSession();
     if (sessionUser != null &&
         sessionUser.firebaseUid == firebaseUid &&
         sessionUser.uid.trim().isNotEmpty) {
-      _cachedUserDocId = sessionUser.uid;
-      return _cachedUserDocId;
+      final sessionDoc = await _firestore
+          .collection('users')
+          .doc(sessionUser.uid.trim())
+          .get();
+      if (sessionDoc.exists &&
+          sessionDoc.data()?['firebaseUid']?.toString() == firebaseUid) {
+        _cachedUserDocId = sessionUser.uid.trim();
+        return _cachedUserDocId;
+      }
     }
 
     final mappingDoc =
         await _firestore.collection('uid_mapping').doc(firebaseUid).get();
     final mappedUserId = mappingDoc.data()?['userId'] as String?;
     if (mappedUserId != null && mappedUserId.trim().isNotEmpty) {
-      _cachedUserDocId = mappedUserId;
+      final mappedDoc =
+          await _firestore.collection('users').doc(mappedUserId.trim()).get();
+      if (mappedDoc.exists &&
+          mappedDoc.data()?['firebaseUid']?.toString() == firebaseUid) {
+        _cachedUserDocId = mappedUserId.trim();
+        return _cachedUserDocId;
+      }
+    }
+
+    final directDoc =
+        await _firestore.collection('users').doc(firebaseUid).get();
+    if (directDoc.exists &&
+        directDoc.data()?['firebaseUid']?.toString() == firebaseUid) {
+      _cachedUserDocId = firebaseUid;
       return _cachedUserDocId;
     }
 
@@ -63,14 +90,27 @@ class WishlistService {
     yield* _wishlistCollection(userDocId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
+        .asyncMap((snapshot) async {
+      final items = snapshot.docs
           .map((doc) => WishlistItemModel.fromFirestore({
                 ...doc.data(),
                 'id': doc.id,
               }))
           .where((item) => item.restaurantId.trim().isNotEmpty)
           .toList();
+
+      return Future.wait(items.map((item) async {
+        final restaurant =
+            await _partnerService.getPartnerByRestaurantId(item.restaurantId);
+        if (restaurant == null) return item;
+        return WishlistItemModel(
+          id: item.id,
+          userId: item.userId,
+          restaurantId: item.restaurantId,
+          restaurant: restaurant,
+          createdAt: item.createdAt,
+        );
+      }));
     });
   }
 

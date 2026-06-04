@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/partner_model.dart';
 import '../../services/reservation_service.dart';
+import '../../utils/restaurant_card_data.dart';
 import '../booking/booking_cancelled.dart';
 import '../booking/booking_data.dart';
 import '../navigate/navigate_page.dart';
@@ -410,8 +411,17 @@ class OrdersPageState extends State<OrdersPage>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        const ReviewPage(returnRoute: '/orders'),
+                    builder: (context) => ReviewPage(
+                      returnRoute: '/orders',
+                      restaurantId: order.restaurantId,
+                      restaurantName: order.title,
+                      restaurantAddress: order.address,
+                      restaurantPhotoUrl: order.photoUrl,
+                      restaurantCuisine: order.cuisine,
+                      restaurantRating: order.restaurant == null
+                          ? null
+                          : RestaurantCardData.ratingFor(order.restaurant!),
+                    ),
                   ),
                 );
               },
@@ -479,7 +489,8 @@ class OrdersPageState extends State<OrdersPage>
           restaurantName: order.title,
           restaurantAddress: order.address,
           restaurantPhotoUrl: order.photoUrl,
-          paymentMethods: order.restaurant?.paymentMethods ?? const ['Cash'],
+          paymentMethods:
+              order.restaurant?.paymentMethods ?? const ['Online Payment'],
         ),
       ),
     );
@@ -496,10 +507,8 @@ class _BookingOrder {
   final String status;
   final String date;
   final String time;
-  final int guests;
-  final String tableNumber;
-  final int floor;
-  final int tablePrice;
+  final int guestCount;
+  final String seatingAreaName;
   final PartnerModel? restaurant;
 
   const _BookingOrder({
@@ -512,10 +521,8 @@ class _BookingOrder {
     required this.status,
     required this.date,
     required this.time,
-    required this.guests,
-    required this.tableNumber,
-    required this.floor,
-    required this.tablePrice,
+    required this.guestCount,
+    required this.seatingAreaName,
     required this.restaurant,
   });
 
@@ -538,10 +545,10 @@ class _BookingOrder {
       status: (data['status'] as String? ?? 'pending').toLowerCase(),
       date: data['date'] as String? ?? '',
       time: data['time'] as String? ?? '',
-      guests: (data['guests'] as num?)?.toInt() ?? 1,
-      tableNumber: data['tableNumber'] as String? ?? '-',
-      floor: (data['floor'] as num?)?.toInt() ?? 1,
-      tablePrice: (data['tablePrice'] as num?)?.toInt() ?? 0,
+      guestCount: (data['guestCount'] as num?)?.toInt() ??
+          (data['guests'] as num?)?.toInt() ??
+          1,
+      seatingAreaName: data['seatingAreaName'] as String? ?? '-',
       restaurant: restaurant,
     );
   }
@@ -568,19 +575,7 @@ class _BookingOrder {
     return [date, time].where((value) => value.isNotEmpty).join(' - ');
   }
 
-  String get tableLabel => 'Table $tableNumber - Floor $floor';
-
-  String get priceLabel {
-    if (tablePrice <= 0) return 'Gratis';
-    final text = tablePrice.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < text.length; i++) {
-      final remaining = text.length - i;
-      buffer.write(text[i]);
-      if (remaining > 1 && remaining % 3 == 1) buffer.write('.');
-    }
-    return 'Rp $buffer';
-  }
+  String get areaLabel => 'Area $seatingAreaName';
 
   static (int, int)? _parseTime(String value) {
     final normalized = value.trim().toUpperCase();
@@ -764,18 +759,13 @@ class _OrderCardState extends State<_OrderCard> {
                               ),
                               const SizedBox(width: 8),
                               _MiniChip(
-                                icon: Icons.table_restaurant_rounded,
-                                label: widget.order.tableLabel,
+                                icon: Icons.event_seat_outlined,
+                                label: widget.order.areaLabel,
                               ),
                               const SizedBox(width: 8),
                               _MiniChip(
                                 icon: Icons.group_rounded,
-                                label: '${widget.order.guests} orang',
-                              ),
-                              const SizedBox(width: 8),
-                              _MiniChip(
-                                icon: Icons.payments_outlined,
-                                label: widget.order.priceLabel,
+                                label: '${widget.order.guestCount} orang',
                               ),
                               const SizedBox(width: 8),
                               _MiniChip(

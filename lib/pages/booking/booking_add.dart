@@ -18,7 +18,7 @@ class BookingAddPage extends StatefulWidget {
     this.restaurantName = '',
     this.restaurantAddress = '',
     this.restaurantPhotoUrl,
-    this.paymentMethods = const ['Cash'],
+    this.paymentMethods = const ['Online Payment'],
     this.menuRequest = const {},
     this.name = '',
     this.phone = '',
@@ -557,7 +557,7 @@ class _BookingAddPageState extends State<BookingAddPage> {
                   ),
                   Expanded(
                     child: Text(
-                      'Book a Table',
+                      'Booking',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',

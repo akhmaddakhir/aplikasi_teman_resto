@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../models/restaurant_table_model.dart';
+
+import '../../models/restaurant_area_model.dart';
 import '../../services/reservation_service.dart';
-import '../../widgets/table_widget.dart';
 import 'booking_detail.dart';
 
 class TableBooking extends StatefulWidget {
@@ -19,12 +19,12 @@ class TableBooking extends StatefulWidget {
   final String time;
 
   TableBooking({
-    Key? key,
+    super.key,
     this.restaurantId = '',
     this.restaurantName = '',
     this.restaurantAddress = '',
     this.restaurantPhotoUrl,
-    this.paymentMethods = const ['Cash'],
+    this.paymentMethods = const ['Online Payment'],
     this.menuRequest = const {},
     this.name = '',
     this.phone = '',
@@ -32,23 +32,20 @@ class TableBooking extends StatefulWidget {
     this.guests = 1,
     DateTime? date,
     this.time = '',
-  })  : date = date ?? DateTime.now(),
-        super(key: key);
+  }) : date = date ?? DateTime.now();
 
   @override
   State<TableBooking> createState() => TableBookingState();
 }
 
-class TableBookingState extends State<TableBooking>
-    with TickerProviderStateMixin {
+class TableBookingState extends State<TableBooking> {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
 
   final _reservationService = ReservationService();
-  late TabController _tabController;
   String? _restaurantId;
-  List<RestaurantTable> _tables = [];
-  RestaurantTable? _selectedTable;
+  List<RestaurantArea> _areas = [];
+  RestaurantArea? _selectedArea;
   bool _loading = true;
   bool _booking = false;
   String? _error;
@@ -56,17 +53,10 @@ class TableBookingState extends State<TableBooking>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 1, vsync: this);
-    _loadTables();
+    _loadAreas();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadTables() async {
+  Future<void> _loadAreas() async {
     setState(() {
       _loading = true;
       _error = null;
@@ -79,56 +69,39 @@ class TableBookingState extends State<TableBooking>
         throw Exception('Restoran belum tersedia untuk reservasi.');
       }
 
-      final tables = await _reservationService.getAvailableTables(
+      final areas = await _reservationService.getAvailableAreas(
         restaurantId: restaurantId,
-        guests: widget.guests,
-        date: widget.date,
-        time: widget.time,
       );
 
-      final floors = _floorsFrom(tables);
-
-      if (mounted) {
-        _tabController.dispose();
-        _tabController = TabController(
-          length: floors.isEmpty ? 1 : floors.length,
-          vsync: this,
-        );
-
-        RestaurantTable? selectedTable;
-        for (final table in tables) {
-          if (table.status == TableStatus.available) {
-            selectedTable = table;
-            break;
-          }
-        }
-
-        setState(() {
-          _restaurantId = restaurantId;
-          _tables = tables;
-          _selectedTable = selectedTable;
-          _loading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _restaurantId = restaurantId;
+        _areas = areas;
+        _selectedArea = areas.isEmpty ? null : areas.first;
+        _loading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString().replaceAll('Exception: ', '');
-          _loading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+        _loading = false;
+      });
     }
   }
 
-  List<int> _floorsFrom(List<RestaurantTable> tables) {
-    final floors = tables.map((table) => table.floor).toSet().toList()..sort();
-    return floors;
-  }
-
-  Future<void> _bookSelectedTable() async {
-    if (_selectedTable == null || _restaurantId == null) {
+  Future<void> _bookSelectedArea() async {
+    final area = _selectedArea;
+    if (area == null || _restaurantId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak ada meja yang bisa dipesan')),
+        const SnackBar(
+            content: Text('Pilih area tempat duduk terlebih dahulu')),
+      );
+      return;
+    }
+
+    if (widget.guests > area.maxCapacity) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kapasitas area tidak mencukupi.')),
       );
       return;
     }
@@ -137,11 +110,11 @@ class TableBookingState extends State<TableBooking>
     try {
       final reservationRef = await _reservationService.createReservation(
         restaurantId: _restaurantId!,
-        table: _selectedTable!,
+        seatingArea: area,
         customerName: widget.name,
         phone: widget.phone,
         occasion: widget.occasion,
-        guests: widget.guests,
+        guestCount: widget.guests,
         date: widget.date,
         time: widget.time,
         paymentMethods: widget.paymentMethods,
@@ -151,34 +124,32 @@ class TableBookingState extends State<TableBooking>
         menuRequest: widget.menuRequest,
       );
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BookingDetail(
-              reservationId: reservationRef.id,
-              restaurantName: widget.restaurantName,
-              restaurantAddress: widget.restaurantAddress,
-              restaurantPhotoUrl: widget.restaurantPhotoUrl,
-              paymentMethods: widget.paymentMethods,
-              menuRequest: widget.menuRequest,
-              customerName: widget.name,
-              phone: widget.phone,
-              occasion: widget.occasion,
-              guests: widget.guests,
-              date: widget.date,
-              time: widget.time,
-              table: _selectedTable!,
-            ),
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BookingDetail(
+            reservationId: reservationRef.id,
+            restaurantName: widget.restaurantName,
+            restaurantAddress: widget.restaurantAddress,
+            restaurantPhotoUrl: widget.restaurantPhotoUrl,
+            paymentMethods: widget.paymentMethods,
+            menuRequest: widget.menuRequest,
+            customerName: widget.name,
+            phone: widget.phone,
+            occasion: widget.occasion,
+            guestCount: widget.guests,
+            date: widget.date,
+            time: widget.time,
+            seatingArea: area,
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
         );
-        _loadTables();
       }
     } finally {
       if (mounted) setState(() => _booking = false);
@@ -187,8 +158,6 @@ class TableBookingState extends State<TableBooking>
 
   @override
   Widget build(BuildContext context) {
-    final floors = _floorsFrom(_tables);
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -200,64 +169,31 @@ class TableBookingState extends State<TableBooking>
                 child: Center(child: CircularProgressIndicator(color: _orange)),
               )
             else if (_error != null)
+              Expanded(child: _message(_error!))
+            else if (_areas.isEmpty)
+              Expanded(child: _message('Belum ada area tempat duduk aktif.'))
+            else
               Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontFamily: _font),
-                    ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pilih Area Tempat Duduk',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ..._areas.map(_areaTile),
+                    ],
                   ),
                 ),
-              )
-            else if (_tables.isEmpty)
-              const Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Tidak ada meja tersedia untuk jumlah tamu, tanggal, dan jam ini.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: _font),
-                    ),
-                  ),
-                ),
-              )
-            else ...[
-              TabBar(
-                controller: _tabController,
-                labelColor: _orange,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: _orange,
-                labelStyle: const TextStyle(
-                  fontFamily: _font,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                tabs:
-                    floors.map((floor) => Tab(text: 'Lantai $floor')).toList(),
               ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _legend(const Color(0xFFFF4F0F), 'Reserved'),
-                    _legend(const Color(0xFFEDEDED), 'Available'),
-                    _legend(const Color(0xFF43EA3B), 'Selected'),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: floors.map(_floorContent).toList(),
-                ),
-              ),
-            ],
             Padding(
               padding: const EdgeInsets.all(24),
               child: SizedBox(
@@ -265,10 +201,10 @@ class TableBookingState extends State<TableBooking>
                 height: 56,
                 child: ElevatedButton(
                   onPressed:
-                      _booking || _tables.isEmpty ? null : _bookSelectedTable,
+                      _booking || _areas.isEmpty ? null : _bookSelectedArea,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _orange,
-                    disabledBackgroundColor: _orange.withOpacity(0.45),
+                    disabledBackgroundColor: _orange.withValues(alpha: 0.45),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
@@ -276,9 +212,11 @@ class TableBookingState extends State<TableBooking>
                   ),
                   child: _booking
                       ? const CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2)
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        )
                       : const Text(
-                          'Book a table',
+                          'Reserve Area',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -300,98 +238,144 @@ class TableBookingState extends State<TableBooking>
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new,
-                size: 20, color: Colors.black),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              size: 20,
+              color: Colors.black,
+            ),
             onPressed: () => Navigator.maybePop(context),
           ),
           const Expanded(
             child: Text(
-              'Select Table',
+              'Select Area',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.black),
-            onPressed: _loadTables,
+            onPressed: _loadAreas,
           ),
         ],
       ),
     );
   }
 
-  Widget _floorContent(int floor) {
-    final tables = _tables.where((table) => table.floor == floor).toList();
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-      child: Wrap(
-        spacing: 18,
-        runSpacing: 22,
-        children: tables.map(_tableCard).toList(),
+  Widget _message(String text) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontFamily: _font),
+        ),
       ),
     );
   }
 
-  Widget _tableCard(RestaurantTable table) {
-    final selected = _selectedTable?.id == table.id;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TableShapeWidget(
-          tableName: table.tableNumber,
-          capacity: table.capacity,
-          shape: table.shape,
-          orientation: table.orientation,
-          status: table.status,
-          isSelected: selected,
-          onTap: () => setState(() => _selectedTable = table),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _formatRupiah(table.price),
-          style: TextStyle(
-            fontFamily: _font,
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? _orange : const Color(0xFF555555),
+  Widget _areaTile(RestaurantArea area) {
+    final selected = _selectedArea?.id == area.id;
+    final insufficient = widget.guests > area.maxCapacity;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () => setState(() => _selectedArea = area),
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFFFF3EE) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? _orange : const Color(0xFFEDEDED),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                margin: const EdgeInsets.only(top: 2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: selected ? _orange : const Color(0xFFCCCCCC),
+                    width: 2,
+                  ),
+                ),
+                child: selected
+                    ? Center(
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: _orange,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      area.areaName,
+                      style: const TextStyle(
+                        fontFamily: _font,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                    if (area.description.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        area.description,
+                        style: const TextStyle(
+                          fontFamily: _font,
+                          fontSize: 13,
+                          color: Color(0xFF777777),
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Kapasitas: ${area.maxCapacity} orang',
+                      style: TextStyle(
+                        fontFamily: _font,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: insufficient ? Colors.red : _orange,
+                      ),
+                    ),
+                    if (selected && insufficient) ...[
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Kapasitas area tidak mencukupi.',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-      ],
-    );
-  }
-
-  String _formatRupiah(int value) {
-    if (value <= 0) return 'Gratis';
-    final text = value.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < text.length; i++) {
-      final remaining = text.length - i;
-      buffer.write(text[i]);
-      if (remaining > 1 && remaining % 3 == 1) buffer.write('.');
-    }
-    return 'Rp $buffer';
-  }
-
-  Widget _legend(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: _font,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF3A3A3A),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

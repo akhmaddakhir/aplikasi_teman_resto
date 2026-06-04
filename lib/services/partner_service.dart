@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 import '../config/cloudinary_config.dart';
 import '../data/malang_restaurant_locations.dart';
 import '../models/partner_model.dart';
-import '../models/restaurant_table_model.dart';
+import '../models/restaurant_area_model.dart';
 import '../services/image_service.dart';
 
 class PartnerService {
@@ -34,12 +35,12 @@ class PartnerService {
           .where('ownerId', isEqualTo: ownerId)
           .get();
 
-      final partners = query.docs
+      final partners = await _withReviewStats(query.docs
           .map((doc) => _withKnownMalangLocation(PartnerModel.fromFirestore({
                 ...doc.data(),
                 'id': doc.id,
               })))
-          .toList();
+          .toList());
       partners.sort((a, b) {
         final statusRank =
             _statusRank(a.status).compareTo(_statusRank(b.status));
@@ -53,17 +54,295 @@ class PartnerService {
     }
   }
 
-  Future<List<PartnerModel>> getApprovedRestaurants() async {
+  Future<PartnerUserContext?> getPartnerUserContext(String firebaseUid) async {
     try {
-      print(
-          '[PartnerService] getApprovedRestaurants - fetching restaurants with status in [approved, active]');
+      DocumentSnapshot<Map<String, dynamic>>? doc;
 
-      final query = await _firestore
+      final mappingDoc =
+          await _firestore.collection('uid_mapping').doc(firebaseUid).get();
+      final mappedUserId = mappingDoc.data()?['userId']?.toString();
+      if (mappedUserId != null && mappedUserId.trim().isNotEmpty) {
+        final mappedDoc =
+            await _firestore.collection('users').doc(mappedUserId.trim()).get();
+        if (mappedDoc.exists && mappedDoc.data() != null) {
+          doc = mappedDoc;
+        }
+      }
+
+      if (doc == null) {
+        final directDoc =
+            await _firestore.collection('users').doc(firebaseUid).get();
+        if (directDoc.exists && directDoc.data() != null) {
+          doc = directDoc;
+        }
+      }
+
+      if (doc == null) {
+        final query = await _firestore
+            .collection('users')
+            .where('firebaseUid', isEqualTo: firebaseUid)
+            .limit(1)
+            .get();
+        if (query.docs.isNotEmpty) {
+          doc = query.docs.first;
+        }
+      }
+
+      if (doc == null || doc.data() == null) {
+        debugPrint('[PartnerService] FirebaseAuth uid: $firebaseUid');
+        debugPrint('[PartnerService] user document id: null');
+        debugPrint('[PartnerService] data users/{uid}: null');
+        return null;
+      }
+
+      final data = doc.data()!;
+      final rawUid = data['uid']?.toString();
+      final customUserId = doc.id != firebaseUid
+          ? doc.id
+          : rawUid != null && rawUid.trim().isNotEmpty
+              ? rawUid.trim()
+              : doc.id;
+
+      final context = PartnerUserContext(
+        firebaseUid: firebaseUid,
+        userDocId: doc.id,
+        customUserId: customUserId,
+        role: data['role']?.toString(),
+        partnerId: data['partnerId']?.toString(),
+        restaurantId: data['restaurantId']?.toString(),
+        restaurantIds: List<String>.from(data['restaurantIds'] ?? const []),
+        email: data['email']?.toString(),
+        fullName: data['fullName']?.toString(),
+      );
+
+      debugPrint('[PartnerService] FirebaseAuth uid: ${context.firebaseUid}');
+      debugPrint('[PartnerService] custom user id: ${context.customUserId}');
+      debugPrint('[PartnerService] user document id: ${context.userDocId}');
+      debugPrint('[PartnerService] data users/{uid}: $data');
+      debugPrint('[PartnerService] role: ${context.role}');
+      debugPrint('[PartnerService] partnerId: ${context.partnerId}');
+      debugPrint('[PartnerService] restaurantId: ${context.restaurantId}');
+      debugPrint('[PartnerService] restaurantIds: ${context.restaurantIds}');
+
+      return context;
+    } catch (e) {
+      debugPrint('[PartnerService] getPartnerUserContext error: $e');
+      return null;
+    }
+  }
+
+  Future<List<PartnerModel>> getRestaurantsForUser({
+    required String firebaseUid,
+    String? customUserId,
+    String? email,
+    String? restaurantId,
+    List<String> restaurantIds = const [],
+    String? partnerId,
+  }) async {
+    final restaurants = <PartnerModel>[];
+    final seenIds = <String>{};
+
+    bool addDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+      final data = doc.data();
+      if (data == null || !seenIds.add(doc.id)) return false;
+      restaurants.add(_withKnownMalangLocation(PartnerModel.fromFirestore({
+        ...data,
+        'id': doc.id,
+      })));
+      return true;
+    }
+
+    Future<int> addRestaurantsQuery(String field, String value) async {
+      if (value.trim().isEmpty) return 0;
+      final snapshot = await _firestore
           .collection('restaurants')
-          .where('status', whereIn: ['approved', 'active']).get();
+          .where(field, isEqualTo: value.trim())
+          .get();
+      for (final doc in snapshot.docs) {
+        addDoc(doc);
+      }
+      return snapshot.docs.length;
+    }
 
-      print(
-          '[PartnerService] getApprovedRestaurants found ${query.docs.length} restaurants');
+    Future<int> addEmailQuery(String field, String value) async {
+      if (value.trim().isEmpty) return 0;
+      final snapshot = await _firestore
+          .collection('restaurants')
+          .where(field, isEqualTo: value.trim())
+          .get();
+      for (final doc in snapshot.docs) {
+        addDoc(doc);
+      }
+      return snapshot.docs.length;
+    }
+
+    Future<int> addDirectRestaurant(String id) async {
+      if (id.trim().isEmpty) return 0;
+      final doc =
+          await _firestore.collection('restaurants').doc(id.trim()).get();
+      if (!doc.exists) return 0;
+      return addDoc(doc) ? 1 : 0;
+    }
+
+    try {
+      debugPrint('[PartnerService] currentUser.uid: $firebaseUid');
+      debugPrint('[PartnerService] custom user id: $customUserId');
+      debugPrint('[PartnerService] users/{uid}.restaurantId: $restaurantId');
+      debugPrint('[PartnerService] users.partnerId: $partnerId');
+
+      var userRestaurantIdCount = 0;
+      final directRestaurantIds = <String>{
+        if (restaurantId != null && restaurantId.trim().isNotEmpty)
+          restaurantId.trim(),
+        ...restaurantIds.where((id) => id.trim().isNotEmpty).map(
+              (id) => id.trim(),
+            ),
+      };
+      for (final directRestaurantId in directRestaurantIds) {
+        userRestaurantIdCount += await addDirectRestaurant(directRestaurantId);
+      }
+      debugPrint(
+          '[PartnerService] restaurantId dari user result count: $userRestaurantIdCount');
+
+      final ownerIdCount = await addRestaurantsQuery('ownerId', firebaseUid);
+      var ownerIdCustomCount = 0;
+      if (customUserId != null && customUserId.trim().isNotEmpty) {
+        ownerIdCustomCount =
+            await addRestaurantsQuery('ownerId', customUserId.trim());
+      }
+      debugPrint(
+          '[PartnerService] hasil query ownerId current uid: $ownerIdCount');
+      debugPrint(
+          '[PartnerService] hasil query ownerId custom uid: $ownerIdCustomCount');
+
+      final userIdCount = await addRestaurantsQuery('userId', firebaseUid);
+      var userIdCustomCount = 0;
+      if (customUserId != null && customUserId.trim().isNotEmpty) {
+        userIdCustomCount =
+            await addRestaurantsQuery('userId', customUserId.trim());
+      }
+      debugPrint(
+          '[PartnerService] hasil query userId current uid: $userIdCount');
+      debugPrint(
+          '[PartnerService] hasil query userId custom uid: $userIdCustomCount');
+
+      final partnerIdFieldCount =
+          await addRestaurantsQuery('partnerId', firebaseUid);
+      var partnerIdFieldCustomCount = 0;
+      if (customUserId != null && customUserId.trim().isNotEmpty) {
+        partnerIdFieldCustomCount =
+            await addRestaurantsQuery('partnerId', customUserId.trim());
+      }
+      debugPrint(
+          '[PartnerService] hasil query partnerId current uid: $partnerIdFieldCount');
+      debugPrint(
+          '[PartnerService] hasil query partnerId custom uid: $partnerIdFieldCustomCount');
+
+      final uidCount = await addRestaurantsQuery('uid', firebaseUid);
+      final createdByCount =
+          await addRestaurantsQuery('createdBy', firebaseUid);
+
+      var emailCount = 0;
+      final rawEmail = email?.trim();
+      final emailVariants = <String>{
+        if (rawEmail != null && rawEmail.isNotEmpty) rawEmail,
+        if (rawEmail != null && rawEmail.isNotEmpty) rawEmail.toLowerCase(),
+      };
+      for (final emailValue in emailVariants) {
+        emailCount += await addEmailQuery('ownerEmail', emailValue);
+        emailCount += await addEmailQuery('email', emailValue);
+      }
+
+      var userPartnerIdDocCount = 0;
+      final trimmedPartnerId = partnerId?.trim();
+      if (trimmedPartnerId != null && trimmedPartnerId.isNotEmpty) {
+        userPartnerIdDocCount += await addDirectRestaurant(trimmedPartnerId);
+      }
+
+      debugPrint('[PartnerService] hasil query uid current uid: $uidCount');
+      debugPrint(
+          '[PartnerService] hasil query createdBy current uid: $createdByCount');
+      debugPrint(
+          '[PartnerService] query restaurants email result count: $emailCount');
+      debugPrint(
+          '[PartnerService] query users.partnerId doc result count: $userPartnerIdDocCount');
+      debugPrint(
+          '[PartnerService] jumlah restoran ditemukan: ${restaurants.length}');
+
+      final withStats = await _withReviewStats(restaurants);
+      withStats.sort((a, b) {
+        final statusRank =
+            _statusRank(a.status).compareTo(_statusRank(b.status));
+        if (statusRank != 0) return statusRank;
+        return b.createdAt.compareTo(a.createdAt);
+      });
+      debugPrint(
+          '[PartnerService] id restoran yang dipakai dashboard: ${withStats.isEmpty ? null : withStats.first.id}');
+      return withStats;
+    } catch (e) {
+      debugPrint('[PartnerService] getRestaurantsForUser error: $e');
+      return [];
+    }
+  }
+
+  Future<PartnerModel?> getPartnerRequestById(String partnerId) async {
+    try {
+      final doc = await _firestore.collection('partners').doc(partnerId).get();
+      if (!doc.exists || doc.data() == null) return null;
+      return PartnerModel.fromFirestore({
+        ...doc.data()!,
+        'id': doc.id,
+      });
+    } catch (e) {
+      print('[PartnerService] getPartnerRequestById error: $e');
+      return null;
+    }
+  }
+
+  Future<PartnerModel?> getLatestPartnerRequestByUserId(String userId) async {
+    try {
+      final requests = <PartnerModel>[];
+      final seenIds = <String>{};
+
+      Future<void> addQuery(String field) async {
+        final query = await _firestore
+            .collection('partners')
+            .where(field, isEqualTo: userId)
+            .get();
+        for (final doc in query.docs) {
+          if (!seenIds.add(doc.id)) continue;
+          requests.add(PartnerModel.fromFirestore({
+            ...doc.data(),
+            'id': doc.id,
+          }));
+        }
+      }
+
+      await addQuery('userId');
+      await addQuery('uid');
+      await addQuery('ownerId');
+
+      if (requests.isEmpty) return null;
+      requests.sort((a, b) {
+        final statusRank =
+            _statusRank(a.status).compareTo(_statusRank(b.status));
+        if (statusRank != 0) return statusRank;
+        return b.createdAt.compareTo(a.createdAt);
+      });
+      return requests.first;
+    } catch (e) {
+      print('[PartnerService] getLatestPartnerRequestByUserId error: $e');
+      return null;
+    }
+  }
+
+  Future<List<PartnerModel>> getRestaurants() async {
+    try {
+      print('[PartnerService] getRestaurants - fetching restaurants');
+
+      final query = await _firestore.collection('restaurants').get();
+
+      print('[PartnerService] getRestaurants found ${query.docs.length}');
 
       for (var doc in query.docs) {
         print('[PartnerService] Doc ID: ${doc.id}');
@@ -82,12 +361,13 @@ class PartnerService {
           rethrow;
         }
       }).toList();
-      partners.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final partnersWithReviews = await _withReviewStats(partners);
+      partnersWithReviews.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       print(
-          '[PartnerService] Successfully parsed ${partners.length} restaurants');
-      return partners;
+          '[PartnerService] Successfully parsed ${partnersWithReviews.length} restaurants');
+      return partnersWithReviews;
     } catch (e) {
-      print('[PartnerService] getApprovedRestaurants error: $e');
+      print('[PartnerService] getRestaurants error: $e');
       rethrow;
     }
   }
@@ -97,10 +377,11 @@ class PartnerService {
       final doc =
           await _firestore.collection('restaurants').doc(restaurantId).get();
       if (!doc.exists || doc.data() == null) return null;
-      return _withKnownMalangLocation(PartnerModel.fromFirestore({
+      final partner = _withKnownMalangLocation(PartnerModel.fromFirestore({
         ...doc.data()!,
         'id': doc.id,
       }));
+      return _withReviewStatsForPartner(partner);
     } catch (e) {
       print('[PartnerService] getPartnerByRestaurantId error: $e');
       return null;
@@ -165,6 +446,30 @@ class PartnerService {
     File? restaurantPhoto,
   }) async {
     try {
+      final userDocId = await _findUserDocId(ownerId);
+      if (userDocId == null) {
+        throw Exception('Data user tidak ditemukan. Silakan login ulang.');
+      }
+
+      debugPrint('[PartnerService.submitRegistration] uid user: $ownerId');
+
+      final context = await getPartnerUserContext(ownerId);
+      final existingRestaurants = await getRestaurantsForUser(
+        firebaseUid: ownerId,
+        customUserId: context?.customUserId,
+        email: context?.email ?? email,
+        restaurantId: context?.restaurantId,
+        restaurantIds: context?.restaurantIds ?? const [],
+        partnerId: context?.partnerId,
+      );
+      if (existingRestaurants.isNotEmpty) {
+        final existing = existingRestaurants.first;
+        await _updateUserPartnerRestaurant(ownerId, existing.id);
+        debugPrint(
+            '[PartnerService.submitRegistration] existing restaurant dipakai: ${existing.id}');
+        return existing;
+      }
+
       final restaurantId = await _generateRestaurantId();
       final docRef = _firestore.collection('restaurants').doc(restaurantId);
 
@@ -206,16 +511,57 @@ class PartnerService {
         createdAt: DateTime.now(),
       );
 
-      print(
-          '[PartnerService] submitRegistration - saving restaurant: $restaurantId with status: ${partner.status.name}');
-      final firestoreData = partner.toFirestore();
-      print('[PartnerService] Firestore data being saved: $firestoreData');
-      await docRef.set(firestoreData);
-      print(
-          '[PartnerService] submitRegistration - restaurant saved successfully');
+      final now = DateTime.now().toIso8601String();
+      final normalizedEmail = email.trim().toLowerCase();
+      final firestoreData = <String, dynamic>{
+        'id': restaurantId,
+        'userId': ownerId,
+        'uid': ownerId,
+        'ownerId': ownerId,
+        'createdBy': ownerId,
+        'ownerEmail': normalizedEmail,
+        'ownerName': ownerName,
+        'restaurantName': restaurantName,
+        'phone': phone,
+        'email': normalizedEmail,
+        'address': address,
+        'openTime': openTime,
+        'closeTime': closeTime,
+        'description': description,
+        'cuisine': cuisine,
+        'highlights': highlights,
+        'paymentMethods': paymentMethods,
+        'restaurantPhotoUrl': restaurantPhotoUrl,
+        'menuPhotos': const [],
+        'galleryPhotos': const [],
+        'latitude': coordinates?.latitude,
+        'longitude': coordinates?.longitude,
+        'restaurantAddress': address,
+        'restaurantDescription': description,
+        'status': 'active',
+        'createdAt': now,
+        'updatedAt': now,
+      };
+      debugPrint(
+          '[PartnerService.submitRegistration] data restoran yang akan disimpan: $firestoreData');
 
-      // Update user role
-      await _updateUserPartnerStatus(ownerId, restaurantId, 'approved');
+      await docRef.set(firestoreData);
+      debugPrint(
+          '[PartnerService.submitRegistration] hasil create restaurant: success id=$restaurantId');
+
+      final userUpdates = <String, dynamic>{
+        'role': 'partner',
+        'restaurantId': restaurantId,
+        'restaurantIds': FieldValue.arrayUnion([restaurantId]),
+        'partnerId': FieldValue.delete(),
+        'rejectionReason': FieldValue.delete(),
+        'updatedAt': now,
+      };
+      await _firestore.collection('users').doc(userDocId).update(userUpdates);
+      debugPrint(
+          '[PartnerService.submitRegistration] hasil update user: success userDocId=$userDocId updates=$userUpdates');
+      debugPrint(
+          '[PartnerService.submitRegistration] restaurantId yang tersimpan: $restaurantId');
 
       return partner;
     } catch (e) {
@@ -225,6 +571,104 @@ class PartnerService {
   }
 
   // ── UPDATE REGISTRATION ───────────────────────────────────────
+  Future<PartnerModel?> createRestaurantForPartner({
+    required String firebaseUid,
+    required String restaurantName,
+    required String ownerName,
+    required String phone,
+    required String email,
+    required String address,
+    required String openTime,
+    required String closeTime,
+    required String description,
+    required String cuisine,
+    List<String> highlights = const [],
+    List<String> paymentMethods = const [],
+    File? restaurantPhoto,
+  }) async {
+    try {
+      final context = await getPartnerUserContext(firebaseUid);
+      if (context == null) {
+        throw Exception('Data user tidak ditemukan. Silakan login ulang.');
+      }
+
+      final restaurantId = await _generateRestaurantId();
+      final docRef = _firestore.collection('restaurants').doc(restaurantId);
+
+      String? restaurantPhotoUrl;
+      if (restaurantPhoto != null) {
+        restaurantPhotoUrl = await _imageService.uploadProfileImage(
+          uid: 'restaurant_$restaurantId',
+          imageFile: restaurantPhoto,
+          folder: CloudinaryConfig.restaurantPhotoFolder,
+          publicIdPrefix: 'resto',
+        );
+      }
+
+      final coordinates = await _resolveCoordinates(
+        restaurantName: restaurantName,
+        address: address,
+      );
+
+      final normalizedEmail = email.trim().toLowerCase();
+      final contextEmail = context.email?.trim().toLowerCase();
+
+      final data = <String, dynamic>{
+        'id': restaurantId,
+        'ownerId': firebaseUid,
+        'userId': firebaseUid,
+        'uid': firebaseUid,
+        'createdBy': firebaseUid,
+        'ownerEmail': contextEmail ?? normalizedEmail,
+        'ownerName': context.fullName ?? ownerName,
+        'restaurantName': restaurantName,
+        'phone': phone,
+        'email': normalizedEmail,
+        'address': address,
+        'openTime': openTime,
+        'closeTime': closeTime,
+        'description': description,
+        'cuisine': cuisine,
+        'highlights': highlights,
+        'paymentMethods': paymentMethods,
+        'restaurantPhotoUrl': restaurantPhotoUrl,
+        'menuPhotos': const [],
+        'galleryPhotos': const [],
+        'latitude': coordinates?.latitude,
+        'longitude': coordinates?.longitude,
+        'status': 'active',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(data);
+
+      final userUpdates = <String, dynamic>{
+        'role': 'partner',
+        'restaurantId': restaurantId,
+        'restaurantIds': FieldValue.arrayUnion([restaurantId]),
+        'partnerId': FieldValue.delete(),
+        'rejectionReason': FieldValue.delete(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      await _firestore
+          .collection('users')
+          .doc(context.userDocId)
+          .update(userUpdates);
+
+      return PartnerModel.fromFirestore({
+        ...data,
+        'id': restaurantId,
+        'createdAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('[PartnerService] createRestaurantForPartner error: $e');
+      rethrow;
+    }
+  }
+
   Future<void> updateRegistration({
     required String restaurantId,
     required String ownerId,
@@ -243,12 +687,19 @@ class PartnerService {
     String? existingRestaurantPhotoUrl,
   }) async {
     try {
+      final partnerRequestDoc =
+          await _firestore.collection('partners').doc(restaurantId).get();
+
       final coordinates = await _resolveCoordinates(
         restaurantName: restaurantName,
         address: address,
       );
 
       final updates = <String, dynamic>{
+        'ownerId': ownerId,
+        'userId': ownerId,
+        'uid': ownerId,
+        'createdBy': ownerId,
         'restaurantName': restaurantName,
         'ownerName': ownerName,
         'phone': phone,
@@ -260,10 +711,15 @@ class PartnerService {
         'cuisine': cuisine,
         'highlights': highlights,
         'paymentMethods': paymentMethods,
-        'status': 'approved',
-        'rejectionReason': null,
+        'status': 'active',
         'updatedAt': DateTime.now().toIso8601String(),
       };
+      if (partnerRequestDoc.exists) {
+        updates.addAll({
+          'restaurantAddress': address,
+          'restaurantDescription': description,
+        });
+      }
       if (coordinates != null) {
         updates['latitude'] = coordinates.latitude;
         updates['longitude'] = coordinates.longitude;
@@ -284,8 +740,8 @@ class PartnerService {
       await _firestore
           .collection('restaurants')
           .doc(restaurantId)
-          .update(updates);
-      await _updateUserPartnerStatus(ownerId, restaurantId, 'approved');
+          .set(updates, SetOptions(merge: true));
+      await _updateUserPartnerRestaurant(ownerId, restaurantId);
     } catch (e) {
       print('[PartnerService] updateRegistration error: $e');
       rethrow;
@@ -357,92 +813,78 @@ class PartnerService {
   }
 
   // ── GET TABLES ────────────────────────────────────────────────
-  Future<List<RestaurantTable>> getTablesByRestaurant(
-      String restaurantId) async {
+  Future<List<RestaurantArea>> getAreasByRestaurant(String restaurantId) async {
     try {
       final query = await _firestore
-          .collection('restaurants')
-          .doc(restaurantId)
-          .collection('tables')
+          .collection('restaurant_areas')
+          .where('restaurantId', isEqualTo: restaurantId)
           .get();
       return query.docs
-          .map((d) => RestaurantTable.fromFirestore({
+          .map((d) => RestaurantArea.fromFirestore({
                 ...d.data(),
                 'id': d.id,
-                'tableId': d.id,
                 'restaurantId': restaurantId,
               }))
           .toList()
-        ..sort((a, b) {
-          final floorCmp = a.floor.compareTo(b.floor);
-          if (floorCmp != 0) return floorCmp;
-          return a.tableNumber.compareTo(b.tableNumber);
-        });
+        ..sort((a, b) => a.areaName.compareTo(b.areaName));
     } catch (e) {
-      print('[PartnerService] getTablesByRestaurant error: $e');
+      print('[PartnerService] getAreasByRestaurant error: $e');
       return [];
     }
   }
 
   // ── SAVE TABLES ───────────────────────────────────────────────
-  Future<void> saveTables(
-      String restaurantId, List<RestaurantTable> tables) async {
-    final normalizedTables = await _normalizeTableIds(restaurantId, tables);
-    final tablesRef = _firestore
-        .collection('restaurants')
-        .doc(restaurantId)
-        .collection('tables');
+  Future<void> saveAreas(
+      String restaurantId, List<RestaurantArea> areas) async {
+    final normalizedAreas = await _normalizeAreaIds(restaurantId, areas);
+    final areasRef = _firestore.collection('restaurant_areas');
     final batch = _firestore.batch();
 
-    final existing = await tablesRef.get();
+    final existing =
+        await areasRef.where('restaurantId', isEqualTo: restaurantId).get();
     for (final doc in existing.docs) {
       batch.delete(doc.reference);
     }
 
-    for (final table in normalizedTables) {
-      final ref = tablesRef.doc(table.id);
-      batch.set(ref, table.toFirestore());
+    for (final area in normalizedAreas) {
+      final ref = areasRef.doc(area.id);
+      batch.set(ref, area.toFirestore());
     }
 
     await batch.commit();
   }
 
   // ── DELETE TABLE ──────────────────────────────────────────────
-  Future<void> deleteTable(String restaurantId, String tableId) async {
-    await _firestore
-        .collection('restaurants')
-        .doc(restaurantId)
-        .collection('tables')
-        .doc(tableId)
-        .delete();
+  Future<void> deleteArea(String areaId) async {
+    await _firestore.collection('restaurant_areas').doc(areaId).delete();
   }
 
-  Future<List<RestaurantTable>> _normalizeTableIds(
+  Future<List<RestaurantArea>> _normalizeAreaIds(
     String restaurantId,
-    List<RestaurantTable> tables,
+    List<RestaurantArea> areas,
   ) async {
-    final tableIdPattern = RegExp(r'^TBL-\d{7}$');
+    final areaIdPattern = RegExp(r'^ARA-\d{7}$');
     final needsId =
-        tables.where((table) => !tableIdPattern.hasMatch(table.id)).length;
+        areas.where((area) => !areaIdPattern.hasMatch(area.id)).length;
 
     if (needsId == 0) {
-      return tables
-          .map((table) => table.copyWith(restaurantId: restaurantId))
+      return areas
+          .map((area) => area.copyWith(restaurantId: restaurantId))
           .toList();
     }
 
-    final generatedIds = await _generateTableIds(needsId);
+    final generatedIds = await _generateAreaIds(needsId);
     var generatedIndex = 0;
-    return tables.map((table) {
-      final id = tableIdPattern.hasMatch(table.id)
-          ? table.id
+    return areas.map((area) {
+      final id = areaIdPattern.hasMatch(area.id)
+          ? area.id
           : generatedIds[generatedIndex++];
-      return table.copyWith(id: id, restaurantId: restaurantId);
+      return area.copyWith(id: id, restaurantId: restaurantId);
     }).toList();
   }
 
-  Future<List<String>> _generateTableIds(int count) async {
-    final counterRef = _firestore.collection('counters').doc('table_counter');
+  Future<List<String>> _generateAreaIds(int count) async {
+    final counterRef = _firestore.collection('counters').doc('area_counter');
 
     return await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(counterRef);
@@ -454,7 +896,7 @@ class PartnerService {
 
       final ids = List.generate(count, (index) {
         final nextCount = currentCount + index + 1;
-        return 'TBL-${nextCount.toString().padLeft(7, '0')}';
+        return 'ARA-${nextCount.toString().padLeft(7, '0')}';
       });
 
       transaction.set(
@@ -482,7 +924,11 @@ class PartnerService {
       }
 
       await _deleteQueryBatch(restaurantRef.collection('menus'));
-      await _deleteQueryBatch(restaurantRef.collection('tables'));
+      await _deleteQueryBatch(
+        _firestore
+            .collection('restaurant_areas')
+            .where('restaurantId', isEqualTo: partner.id),
+      );
       await _deleteQueryBatch(
         _firestore
             .collection('reservations')
@@ -520,17 +966,46 @@ class PartnerService {
             .startsWith(DateTime.now().toIso8601String().substring(0, 10));
       }).length;
 
-      return {'total': total, 'pending': pending, 'today': today};
+      final areaStats = await getAreaStats(restaurantId);
+
+      return {
+        'total': total,
+        'pending': pending,
+        'today': today,
+        ...areaStats,
+      };
     } catch (_) {
-      return {'total': 0, 'pending': 0, 'today': 0};
+      return {
+        'total': 0,
+        'pending': 0,
+        'today': 0,
+        'activeAreas': 0,
+        'totalCapacity': 0,
+      };
+    }
+  }
+
+  Future<Map<String, int>> getAreaStats(String restaurantId) async {
+    try {
+      final areas = await getAreasByRestaurant(restaurantId);
+      final activeAreas = areas.where((area) => area.isActive).toList();
+      final totalCapacity = activeAreas.fold<int>(
+        0,
+        (total, area) => total + area.maxCapacity,
+      );
+      return {
+        'activeAreas': activeAreas.length,
+        'totalCapacity': totalCapacity,
+      };
+    } catch (_) {
+      return {'activeAreas': 0, 'totalCapacity': 0};
     }
   }
 
   // ── HELPER ───────────────────────────────────────────────────
-  Future<void> _updateUserPartnerStatus(
+  Future<void> _updateUserPartnerRestaurant(
     String ownerId,
     String restaurantId,
-    String status,
   ) async {
     // Find the user doc
     final mappingDoc =
@@ -548,13 +1023,15 @@ class PartnerService {
       if (query.docs.isNotEmpty) userDocId = query.docs.first.id;
     }
     if (userDocId != null) {
-      await _firestore.collection('users').doc(userDocId).update({
+      final updates = <String, dynamic>{
         'role': 'partner',
-        'partnerStatus': status,
+        'updatedAt': DateTime.now().toIso8601String(),
         'restaurantId': restaurantId,
         'restaurantIds': FieldValue.arrayUnion([restaurantId]),
-        'updatedAt': DateTime.now().toIso8601String(),
-      });
+        'partnerId': FieldValue.delete(),
+        'rejectionReason': FieldValue.delete(),
+      };
+      await _firestore.collection('users').doc(userDocId).update(updates);
     }
   }
 
@@ -576,14 +1053,16 @@ class PartnerService {
     if (nextRestaurant == null) {
       updates.addAll({
         'role': 'customer',
-        'partnerStatus': FieldValue.delete(),
+        'partnerId': FieldValue.delete(),
+        'rejectionReason': FieldValue.delete(),
         'restaurantId': FieldValue.delete(),
       });
     } else {
       updates.addAll({
         'role': 'partner',
-        'partnerStatus': nextRestaurant.status.name,
         'restaurantId': nextRestaurant.id,
+        'partnerId': FieldValue.delete(),
+        'rejectionReason': FieldValue.delete(),
       });
     }
 
@@ -631,11 +1110,51 @@ class PartnerService {
         .snapshots()
         .map((snap) {
       if (!snap.exists || snap.data() == null) return null;
-      return _withKnownMalangLocation(PartnerModel.fromFirestore({
+      final partner = _withKnownMalangLocation(PartnerModel.fromFirestore({
         ...snap.data()!,
         'id': snap.id,
       }));
+      return partner;
     });
+  }
+
+  Future<List<PartnerModel>> _withReviewStats(List<PartnerModel> partners) {
+    return Future.wait(partners.map(_withReviewStatsForPartner));
+  }
+
+  Future<PartnerModel> _withReviewStatsForPartner(PartnerModel partner) async {
+    if (partner.id.trim().isEmpty) return partner;
+
+    try {
+      final snapshot = await _firestore
+          .collection('reviews')
+          .where('restaurantId', isEqualTo: partner.id)
+          .get();
+      if (snapshot.docs.isEmpty) {
+        return partner.copyWith(clearAverageRating: true, reviewCount: 0);
+      }
+
+      var total = 0.0;
+      var count = 0;
+      for (final doc in snapshot.docs) {
+        final rating = doc.data()['rating'];
+        if (rating is num) {
+          total += rating.toDouble();
+          count++;
+        }
+      }
+      if (count == 0) {
+        return partner.copyWith(clearAverageRating: true, reviewCount: 0);
+      }
+
+      return partner.copyWith(
+        averageRating: total / count,
+        reviewCount: count,
+      );
+    } catch (e) {
+      print('[PartnerService] review stats error for ${partner.id}: $e');
+      return partner;
+    }
   }
 
   PartnerModel _withKnownMalangLocation(PartnerModel partner) {
@@ -690,4 +1209,30 @@ class _ResolvedCoordinates {
   final double longitude;
 
   const _ResolvedCoordinates(this.latitude, this.longitude);
+}
+
+class PartnerUserContext {
+  final String firebaseUid;
+  final String userDocId;
+  final String customUserId;
+  final String? role;
+  final String? partnerId;
+  final String? restaurantId;
+  final List<String> restaurantIds;
+  final String? email;
+  final String? fullName;
+
+  const PartnerUserContext({
+    required this.firebaseUid,
+    required this.userDocId,
+    required this.customUserId,
+    this.role,
+    this.partnerId,
+    this.restaurantId,
+    this.restaurantIds = const [],
+    this.email,
+    this.fullName,
+  });
+
+  bool get hasPartnerRole => role?.toLowerCase() == 'partner';
 }

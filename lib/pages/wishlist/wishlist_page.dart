@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../models/partner_model.dart';
 import '../../models/wishlist_item_model.dart';
+import '../../services/location_service.dart';
 import '../../services/wishlist_service.dart';
+import '../../utils/restaurant_card_data.dart';
 import '../restaurant/restaurant_detail.dart';
 
 class WishlistPage extends StatefulWidget {
@@ -18,21 +21,20 @@ class WishlistState extends State<WishlistPage> {
   final _wishlistService = WishlistService();
 
   String selectedCuisine = 'All';
+  Position? _currentPosition;
 
-  final List<String> cuisineFilters = [
-    'All',
-    'Javanese',
-    'Sundanese',
-    'Padang',
-    'Betawi',
-    'Balinese',
-    'Japanese',
-    'Korean',
-    'Chinese',
-    'Western',
-    'Italian',
-    'Thai',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _currentPosition = LocationService.instance.latestPosition;
+    _refreshCardChipPosition();
+  }
+
+  Future<void> _refreshCardChipPosition() async {
+    final position = await RestaurantCardData.currentPosition();
+    if (!mounted || position == null) return;
+    setState(() => _currentPosition = position);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,45 +59,6 @@ class WishlistState extends State<WishlistPage> {
               ),
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              height: 36,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: cuisineFilters.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final cuisine = cuisineFilters[index];
-                  final isSelected = selectedCuisine == cuisine;
-                  return GestureDetector(
-                    onTap: () => setState(() => selectedCuisine = cuisine),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: isSelected ? _orange : const Color(0xFFF4F4F4),
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      child: Center(
-                        child: Text(
-                          cuisine,
-                          style: TextStyle(
-                            fontFamily: _font,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
-                                ? Colors.white
-                                : const Color(0xFF4A4A4A),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
             Expanded(
               child: StreamBuilder<List<WishlistItemModel>>(
                 stream: _wishlistService.streamWishlistItems(),
@@ -108,23 +71,88 @@ class WishlistState extends State<WishlistPage> {
 
                   final wishlistItems =
                       snapshot.data ?? const <WishlistItemModel>[];
-                  final filtered = selectedCuisine == 'All'
+                  final cuisineFilters = _cuisineFiltersFor(wishlistItems);
+                  final activeCuisine = cuisineFilters.contains(selectedCuisine)
+                      ? selectedCuisine
+                      : 'All';
+                  final filtered = activeCuisine == 'All'
                       ? wishlistItems
                       : wishlistItems
                           .where(
                             (item) =>
-                                item.restaurant.cuisine == selectedCuisine,
+                                RestaurantCardData.cuisineFor(item.restaurant)
+                                    .toLowerCase() ==
+                                activeCuisine.toLowerCase(),
                           )
                           .toList();
 
-                  if (filtered.isEmpty) return _buildEmptyState();
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 56),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) =>
-                        _WishlistCard(item: filtered[index]),
+                  return Column(
+                    children: [
+                      SizedBox(
+                        height: 36,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: cuisineFilters.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final cuisine = cuisineFilters[index];
+                            final isSelected = activeCuisine == cuisine;
+                            return GestureDetector(
+                              onTap: () =>
+                                  setState(() => selectedCuisine = cuisine),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOut,
+                                constraints: const BoxConstraints(minWidth: 80),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? _orange
+                                      : const Color(0xFFF4F4F4),
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    cuisine,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontFamily: _font,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : const Color(0xFF3B3B3B),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? _buildEmptyState()
+                            : ListView.separated(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 0, 16, 112),
+                                itemCount: filtered.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 16),
+                                itemBuilder: (context, index) => _WishlistCard(
+                                  item: filtered[index],
+                                  currentPosition: _currentPosition,
+                                ),
+                              ),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -133,6 +161,15 @@ class WishlistState extends State<WishlistPage> {
         ),
       ),
     );
+  }
+
+  List<String> _cuisineFiltersFor(List<WishlistItemModel> wishlistItems) {
+    final cuisines = <String>{};
+    for (final item in wishlistItems) {
+      final cuisine = RestaurantCardData.cuisineFor(item.restaurant).trim();
+      if (cuisine.isNotEmpty) cuisines.add(cuisine);
+    }
+    return ['All', ...cuisines.toList()..sort()];
   }
 
   Widget _buildEmptyState() {
@@ -181,8 +218,12 @@ class WishlistState extends State<WishlistPage> {
 
 class _WishlistCard extends StatelessWidget {
   final WishlistItemModel item;
+  final Position? currentPosition;
 
-  const _WishlistCard({required this.item});
+  const _WishlistCard({
+    required this.item,
+    required this.currentPosition,
+  });
 
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
@@ -194,6 +235,12 @@ class _WishlistCard extends StatelessWidget {
     final image = restaurant.restaurantPhotoUrl?.trim().isNotEmpty == true
         ? restaurant.restaurantPhotoUrl!.trim()
         : 'assets/images/gambar_restoran_5.jfif';
+    final rating = RestaurantCardData.ratingFor(restaurant);
+    final duration = RestaurantCardData.durationLabel(
+      restaurant,
+      currentPosition,
+    );
+    final cuisine = RestaurantCardData.cuisineFor(restaurant);
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -207,12 +254,12 @@ class _WishlistCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.07),
+              color: Colors.black.withValues(alpha: 0.07),
               blurRadius: 16,
               offset: const Offset(0, 2),
             ),
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
@@ -231,16 +278,25 @@ class _WishlistCard extends StatelessWidget {
                     top: 12,
                     right: 12,
                     child: GestureDetector(
-                      onTap: () => WishlistService().toggleWishlist(restaurant),
+                      onTap: () async {
+                        try {
+                          await WishlistService().toggleWishlist(restaurant);
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      },
                       child: Container(
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withValues(alpha: 0.95),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.13),
+                              color: Colors.black.withValues(alpha: 0.13),
                               blurRadius: 10,
                             ),
                           ],
@@ -280,9 +336,7 @@ class _WishlistCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isOpen
-                                ? 'Open now'
-                                : 'Closes ${restaurant.closeTime}',
+                            isOpen ? 'Open now' : 'Closed',
                             style: const TextStyle(
                               fontFamily: _font,
                               fontSize: 12,
@@ -326,14 +380,15 @@ class _WishlistCard extends StatelessWidget {
                           color: const Color(0xFFFFF3EE),
                           borderRadius: BorderRadius.circular(50),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.star_rounded, size: 14, color: _orange),
-                            SizedBox(width: 4),
+                            const Icon(Icons.star_rounded,
+                                size: 14, color: _orange),
+                            const SizedBox(width: 4),
                             Text(
-                              '4.8',
-                              style: TextStyle(
+                              rating,
+                              style: const TextStyle(
                                 fontFamily: _font,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -348,14 +403,16 @@ class _WishlistCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const _InfoChip(
+                      _InfoChip(
                         icon: Icons.access_time_rounded,
-                        label: '25 min',
+                        label: duration,
                       ),
                       const SizedBox(width: 8),
-                      _InfoChip(
-                        icon: Icons.restaurant_rounded,
-                        label: restaurant.cuisine,
+                      Flexible(
+                        child: _InfoChip(
+                          icon: Icons.restaurant_rounded,
+                          label: cuisine,
+                        ),
                       ),
                     ],
                   ),
@@ -463,13 +520,17 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: _orange),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: _font,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF3A3A3A),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: _font,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF3A3A3A),
+              ),
             ),
           ),
         ],

@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../models/partner_model.dart';
 import '../../services/review_service.dart';
 import '../../services/session_service.dart';
+import '../../utils/restaurant_card_data.dart';
 import 'package:teman_resto/widgets/gallery_grid.dart';
 import 'package:teman_resto/widgets/menu_card.dart';
 import 'package:teman_resto/widgets/review_card.dart';
@@ -32,6 +34,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
   String selectedFilter = 'Most relevant';
   String searchQuery = '';
   bool _keyboardWasVisible = false;
+  Position? _currentPosition;
   List<Map<String, dynamic>> _firestoreMenuItems = [];
   bool _loadingMenus = false;
   bool _loadingReviews = false;
@@ -40,7 +43,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
 
   // ============ MENU REQUEST STATE ============
   // Cart sekarang berfungsi sebagai "menu request" saat booking,
-  // bukan order berbayar langsung.
+  // bukan pembayaran online langsung.
   final Map<String, int> _cart = {};
 
   int get _totalItems => _cart.values.fold(0, (a, b) => a + b);
@@ -67,7 +70,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
       widget.partner?.longitude ?? malangRestaurantLocations.first.longitude;
   List<String> get _restaurantPaymentMethods {
     final methods = widget.partner?.paymentMethods ?? const <String>[];
-    return methods.isNotEmpty ? methods : const ['Cash'];
+    return methods.isNotEmpty ? methods : const ['Online Payment'];
   }
 
   List<String> get _restaurantHighlights {
@@ -150,6 +153,13 @@ class RestaurantDetailState extends State<RestaurantDetail>
     _saveRecentView();
     _loadRestaurantMenus();
     _listenRestaurantReviews();
+    _loadCurrentPosition();
+  }
+
+  Future<void> _loadCurrentPosition() async {
+    final position = await RestaurantCardData.currentPosition();
+    if (!mounted || position == null) return;
+    setState(() => _currentPosition = position);
   }
 
   Future<void> _saveRecentView() async {
@@ -362,6 +372,36 @@ class RestaurantDetailState extends State<RestaurantDetail>
     return filtered;
   }
 
+  String get _ratingLabel {
+    if (allReviews.isNotEmpty) {
+      final average = allReviews.fold<double>(
+            0,
+            (sum, review) => sum + ((review['rating'] as num).toDouble()),
+          ) /
+          allReviews.length;
+      return '${average.toStringAsFixed(1)} (${allReviews.length})';
+    }
+
+    final partner = widget.partner;
+    if (partner?.averageRating != null && partner!.reviewCount > 0) {
+      return '${partner.averageRating!.toStringAsFixed(1)} (${partner.reviewCount})';
+    }
+
+    return '-';
+  }
+
+  String get _distanceLabel {
+    final partner = widget.partner;
+    if (partner == null) return 'Jarak -';
+    return RestaurantCardData.distanceLabel(partner, _currentPosition);
+  }
+
+  String get _durationLabel {
+    final partner = widget.partner;
+    if (partner == null) return 'Waktu -';
+    return RestaurantCardData.durationLabel(partner, _currentPosition);
+  }
+
   // ============= GALLERY PREVIEW =============
   void _openGalleryPreview(int initialIndex) {
     showDialog(
@@ -526,7 +566,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Pembayaran dilakukan langsung di restoran. Ini hanya permintaan menu, bukan order berbayar.',
+                      'Pembayaran dilakukan online setelah detail reservasi dikonfirmasi. Ini hanya permintaan menu awal.',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
@@ -813,43 +853,22 @@ class RestaurantDetailState extends State<RestaurantDetail>
                                 color: Colors.black),
                           ),
                           const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  _tagChip(Icons.access_time_rounded, '1 hour'),
-                                  const SizedBox(width: 6),
-                                  _tagChip(Icons.restaurant_rounded,
-                                      _restaurantCuisine),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF3EE),
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.star_rounded,
-                                        size: 14, color: Color(0xFFFF4F0F)),
-                                    const SizedBox(width: 4),
-                                    const Text(
-                                      '4.8 (26)',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFFFF4F0F),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _ratingChip(_ratingLabel),
+                                const SizedBox(width: 6),
+                                _tagChip(
+                                    Icons.location_on_rounded, _distanceLabel),
+                                const SizedBox(width: 6),
+                                _tagChip(
+                                    Icons.access_time_rounded, _durationLabel),
+                                const SizedBox(width: 6),
+                                _tagChip(Icons.restaurant_rounded,
+                                    _restaurantCuisine),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -949,7 +968,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 child: hasMenuRequest
                     // Ada menu yang dipilih → tampilkan Menu Request bar
                     ? _buildMenuRequestBar()
-                    // Belum ada menu dipilih → tampilkan Book a Table bar
+                    // Belum ada menu dipilih -> tampilkan booking bar
                     : _buildBookTableBar(),
               ),
           ],
@@ -985,6 +1004,32 @@ class RestaurantDetailState extends State<RestaurantDetail>
     );
   }
 
+  Widget _ratingChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3EE),
+        borderRadius: BorderRadius.circular(50),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF4F0F)),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFFFF4F0F),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildImageItem(String imagePath, int index, int itemCount) {
     final radius = BorderRadius.horizontal(
       left: index == 0 ? const Radius.circular(6) : Radius.zero,
@@ -1013,7 +1058,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
     );
   }
 
-  // ── Bottom bar: Book a Table (belum ada menu request) ──
+  // Bottom bar booking (belum ada menu request)
   Widget _buildBookTableBar() {
     return Container(
       key: const ValueKey('book'),
@@ -1061,7 +1106,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                 ),
               ),
               child: const Text(
-                'Book a Table',
+                'Booking',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1150,7 +1195,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
                         ),
                       ),
                       Text(
-                        '$_totalItems item · Dibayar di restoran',
+                        '$_totalItems item · Bayar online saat booking',
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 12,
@@ -1526,6 +1571,9 @@ class RestaurantDetailState extends State<RestaurantDetail>
           restaurantAddress: _restaurantAddress,
           restaurantPhotoUrl: _restaurantPhotoUrl,
           restaurantCuisine: _restaurantCuisine,
+          restaurantRating: _ratingLabel,
+          restaurantDistance: _distanceLabel,
+          restaurantDuration: _durationLabel,
         ),
       ),
     );

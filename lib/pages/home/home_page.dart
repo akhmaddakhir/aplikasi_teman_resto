@@ -10,6 +10,7 @@ import 'package:teman_resto/services/auth_service.dart';
 import 'package:teman_resto/services/location_service.dart';
 import 'package:teman_resto/services/partner_service.dart';
 import 'package:teman_resto/services/session_service.dart';
+import 'package:teman_resto/utils/restaurant_card_data.dart';
 import 'package:teman_resto/widgets/wishlist_button.dart';
 import '../../models/partner_model.dart';
 import '../restaurant/restaurant_detail.dart';
@@ -31,6 +32,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   final _sessionService = SessionService();
   final _partnerService = PartnerService();
   late Future<List<PartnerModel>> _restaurantsFuture;
+  Position? _currentPosition;
 
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
@@ -39,7 +41,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _restaurantsFuture = _partnerService.getApprovedRestaurants();
+    _restaurantsFuture = _partnerService.getRestaurants();
+    _currentPosition = LocationService.instance.latestPosition;
+    _refreshDistancePosition();
   }
 
   @override
@@ -122,7 +126,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _setLocationFromPosition(Position position) async {
-    if (LocationService.instance.hasManualCity) return;
+    if (LocationService.instance.hasManualCity) {
+      if (mounted) {
+        setState(() => _currentPosition = position);
+      }
+      return;
+    }
 
     final requestId = ++_locationRequestId;
     final city = await LocationService.instance.getCityFromPosition(position);
@@ -130,8 +139,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (!mounted || requestId != _locationRequestId) return;
     setState(() {
       selectedLocation = city;
+      _currentPosition = position;
     });
     _saveSelectedLocation(city);
+  }
+
+  Future<void> _refreshDistancePosition() async {
+    final position = await RestaurantCardData.currentPosition();
+    if (!mounted || position == null) return;
+    setState(() => _currentPosition = position);
   }
 
   Future<void> _saveSelectedLocation(String location) async {
@@ -172,11 +188,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   String _restaurantImage(PartnerModel restaurant, String fallback) {
-    final url = restaurant.restaurantPhotoUrl?.trim();
-    return url != null && url.isNotEmpty ? url : fallback;
+    return RestaurantCardData.imageFor(restaurant, fallback: fallback);
   }
 
-  String _ratingFor(PartnerModel restaurant) => '4.8';
+  String _ratingFor(PartnerModel restaurant) {
+    return RestaurantCardData.ratingFor(restaurant);
+  }
+
+  String _distanceFor(PartnerModel restaurant) {
+    return RestaurantCardData.distanceLabel(restaurant, _currentPosition);
+  }
+
+  String _durationFor(PartnerModel restaurant) {
+    return RestaurantCardData.durationLabel(restaurant, _currentPosition);
+  }
 
   bool _isOpenNow(PartnerModel restaurant) {
     final now = TimeOfDay.now();
@@ -217,7 +242,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               title: restaurant.restaurantName,
               address: restaurant.address,
               rating: _ratingFor(restaurant),
-              distance: '0.8 km',
+              distance: _distanceFor(restaurant),
+              duration: _durationFor(restaurant),
               onTap: () => _openRestaurant(restaurant),
             ),
             const SizedBox(width: 13),
@@ -241,8 +267,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
               title: restaurant.restaurantName,
               rating: _ratingFor(restaurant),
-              duration: '25 min',
-              cuisine: restaurant.cuisine,
+              duration: _durationFor(restaurant),
+              cuisine: RestaurantCardData.cuisineFor(restaurant),
               address: restaurant.address,
               isOpen: _isOpenNow(restaurant),
               closingTime: restaurant.closeTime,
@@ -522,6 +548,7 @@ class _PopularCard extends StatelessWidget {
   final String address;
   final String rating;
   final String distance;
+  final String duration;
   final VoidCallback onTap;
 
   const _PopularCard({
@@ -530,6 +557,7 @@ class _PopularCard extends StatelessWidget {
     required this.address,
     required this.rating,
     required this.distance,
+    required this.duration,
     required this.onTap,
   });
 
@@ -698,7 +726,44 @@ class _PopularCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(50),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(50),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.28),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.access_time_rounded,
+                                    size: 12,
+                                    color: Colors.white.withOpacity(0.9)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  duration,
+                                  style: TextStyle(
+                                    fontFamily: _font,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white.withOpacity(0.9),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(50),
                         child: BackdropFilter(
@@ -824,12 +889,12 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.07),
+              color: Colors.black.withValues(alpha: 0.07),
               blurRadius: 16,
               offset: const Offset(0, 2),
             ),
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
@@ -855,11 +920,11 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.95),
+                            color: Colors.white.withValues(alpha: 0.95),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.13),
+                                color: Colors.black.withValues(alpha: 0.13),
                                 blurRadius: 10,
                               ),
                             ],
@@ -900,9 +965,7 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            widget.isOpen
-                                ? 'Open now'
-                                : 'Closes ${widget.closingTime ?? ''}',
+                            widget.isOpen ? 'Open now' : 'Closed',
                             style: const TextStyle(
                               fontFamily: _font,
                               fontSize: 12,
@@ -972,9 +1035,11 @@ class _RestaurantVerticalCardState extends State<_RestaurantVerticalCard> {
                         label: widget.duration,
                       ),
                       const SizedBox(width: 8),
-                      _InfoChip(
-                        icon: Icons.restaurant_rounded,
-                        label: widget.cuisine,
+                      Flexible(
+                        child: _InfoChip(
+                          icon: Icons.restaurant_rounded,
+                          label: widget.cuisine,
+                        ),
                       ),
                     ],
                   ),
@@ -1037,13 +1102,17 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: _orange),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: _font,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF3A3A3A),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: _font,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF3A3A3A),
+              ),
             ),
           ),
         ],

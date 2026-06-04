@@ -16,7 +16,7 @@ class BookingData extends StatelessWidget {
     this.restaurantName = '',
     this.restaurantAddress = '',
     this.restaurantPhotoUrl,
-    this.paymentMethods = const ['Cash'],
+    this.paymentMethods = const ['Online Payment'],
   }) : super(key: key);
 
   @override
@@ -46,7 +46,7 @@ class BookingFormPage extends StatefulWidget {
     this.restaurantName = '',
     this.restaurantAddress = '',
     this.restaurantPhotoUrl,
-    this.paymentMethods = const ['Cash'],
+    this.paymentMethods = const ['Online Payment'],
     this.menuRequest = const {},
   }) : super(key: key);
 
@@ -90,7 +90,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
                   ),
                   Expanded(
                     child: Text(
-                      'Book a Table',
+                      'Booking',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
