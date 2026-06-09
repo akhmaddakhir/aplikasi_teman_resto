@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/notification_model.dart';
+import 'app_data_cache_service.dart';
 import 'session_service.dart';
 
 class NotificationService {
@@ -11,6 +14,7 @@ class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final SessionService _sessionService = SessionService();
   String? _cachedUserDocId;
+  String? _cachedFirebaseUid;
 
   factory NotificationService() => _instance;
   NotificationService._internal();
@@ -18,7 +22,17 @@ class NotificationService {
   Future<String?> currentUserDocId() async {
     final firebaseUid = _auth.currentUser?.uid;
     if (firebaseUid == null) return null;
+    if (_cachedFirebaseUid != firebaseUid) {
+      _cachedFirebaseUid = firebaseUid;
+      _cachedUserDocId = null;
+    }
     if (_cachedUserDocId != null) return _cachedUserDocId;
+
+    final cacheDocId = AppDataCacheService().userDocId;
+    if (cacheDocId != null && cacheDocId.trim().isNotEmpty) {
+      _cachedUserDocId = cacheDocId.trim();
+      return _cachedUserDocId;
+    }
 
     final sessionUser = await _sessionService.getUserSession();
     if (sessionUser != null &&
@@ -62,6 +76,7 @@ class NotificationService {
 
     yield* _notificationsRef(userId)
         .orderBy('createdAt', descending: true)
+        .limit(30)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -80,6 +95,7 @@ class NotificationService {
     await _notificationsRef(userId).doc(notification.id).update({
       'isRead': true,
     });
+    unawaited(AppDataCacheService().refreshNotifications());
   }
 
   Future<void> createBookingCreatedNotification({

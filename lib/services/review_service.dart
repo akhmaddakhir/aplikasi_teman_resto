@@ -35,6 +35,7 @@ class ReviewService {
     return _firestore
         .collection('reviews')
         .where('restaurantId', isEqualTo: restaurantId)
+        .limit(50)
         .snapshots()
         .map((snapshot) {
       final reviews = snapshot.docs

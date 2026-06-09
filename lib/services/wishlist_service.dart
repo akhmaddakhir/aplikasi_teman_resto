@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/partner_model.dart';
 import '../models/wishlist_item_model.dart';
+import 'app_data_cache_service.dart';
 import 'partner_service.dart';
 import 'session_service.dart';
 
@@ -32,6 +35,12 @@ class WishlistService {
       _cachedUserDocId = null;
     }
     if (_cachedUserDocId != null) return _cachedUserDocId;
+
+    final cacheDocId = AppDataCacheService().userDocId;
+    if (cacheDocId != null && cacheDocId.trim().isNotEmpty) {
+      _cachedUserDocId = cacheDocId.trim();
+      return _cachedUserDocId;
+    }
 
     final sessionUser = await _sessionService.getUserSession();
     if (sessionUser != null &&
@@ -81,6 +90,13 @@ class WishlistService {
   }
 
   Stream<List<WishlistItemModel>> streamWishlistItems() async* {
+    final cached = AppDataCacheService().getCachedWishlistItems(
+      debugSource: 'WishlistService.streamWishlistItems',
+    );
+    if (cached.isNotEmpty) {
+      yield cached;
+    }
+
     final userDocId = await _currentUserDocId();
     if (userDocId == null) {
       yield const <WishlistItemModel>[];
@@ -89,6 +105,7 @@ class WishlistService {
 
     yield* _wishlistCollection(userDocId)
         .orderBy('createdAt', descending: true)
+        .limit(50)
         .snapshots()
         .asyncMap((snapshot) async {
       final items = snapshot.docs
@@ -100,7 +117,10 @@ class WishlistService {
           .toList();
 
       return Future.wait(items.map((item) async {
-        final restaurant =
+        final restaurant = AppDataCacheService().getRestaurantById(
+              item.restaurantId,
+              debugSource: 'WishlistService.streamWishlistItems',
+            ) ??
             await _partnerService.getPartnerByRestaurantId(item.restaurantId);
         if (restaurant == null) return item;
         return WishlistItemModel(
@@ -148,6 +168,7 @@ class WishlistService {
 
     if (existing.docs.isNotEmpty) {
       await existing.docs.first.reference.delete();
+      unawaited(AppDataCacheService().refreshWishlist());
       return;
     }
 
@@ -184,5 +205,6 @@ class WishlistService {
         SetOptions(merge: true),
       );
     });
+    unawaited(AppDataCacheService().refreshWishlist());
   }
 }

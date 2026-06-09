@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/partner_model.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/reservation_service.dart';
 import 'partner_theme.dart';
 
@@ -20,28 +21,103 @@ class _PartnerReservationsPageState extends State<PartnerReservationsPage> {
   static const String _font = PartnerTheme.font;
 
   final _reservationService = ReservationService();
+  final _cache = AppDataCacheService();
   DateTime? _selectedDate;
   DateTime _calendarDate = DateTime.now();
   String _status = 'all';
 
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> _filterDocs(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  List<_ReservationEntry> _filterDocs(
+    List<_ReservationEntry> docs,
   ) {
     final dateKey = _selectedDate == null
         ? null
         : _reservationService.formatDate(_selectedDate!);
     final filtered = docs.where((doc) {
-      final data = doc.data();
+      final data = doc.data;
       final matchDate = dateKey == null || data['date'] == dateKey;
       final matchStatus = _status == 'all' || data['status'] == _status;
       return matchDate && matchStatus;
     }).toList();
     filtered.sort((a, b) {
-      final ad = '${a.data()['date'] ?? ''} ${a.data()['time'] ?? ''}';
-      final bd = '${b.data()['date'] ?? ''} ${b.data()['time'] ?? ''}';
+      final ad = '${a.data['date'] ?? ''} ${a.data['time'] ?? ''}';
+      final bd = '${b.data['date'] ?? ''} ${b.data['time'] ?? ''}';
       return bd.compareTo(ad);
     });
     return filtered;
+  }
+
+  List<_ReservationEntry> _cachedReservationEntries() {
+    return _cache
+        .getCachedRestaurantBookings(
+          widget.partner.id,
+          debugSource: 'PartnerReservationsPage',
+        )
+        .map(_ReservationEntry.fromCached)
+        .toList();
+  }
+
+  List<CachedFirestoreDocument> _snapshotToCacheDocs(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    return docs
+        .map(
+          (doc) => CachedFirestoreDocument(
+            id: doc.id,
+            data: Map<String, dynamic>.from(doc.data()),
+          ),
+        )
+        .toList();
+  }
+
+  Widget _reservationList(List<_ReservationEntry> docs) {
+    if (docs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: _orange.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.event_note_rounded,
+                color: _orange,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Belum ada booking masuk',
+              style: TextStyle(
+                fontFamily: _font,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tidak ada reservasi yang diterima saat ini',
+              style: TextStyle(
+                fontFamily: _font,
+                fontSize: 14,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      itemCount: docs.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, i) => _reservationCard(docs[i]),
+    );
   }
 
   Future<void> _pickDate() async {
@@ -425,57 +501,26 @@ class _PartnerReservationsPageState extends State<PartnerReservationsPage> {
                       _reservationService.streamReservations(widget.partner.id),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
+                      final cachedDocs = _filterDocs(
+                        _cachedReservationEntries(),
+                      );
+                      if (cachedDocs.isNotEmpty) {
+                        return _reservationList(cachedDocs);
+                      }
                       return const Center(
                           child: CircularProgressIndicator(color: _orange));
                     }
-                    final docs = _filterDocs(snapshot.data?.docs ?? []);
-                    if (docs.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 72,
-                              height: 72,
-                              decoration: BoxDecoration(
-                                color: _orange.withOpacity(0.08),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.event_note_rounded,
-                                color: _orange,
-                                size: 32,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Belum ada booking masuk',
-                              style: TextStyle(
-                                fontFamily: _font,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF1A1A1A),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Tidak ada reservasi yang diterima saat ini',
-                              style: TextStyle(
-                                fontFamily: _font,
-                                fontSize: 14,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                          ],
-                        ),
+                    final snapshotDocs = snapshot.data?.docs ?? [];
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _cache.setRestaurantBookings(
+                        widget.partner.id,
+                        _snapshotToCacheDocs(snapshotDocs),
                       );
-                    }
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                      itemCount: docs.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) => _reservationCard(docs[i]),
+                    });
+                    final docs = _filterDocs(
+                      snapshotDocs.map(_ReservationEntry.fromSnapshot).toList(),
                     );
+                    return _reservationList(docs);
                   },
                 ),
               ),
@@ -594,8 +639,8 @@ class _PartnerReservationsPageState extends State<PartnerReservationsPage> {
     );
   }
 
-  Widget _reservationCard(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data();
+  Widget _reservationCard(_ReservationEntry doc) {
+    final data = doc.data;
     final status = data['status'] as String? ?? 'Pending';
     final customerName = data['customerName'] as String? ?? '-';
     final phone = data['phone'] as String? ?? '-';
@@ -854,6 +899,32 @@ class _PartnerReservationsPageState extends State<PartnerReservationsPage> {
         color: Colors.black,
         onPressed: _refreshReservations,
       ),
+    );
+  }
+}
+
+class _ReservationEntry {
+  final String id;
+  final Map<String, dynamic> data;
+
+  const _ReservationEntry({
+    required this.id,
+    required this.data,
+  });
+
+  factory _ReservationEntry.fromSnapshot(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    return _ReservationEntry(
+      id: doc.id,
+      data: Map<String, dynamic>.from(doc.data()),
+    );
+  }
+
+  factory _ReservationEntry.fromCached(CachedFirestoreDocument doc) {
+    return _ReservationEntry(
+      id: doc.id,
+      data: doc.data,
     );
   }
 }

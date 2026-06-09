@@ -1,7 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
+import 'app_data_cache_service.dart';
 
 class GoogleLoginResult {
   final UserModel user;
@@ -17,7 +20,7 @@ class AuthService {
   static final AuthService _instance = AuthService._internal();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
 
   factory AuthService() => _instance;
   AuthService._internal();
@@ -273,7 +276,12 @@ class AuthService {
       });
 
       print('[AuthService] Login sukses: $customUserId');
-      return user.copyWith(lastLogin: now, updatedAt: now);
+      final updatedUser = user.copyWith(lastLogin: now, updatedAt: now);
+      AppDataCacheService().setCurrentUserData(
+        updatedUser,
+        rawData: {...userDoc.data()!, 'lastLogin': now.toIso8601String()},
+      );
+      return updatedUser;
     } on FirebaseAuthException catch (e) {
       print('[AuthService] Login FirebaseAuthException: ${e.code}');
       throw Exception(_authErrorMessage(e.code));
@@ -286,59 +294,36 @@ class AuthService {
 
   Future<GoogleLoginResult?> loginWithGoogle() async {
     try {
-      try {
-        await _googleSignIn.disconnect();
-      } catch (_) {
-        await _googleSignIn.signOut();
-      }
+      final userCredential = await _signInToFirebaseWithGoogle();
+      if (userCredential == null) return null;
 
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
-
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) throw Exception('Login Google gagal');
 
       final now = DateTime.now();
-      final email = firebaseUser.email ?? googleUser.email;
-      final displayName = firebaseUser.displayName ?? googleUser.displayName;
-      final photoUrl = firebaseUser.photoURL ?? googleUser.photoUrl;
+      final email = firebaseUser.email?.trim() ?? '';
+      if (email.isEmpty) {
+        throw Exception('Email akun Google tidak tersedia.');
+      }
+      final displayName = firebaseUser.displayName?.trim();
+      final photoUrl = firebaseUser.photoURL;
 
-      String? customUserId;
-      final mappingDoc = await _firestore
-          .collection('uid_mapping')
-          .doc(firebaseUser.uid)
+      final userQuery = await _firestore
+          .collection('users')
+          .where('firebaseUid', isEqualTo: firebaseUser.uid)
+          .limit(1)
           .get();
 
-      if (mappingDoc.exists && mappingDoc.data()?['userId'] is String) {
-        customUserId = mappingDoc.data()!['userId'] as String;
-      } else {
-        final userQuery = await _firestore
-            .collection('users')
-            .where('firebaseUid', isEqualTo: firebaseUser.uid)
-            .limit(1)
-            .get();
-
-        if (userQuery.docs.isNotEmpty) {
-          customUserId = userQuery.docs.first.id;
-        }
-      }
-
       UserModel user;
-      if (customUserId == null) {
+      late final String customUserId;
+      final batch = _firestore.batch();
+
+      if (userQuery.docs.isEmpty) {
         customUserId = await _generateUserId();
         user = UserModel(
           uid: customUserId,
           firebaseUid: firebaseUser.uid,
-          fullName: displayName?.trim().isNotEmpty == true
-              ? displayName!.trim()
-              : 'User',
+          fullName: displayName?.isNotEmpty == true ? displayName! : 'User',
           email: email,
           profileImage: photoUrl,
           createdAt: now,
@@ -346,66 +331,92 @@ class AuthService {
           updatedAt: now,
         );
 
-        await _firestore
-            .collection('users')
-            .doc(customUserId)
-            .set(user.toFirestore());
+        batch.set(
+          _firestore.collection('users').doc(customUserId),
+          user.toFirestore(),
+        );
       } else {
-        final userDoc =
-            await _firestore.collection('users').doc(customUserId).get();
-        if (!userDoc.exists || userDoc.data() == null) {
-          user = UserModel(
-            uid: customUserId,
-            firebaseUid: firebaseUser.uid,
-            fullName: displayName?.trim().isNotEmpty == true
-                ? displayName!.trim()
-                : 'User',
-            email: email,
-            profileImage: photoUrl,
-            createdAt: now,
-            lastLogin: now,
-            updatedAt: now,
-          );
-
-          await _firestore
-              .collection('users')
-              .doc(customUserId)
-              .set(user.toFirestore());
-        } else {
-          user = UserModel.fromFirestore(userDoc.data()!);
-          await _firestore.collection('users').doc(customUserId).update({
-            'lastLogin': now.toIso8601String(),
-            'updatedAt': now.toIso8601String(),
-          });
-          user = user.copyWith(lastLogin: now, updatedAt: now);
-        }
+        final userDoc = userQuery.docs.first;
+        customUserId = userDoc.id;
+        user = UserModel.fromFirestore(userDoc.data());
+        batch.update(userDoc.reference, {
+          'lastLogin': now.toIso8601String(),
+          'updatedAt': now.toIso8601String(),
+        });
+        user = user.copyWith(lastLogin: now, updatedAt: now);
       }
 
-      await _firestore.collection('uid_mapping').doc(firebaseUser.uid).set({
-        'userId': customUserId,
-        'email': email,
-      });
+      batch.set(
+        _firestore.collection('uid_mapping').doc(firebaseUser.uid),
+        {'userId': customUserId, 'email': email},
+      );
+      await batch.commit();
 
       final needsProfileCompletion = user.fullName.trim().isEmpty ||
           user.fullName == 'User' ||
           user.phoneNumber?.trim().isNotEmpty != true ||
           user.gender?.trim().isNotEmpty != true;
 
+      AppDataCacheService().setCurrentUserData(
+        user,
+        rawData: user.toFirestore(),
+      );
+
       return GoogleLoginResult(
         user: user,
         needsProfileCompletion: needsProfileCompletion,
       );
+    } on PlatformException catch (e) {
+      if (e.code == GoogleSignIn.kSignInCanceledError) return null;
+      throw Exception(_googleSignInErrorMessage(e));
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user' ||
+          e.code == 'cancelled-popup-request') {
+        return null;
+      }
       throw Exception(_authErrorMessage(e.code));
+    } on FirebaseException catch (e) {
+      final message = e.code == 'permission-denied'
+          ? 'Akses data user ditolak. Periksa Firestore Rules.'
+          : e.message ?? e.code;
+      throw Exception('Login Google gagal: $message');
     } catch (e) {
       final message = e.toString().replaceAll('Exception: ', '');
       throw Exception('Login Google gagal: $message');
     }
   }
 
+  Future<UserCredential?> _signInToFirebaseWithGoogle() async {
+    if (kIsWeb) {
+      final provider = GoogleAuthProvider()
+        ..setCustomParameters({'prompt': 'select_account'});
+      return _auth.signInWithPopup(provider);
+    }
+
+    final googleSignIn = _googleSignIn;
+    if (googleSignIn == null) {
+      throw Exception('Google Sign-In tidak tersedia di perangkat ini.');
+    }
+
+    final googleUser = await googleSignIn.signIn();
+    if (googleUser == null) return null;
+
+    final googleAuth = await googleUser.authentication;
+    if (googleAuth.accessToken == null && googleAuth.idToken == null) {
+      throw Exception('Token Google tidak tersedia.');
+    }
+
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+    return _auth.signInWithCredential(credential);
+  }
+
   // ── LOGOUT ───────────────────────────────────────────────────
   Future<void> logout() async {
-    await _googleSignIn.signOut();
+    AppDataCacheService().clearCacheOnLogout();
+    await _googleSignIn?.signOut();
     await _auth.signOut();
   }
 
@@ -464,12 +475,22 @@ class AuthService {
   // ── GET USER DATA ─────────────────────────────────────────────
   Future<UserModel?> getUserData(String customUserId) async {
     try {
+      final cached = AppDataCacheService().getCurrentUserData(
+        debugSource: 'AuthService.getUserData',
+      );
+      if (cached != null &&
+          (cached.uid == customUserId || cached.firebaseUid == customUserId)) {
+        return cached;
+      }
+
       final docId = await _resolveUserDocId(customUserId);
       if (docId == null) return null;
 
       final doc = await _firestore.collection('users').doc(docId).get();
       if (!doc.exists || doc.data() == null) return null;
-      return UserModel.fromFirestore(doc.data()!);
+      final user = UserModel.fromFirestore(doc.data()!);
+      AppDataCacheService().setCurrentUserData(user, rawData: doc.data());
+      return user;
     } catch (e) {
       print('[AuthService] getUserData error: $e');
       return null;
@@ -536,6 +557,10 @@ class AuthService {
       if (fullName != null && _auth.currentUser != null) {
         await _auth.currentUser!.updateDisplayName(fullName);
       }
+      final updatedUser = await getUserData(uid);
+      if (updatedUser != null) {
+        AppDataCacheService().setCurrentUserData(updatedUser);
+      }
     } on FirebaseException catch (e) {
       print('[AuthService] Firestore error: ${e.code} - ${e.message}');
       print('[AuthService] Periksa Firestore Security Rules!');
@@ -583,7 +608,13 @@ class AuthService {
       case 'invalid-email':
         return 'Format email tidak valid.';
       case 'operation-not-allowed':
-        return 'Email/Password login belum diaktifkan.';
+        return 'Metode login ini belum diaktifkan di Firebase Authentication.';
+      case 'account-exists-with-different-credential':
+        return 'Email ini sudah terdaftar dengan metode login lain.';
+      case 'popup-blocked':
+        return 'Popup login diblokir browser. Izinkan popup lalu coba lagi.';
+      case 'unauthorized-domain':
+        return 'Domain aplikasi belum diizinkan di Firebase Authentication.';
       case 'user-disabled':
         return 'Akun ini telah dinonaktifkan.';
       case 'user-not-found':
@@ -600,5 +631,24 @@ class AuthService {
       default:
         return 'Error ($code). Silakan coba lagi.';
     }
+  }
+
+  String _googleSignInErrorMessage(PlatformException error) {
+    final details = '${error.message ?? ''} ${error.details ?? ''}';
+
+    if (error.code == GoogleSignIn.kNetworkError) {
+      return 'Koneksi ke Google bermasalah.';
+    }
+    if (error.code == GoogleSignIn.kSignInFailedError &&
+        (details.contains('ApiException: 10') ||
+            details.contains('DEVELOPER_ERROR'))) {
+      return 'Konfigurasi Google Sign-In Android tidak cocok. '
+          'Periksa package name, SHA-1, dan google-services.json.';
+    }
+    if (error.code == GoogleSignIn.kSignInFailedError) {
+      return 'Google Sign-In ditolak oleh perangkat. Silakan coba lagi.';
+    }
+
+    return error.message ?? 'Google Sign-In gagal (${error.code}).';
   }
 }

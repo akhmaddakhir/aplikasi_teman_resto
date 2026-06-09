@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../config/cloudinary_config.dart';
 import '../../models/partner_model.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/image_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
@@ -23,13 +23,12 @@ class _ProfilePageState extends State<ProfilePage> {
   final _authService = AuthService();
   final _sessionService = SessionService();
   final _partnerService = PartnerService();
-  final _firestore = FirebaseFirestore.instance;
+  final _cache = AppDataCacheService();
 
   String? _profileImageUrl;
   String _userName = 'User';
   String _userEmail = 'user@example.com';
   String _userLocation = 'Jakarta';
-  String? _customUserId;
   int _ordersCount = 0;
   int _activeOrdersCount = 0;
   int _reviewsCount = 0;
@@ -53,7 +52,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final currentUser = _authService.currentUser;
       if (currentUser != null) {
-        final userData = await _authService.getUserData(currentUser.uid);
+        final userData = _cache.getCurrentUserData(
+              debugSource: 'ProfilePage._loadUserData',
+            ) ??
+            await _authService.getUserData(currentUser.uid);
         if (userData != null && mounted) {
           final profileLocation = userData.location?.trim();
           setState(() {
@@ -69,15 +71,9 @@ class _ProfilePageState extends State<ProfilePage> {
             _profileImageUrl = userData.profileImage?.trim().isNotEmpty == true
                 ? userData.profileImage!.trim()
                 : null;
-            _customUserId = userData.uid.trim().isNotEmpty
-                ? userData.uid.trim()
-                : _customUserId;
           });
 
-          await _loadProfileStats(
-            firebaseUid: currentUser.uid,
-            customUserId: userData.uid,
-          );
+          await _loadProfileStats();
           await _loadPartnerProfileState(
             firebaseUid: currentUser.uid,
             customUserId: userData.uid,
@@ -103,38 +99,45 @@ class _ProfilePageState extends State<ProfilePage> {
   }) async {
     PartnerModel? request;
     try {
-      final userQuery = await _firestore
-          .collection('users')
-          .where('firebaseUid', isEqualTo: firebaseUid)
-          .limit(1)
-          .get();
-      final userDoc = userQuery.docs.isNotEmpty ? userQuery.docs.first : null;
-      final userData = userDoc?.data();
+      final userContext = _cache.getPartnerData(
+            debugSource: 'ProfilePage._loadPartnerProfileState',
+          ) ??
+          await _partnerService.getPartnerUserContext(firebaseUid).then(
+                (context) => context == null
+                    ? null
+                    : CachedPartnerContext(
+                        firebaseUid: context.firebaseUid,
+                        userDocId: context.userDocId,
+                        customUserId: context.customUserId,
+                        role: context.role,
+                        partnerId: context.partnerId,
+                        restaurantId: context.restaurantId,
+                        restaurantIds: context.restaurantIds,
+                        email: context.email,
+                        fullName: context.fullName,
+                      ),
+              );
 
       debugPrint('[ProfilePage] firebase uid: $firebaseUid');
-      debugPrint('[ProfilePage] custom user id: ${userData?['uid']}');
-      debugPrint('[ProfilePage] user doc id: ${userDoc?.id}');
-      debugPrint('[ProfilePage] role: ${userData?['role']}');
-      debugPrint('[ProfilePage] partnerId: ${userData?['partnerId']}');
+      debugPrint('[ProfilePage] custom user id: ${userContext?.customUserId}');
+      debugPrint('[ProfilePage] user doc id: ${userContext?.userDocId}');
+      debugPrint('[ProfilePage] role: ${userContext?.role}');
+      debugPrint('[ProfilePage] partnerId: ${userContext?.partnerId}');
       debugPrint(
-          '[ProfilePage] users.restaurantId: ${userData?['restaurantId']}');
-
-      final partnerId = userData?['partnerId'] as String?;
+          '[ProfilePage] users.restaurantId: ${userContext?.restaurantId}');
 
       final restaurants = await _partnerService.getRestaurantsForUser(
         firebaseUid: firebaseUid,
         customUserId: customUserId,
-        email: userData?['email']?.toString(),
-        restaurantId: userData?['restaurantId']?.toString(),
-        restaurantIds: List<String>.from(
-          userData?['restaurantIds'] ?? const [],
-        ),
-        partnerId: partnerId,
+        email: userContext?.email,
+        restaurantId: userContext?.restaurantId,
+        restaurantIds: userContext?.restaurantIds ?? const [],
+        partnerId: userContext?.partnerId,
       );
 
       if (!mounted) return request;
       setState(() {
-        _partnerRole = userData?['role']?.toString();
+        _partnerRole = userContext?.role;
         _hasPartnerRestaurant = restaurants.isNotEmpty;
       });
     } catch (e) {
@@ -143,30 +146,19 @@ class _ProfilePageState extends State<ProfilePage> {
     return request;
   }
 
-  Future<void> _loadProfileStats({
-    required String firebaseUid,
-    required String customUserId,
-  }) async {
+  Future<void> _loadProfileStats() async {
     try {
-      final results = await Future.wait([
-        _firestore
-            .collection('reservations')
-            .where('userId', isEqualTo: firebaseUid)
-            .get(),
-        _firestore
-            .collection('reviews')
-            .where('userId', isEqualTo: firebaseUid)
-            .get(),
-        _firestore
-            .collection('users')
-            .doc(customUserId)
-            .collection('wishlist')
-            .get(),
-      ]);
-
-      final reservationDocs = results[0].docs;
+      final reservationDocs = await _cache.getOrLoadUserBookings(
+        debugSource: 'ProfilePage._loadProfileStats',
+      );
+      final wishlistItems = await _cache.getOrLoadWishlistItems(
+        debugSource: 'ProfilePage._loadProfileStats',
+      );
+      final reviewCount = await _cache.getOrLoadUserReviewCount(
+        debugSource: 'ProfilePage._loadProfileStats',
+      );
       final activeCount = reservationDocs.where((doc) {
-        final data = doc.data();
+        final data = doc.data;
         final status = (data['status'] as String? ?? '').toLowerCase();
         if (status == 'cancelled' || status == 'completed') return false;
 
@@ -179,8 +171,8 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _ordersCount = reservationDocs.length;
         _activeOrdersCount = activeCount;
-        _reviewsCount = results[1].docs.length;
-        _favoritesCount = results[2].docs.length;
+        _reviewsCount = reviewCount;
+        _favoritesCount = wishlistItems.length;
       });
     } catch (_) {}
   }
@@ -329,7 +321,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     try {
-      final userData = await _authService.getUserData(currentUser.uid);
+      final userData = _cache.getCurrentUserData(
+            debugSource: 'ProfilePage._openPartnerPage',
+          ) ??
+          await _authService.getUserData(currentUser.uid);
       if (userData != null) {
         await _loadPartnerProfileState(
           firebaseUid: currentUser.uid,
@@ -450,16 +445,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           : null,
                       onTap: () async {
                         await Navigator.pushNamed(context, '/orders');
-                        final currentUser = _authService.currentUser;
-                        final customUserId = _customUserId;
-                        if (currentUser != null &&
-                            customUserId != null &&
-                            customUserId.isNotEmpty) {
-                          await _loadProfileStats(
-                            firebaseUid: currentUser.uid,
-                            customUserId: customUserId,
-                          );
-                        }
+                        await _loadProfileStats();
                       },
                     ),
                     _MenuItemData(

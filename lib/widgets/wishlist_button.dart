@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/partner_model.dart';
+import '../services/app_data_cache_service.dart';
 import '../services/wishlist_service.dart';
 
 class WishlistButton extends StatefulWidget {
@@ -29,18 +32,28 @@ class _WishlistButtonState extends State<WishlistButton> {
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    unawaited(AppDataCacheService().getOrLoadWishlistItems(
+      debugSource: 'WishlistButton.init',
+    ));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentRestaurant = widget.restaurant;
     if (currentRestaurant == null || currentRestaurant.id.trim().isEmpty) {
       return widget.builder(context, false, () {});
     }
 
+    final cache = AppDataCacheService();
     final service = WishlistService();
-    return StreamBuilder<Set<String>>(
-      stream: service.streamWishlistedRestaurantIds(),
-      builder: (context, snapshot) {
-        final remoteSaved =
-            snapshot.data?.contains(currentRestaurant.id) ?? false;
+    return AnimatedBuilder(
+      animation: cache,
+      builder: (context, _) {
+        final remoteSaved = cache
+            .getCachedWishlistedRestaurantIds(debugSource: 'WishlistButton')
+            .contains(currentRestaurant.id);
         final saved = _optimisticSaved ?? remoteSaved;
 
         if (_optimisticSaved != null && _optimisticSaved == remoteSaved) {

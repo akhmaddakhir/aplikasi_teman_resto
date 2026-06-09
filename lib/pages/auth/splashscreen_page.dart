@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
 
@@ -73,6 +74,16 @@ class _SplashScreenState extends State<SplashScreen>
           final sessionService = SessionService();
           bool hasSession = await sessionService.hasActiveSession();
           bool hasAuthUser = AuthService().isLoggedIn;
+          if (hasSession && hasAuthUser) {
+            try {
+              final sessionUser = await sessionService.getUserSession();
+              await AppDataCacheService()
+                  .preloadAfterLogin(user: sessionUser)
+                  .timeout(const Duration(seconds: 6));
+            } catch (e) {
+              debugPrint('[PRELOAD_DEBUG] data gagal dimuat saat splash: $e');
+            }
+          }
           if (!mounted) return;
 
           // Navigate ke home jika ada session, atau ke login jika tidak

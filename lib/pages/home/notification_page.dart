@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/notification_model.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/notification_service.dart';
 
 void main() {
@@ -27,7 +28,40 @@ class _NotificationPageState extends State<NotificationPage> {
   static const Color _textBlack = Color(0xFF111111);
 
   final NotificationService _notificationService = NotificationService();
+  final AppDataCacheService _cache = AppDataCacheService();
   String _currentFilter = 'All';
+  bool _loadingNotifications = false;
+  String? _notificationError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications({bool forceRefresh = false}) async {
+    final cached = _cache.getCachedNotifications(
+      debugSource: 'NotificationPage.init',
+    );
+    if (cached.isEmpty && mounted) {
+      setState(() {
+        _loadingNotifications = true;
+        _notificationError = null;
+      });
+    }
+
+    try {
+      await _cache.getOrLoadNotifications(
+        forceRefresh: forceRefresh,
+        debugSource: 'NotificationPage',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _notificationError = e.toString());
+    } finally {
+      if (mounted) setState(() => _loadingNotifications = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +79,7 @@ class _NotificationPageState extends State<NotificationPage> {
           child: IconButton(
             icon: const Icon(
               Icons.arrow_back_ios_new,
-              size:20,
+              size: 20,
               color: _textBlack,
             ),
             onPressed: () => Navigator.maybePop(context),
@@ -99,27 +133,26 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
         ),
       ),
-      body: StreamBuilder<List<NotificationModel>>(
-        stream: _notificationService.streamCurrentUserNotifications(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: AnimatedBuilder(
+        animation: _cache,
+        builder: (context, _) {
+          final notifications = List<NotificationModel>.from(
+            _cache.getCachedNotifications(debugSource: 'NotificationPage'),
+          )..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+          if (_loadingNotifications && notifications.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(color: _primaryOrange),
             );
           }
 
-          if (snapshot.hasError) {
+          if (_notificationError != null && notifications.isEmpty) {
             return _emptyState(
               Icons.error_outline_rounded,
               'Gagal memuat notifikasi',
               'Periksa koneksi atau izin database, lalu coba lagi.',
             );
           }
-
-          final notifications = List<NotificationModel>.from(
-            snapshot.data ?? const <NotificationModel>[],
-          );
-          notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
           final filteredNotifications = _filteredNotifications(notifications);
           if (filteredNotifications.isEmpty) {
@@ -130,35 +163,39 @@ class _NotificationPageState extends State<NotificationPage> {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 24, bottom: 40),
-            itemCount: filteredNotifications.length,
-            itemBuilder: (context, index) {
-              final item = filteredNotifications[index];
-              final showLabel = index == 0 ||
-                  _dayLabel(item.createdAt) !=
-                      _dayLabel(filteredNotifications[index - 1].createdAt);
+          return RefreshIndicator(
+            color: _primaryOrange,
+            onRefresh: () => _loadNotifications(forceRefresh: true),
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 24, bottom: 40),
+              itemCount: filteredNotifications.length,
+              itemBuilder: (context, index) {
+                final item = filteredNotifications[index];
+                final showLabel = index == 0 ||
+                    _dayLabel(item.createdAt) !=
+                        _dayLabel(filteredNotifications[index - 1].createdAt);
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (showLabel)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-                      child: Text(
-                        _dayLabel(item.createdAt),
-                        style: const TextStyle(
-                          color: Color(0xFFCCCCCC),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          letterSpacing: 1.2,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showLabel)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                        child: Text(
+                          _dayLabel(item.createdAt),
+                          style: const TextStyle(
+                            color: Color(0xFFCCCCCC),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            letterSpacing: 1.2,
+                          ),
                         ),
                       ),
-                    ),
-                  _buildNotificationCard(item),
-                ],
-              );
-            },
+                    _buildNotificationCard(item),
+                  ],
+                );
+              },
+            ),
           );
         },
       ),
@@ -335,6 +372,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
   Future<void> _markAsRead(NotificationModel notification) async {
     await _notificationService.markAsRead(notification);
+    await _loadNotifications(forceRefresh: true);
   }
 
   String _timeLabel(DateTime date) {

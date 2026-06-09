@@ -6,6 +6,7 @@ import '../config/cloudinary_config.dart';
 import '../data/malang_restaurant_locations.dart';
 import '../models/partner_model.dart';
 import '../models/restaurant_area_model.dart';
+import '../services/app_data_cache_service.dart';
 import '../services/image_service.dart';
 
 class PartnerService {
@@ -30,17 +31,24 @@ class PartnerService {
 
   Future<List<PartnerModel>> getPartnersByOwnerId(String ownerId) async {
     try {
+      final cached = AppDataCacheService()
+          .getMyRestaurants(debugSource: 'PartnerService.getPartnersByOwnerId')
+          .where((restaurant) => restaurant.ownerId == ownerId)
+          .toList();
+      if (cached.isNotEmpty) return cached;
+
       final query = await _firestore
           .collection('restaurants')
           .where('ownerId', isEqualTo: ownerId)
+          .limit(20)
           .get();
 
-      final partners = await _withReviewStats(query.docs
+      final partners = query.docs
           .map((doc) => _withKnownMalangLocation(PartnerModel.fromFirestore({
                 ...doc.data(),
                 'id': doc.id,
               })))
-          .toList());
+          .toList();
       partners.sort((a, b) {
         final statusRank =
             _statusRank(a.status).compareTo(_statusRank(b.status));
@@ -56,6 +64,23 @@ class PartnerService {
 
   Future<PartnerUserContext?> getPartnerUserContext(String firebaseUid) async {
     try {
+      final cachedContext = AppDataCacheService().getPartnerData(
+        debugSource: 'PartnerService.getPartnerUserContext',
+      );
+      if (cachedContext != null && cachedContext.firebaseUid == firebaseUid) {
+        return PartnerUserContext(
+          firebaseUid: cachedContext.firebaseUid,
+          userDocId: cachedContext.userDocId,
+          customUserId: cachedContext.customUserId,
+          role: cachedContext.role,
+          partnerId: cachedContext.partnerId,
+          restaurantId: cachedContext.restaurantId,
+          restaurantIds: cachedContext.restaurantIds,
+          email: cachedContext.email,
+          fullName: cachedContext.fullName,
+        );
+      }
+
       DocumentSnapshot<Map<String, dynamic>>? doc;
 
       final mappingDoc =
@@ -157,6 +182,7 @@ class PartnerService {
       final snapshot = await _firestore
           .collection('restaurants')
           .where(field, isEqualTo: value.trim())
+          .limit(20)
           .get();
       for (final doc in snapshot.docs) {
         addDoc(doc);
@@ -169,6 +195,7 @@ class PartnerService {
       final snapshot = await _firestore
           .collection('restaurants')
           .where(field, isEqualTo: value.trim())
+          .limit(20)
           .get();
       for (final doc in snapshot.docs) {
         addDoc(doc);
@@ -185,6 +212,25 @@ class PartnerService {
     }
 
     try {
+      final cache = AppDataCacheService();
+      final cachedRestaurants = await cache.getOrLoadMyRestaurants(
+        debugSource: 'PartnerService.getRestaurantsForUser',
+      );
+      if (cache.firebaseUid == firebaseUid &&
+          (cache.hasMyRestaurantsCache || cachedRestaurants.isNotEmpty) &&
+          cachedRestaurants.any((restaurant) =>
+              restaurant.ownerId == firebaseUid ||
+              restaurant.ownerId == customUserId ||
+              restaurant.id == restaurantId ||
+              restaurantIds.contains(restaurant.id))) {
+        return cachedRestaurants;
+      }
+      if (cache.firebaseUid == firebaseUid &&
+          cache.hasMyRestaurantsCache &&
+          cachedRestaurants.isEmpty) {
+        return cachedRestaurants;
+      }
+
       debugPrint('[PartnerService] currentUser.uid: $firebaseUid');
       debugPrint('[PartnerService] custom user id: $customUserId');
       debugPrint('[PartnerService] users/{uid}.restaurantId: $restaurantId');
@@ -269,16 +315,15 @@ class PartnerService {
       debugPrint(
           '[PartnerService] jumlah restoran ditemukan: ${restaurants.length}');
 
-      final withStats = await _withReviewStats(restaurants);
-      withStats.sort((a, b) {
+      restaurants.sort((a, b) {
         final statusRank =
             _statusRank(a.status).compareTo(_statusRank(b.status));
         if (statusRank != 0) return statusRank;
         return b.createdAt.compareTo(a.createdAt);
       });
       debugPrint(
-          '[PartnerService] id restoran yang dipakai dashboard: ${withStats.isEmpty ? null : withStats.first.id}');
-      return withStats;
+          '[PartnerService] id restoran yang dipakai dashboard: ${restaurants.isEmpty ? null : restaurants.first.id}');
+      return restaurants;
     } catch (e) {
       debugPrint('[PartnerService] getRestaurantsForUser error: $e');
       return [];
@@ -308,6 +353,7 @@ class PartnerService {
         final query = await _firestore
             .collection('partners')
             .where(field, isEqualTo: userId)
+            .limit(1)
             .get();
         for (final doc in query.docs) {
           if (!seenIds.add(doc.id)) continue;
@@ -338,9 +384,20 @@ class PartnerService {
 
   Future<List<PartnerModel>> getRestaurants() async {
     try {
-      print('[PartnerService] getRestaurants - fetching restaurants');
+      final cached = await AppDataCacheService().getOrLoadMainRestaurants(
+        debugSource: 'PartnerService.getRestaurants',
+      );
+      if (cached.isNotEmpty || AppDataCacheService().hasMainRestaurantsCache) {
+        return cached;
+      }
 
-      final query = await _firestore.collection('restaurants').get();
+      print('[PartnerService] getRestaurants - fetching active restaurants');
+
+      final query = await _firestore
+          .collection('restaurants')
+          .where('status', whereIn: ['active', 'approved'])
+          .limit(50)
+          .get();
 
       print('[PartnerService] getRestaurants found ${query.docs.length}');
 
@@ -361,19 +418,29 @@ class PartnerService {
           rethrow;
         }
       }).toList();
-      final partnersWithReviews = await _withReviewStats(partners);
-      partnersWithReviews.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      partners.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       print(
-          '[PartnerService] Successfully parsed ${partnersWithReviews.length} restaurants');
-      return partnersWithReviews;
+          '[PartnerService] Successfully parsed ${partners.length} restaurants');
+      return partners;
     } catch (e) {
       print('[PartnerService] getRestaurants error: $e');
       rethrow;
     }
   }
 
-  Future<PartnerModel?> getPartnerByRestaurantId(String restaurantId) async {
+  Future<PartnerModel?> getPartnerByRestaurantId(
+    String restaurantId, {
+    bool forceRefresh = false,
+  }) async {
     try {
+      if (!forceRefresh) {
+        final cached = AppDataCacheService().getRestaurantById(
+          restaurantId,
+          debugSource: 'PartnerService.getPartnerByRestaurantId',
+        );
+        if (cached != null) return cached;
+      }
+
       final doc =
           await _firestore.collection('restaurants').doc(restaurantId).get();
       if (!doc.exists || doc.data() == null) return null;
@@ -381,7 +448,9 @@ class PartnerService {
         ...doc.data()!,
         'id': doc.id,
       }));
-      return _withReviewStatsForPartner(partner);
+      final partnerWithStats = await _withReviewStatsForPartner(partner);
+      AppDataCacheService().upsertRestaurant(partnerWithStats);
+      return partnerWithStats;
     } catch (e) {
       print('[PartnerService] getPartnerByRestaurantId error: $e');
       return null;
@@ -562,6 +631,7 @@ class PartnerService {
           '[PartnerService.submitRegistration] hasil update user: success userDocId=$userDocId updates=$userUpdates');
       debugPrint(
           '[PartnerService.submitRegistration] restaurantId yang tersimpan: $restaurantId');
+      AppDataCacheService().upsertRestaurant(partner);
 
       return partner;
     } catch (e) {
@@ -742,6 +812,9 @@ class PartnerService {
           .doc(restaurantId)
           .set(updates, SetOptions(merge: true));
       await _updateUserPartnerRestaurant(ownerId, restaurantId);
+      final updated =
+          await getPartnerByRestaurantId(restaurantId, forceRefresh: true);
+      if (updated != null) AppDataCacheService().upsertRestaurant(updated);
     } catch (e) {
       print('[PartnerService] updateRegistration error: $e');
       rethrow;
@@ -770,6 +843,9 @@ class PartnerService {
         .collection('restaurants')
         .doc(restaurantId)
         .update({...updates, 'updatedAt': DateTime.now().toIso8601String()});
+    final updated =
+        await getPartnerByRestaurantId(restaurantId, forceRefresh: true);
+    if (updated != null) AppDataCacheService().upsertRestaurant(updated);
   }
 
   Future<void> updateRestaurantPhotos({
@@ -806,6 +882,9 @@ class PartnerService {
         'galleryPhotos': galleryPhotoUrls,
         'updatedAt': DateTime.now().toIso8601String(),
       });
+      final updated =
+          await getPartnerByRestaurantId(restaurantId, forceRefresh: true);
+      if (updated != null) AppDataCacheService().upsertRestaurant(updated);
     } catch (e) {
       print('[PartnerService] updateRestaurantPhotos error: $e');
       rethrow;
@@ -815,11 +894,19 @@ class PartnerService {
   // ── GET TABLES ────────────────────────────────────────────────
   Future<List<RestaurantArea>> getAreasByRestaurant(String restaurantId) async {
     try {
+      final cached = await AppDataCacheService().getOrLoadAreasForRestaurant(
+        restaurantId,
+        activeOnly: false,
+        debugSource: 'PartnerService.getAreasByRestaurant',
+      );
+      if (cached.isNotEmpty) return cached;
+
       final query = await _firestore
           .collection('restaurant_areas')
           .where('restaurantId', isEqualTo: restaurantId)
+          .limit(50)
           .get();
-      return query.docs
+      final areas = query.docs
           .map((d) => RestaurantArea.fromFirestore({
                 ...d.data(),
                 'id': d.id,
@@ -827,6 +914,8 @@ class PartnerService {
               }))
           .toList()
         ..sort((a, b) => a.areaName.compareTo(b.areaName));
+      AppDataCacheService().setAreasForRestaurant(restaurantId, areas);
+      return areas;
     } catch (e) {
       print('[PartnerService] getAreasByRestaurant error: $e');
       return [];
@@ -840,11 +929,9 @@ class PartnerService {
     final areasRef = _firestore.collection('restaurant_areas');
     final batch = _firestore.batch();
 
-    final existing =
-        await areasRef.where('restaurantId', isEqualTo: restaurantId).get();
-    for (final doc in existing.docs) {
-      batch.delete(doc.reference);
-    }
+    await _deleteQueryBatch(
+      areasRef.where('restaurantId', isEqualTo: restaurantId),
+    );
 
     for (final area in normalizedAreas) {
       final ref = areasRef.doc(area.id);
@@ -852,6 +939,7 @@ class PartnerService {
     }
 
     await batch.commit();
+    AppDataCacheService().setAreasForRestaurant(restaurantId, normalizedAreas);
   }
 
   // ── DELETE TABLE ──────────────────────────────────────────────
@@ -914,6 +1002,7 @@ class PartnerService {
           _firestore.collection('restaurants').doc(partner.id);
       final snapshot = await restaurantRef.get();
       if (!snapshot.exists) {
+        AppDataCacheService().removeRestaurant(partner.id);
         await _syncUserAfterRestaurantDeleted(partner.ownerId, partner.id);
         return;
       }
@@ -941,6 +1030,7 @@ class PartnerService {
       );
 
       await restaurantRef.delete();
+      AppDataCacheService().removeRestaurant(partner.id);
       await _syncUserAfterRestaurantDeleted(partner.ownerId, partner.id);
     } catch (e) {
       print('[PartnerService] deleteRestaurant error: $e');
@@ -951,16 +1041,21 @@ class PartnerService {
   // ── BOOKING STATS ─────────────────────────────────────────────
   Future<Map<String, int>> getBookingStats(String restaurantId) async {
     try {
-      final query = await _firestore
-          .collection('reservations')
-          .where('restaurantId', isEqualTo: restaurantId)
-          .get();
+      var docs = AppDataCacheService().getCachedRestaurantBookings(
+        restaurantId,
+        debugSource: 'PartnerService.getBookingStats',
+      );
+      if (docs.isEmpty) {
+        docs = await AppDataCacheService().getOrLoadRestaurantBookings(
+          restaurantId,
+          debugSource: 'PartnerService.getBookingStats',
+        );
+      }
 
-      int total = query.docs.length;
-      int pending =
-          query.docs.where((d) => d.data()['status'] == 'pending').length;
-      int today = query.docs.where((d) {
-        final date = d.data()['date'] as String?;
+      int total = docs.length;
+      int pending = docs.where((d) => d.data['status'] == 'pending').length;
+      int today = docs.where((d) {
+        final date = d.data['date'] as String?;
         if (date == null) return false;
         return date
             .startsWith(DateTime.now().toIso8601String().substring(0, 10));
@@ -1118,17 +1213,17 @@ class PartnerService {
     });
   }
 
-  Future<List<PartnerModel>> _withReviewStats(List<PartnerModel> partners) {
-    return Future.wait(partners.map(_withReviewStatsForPartner));
-  }
-
   Future<PartnerModel> _withReviewStatsForPartner(PartnerModel partner) async {
     if (partner.id.trim().isEmpty) return partner;
+    if (partner.averageRating != null || partner.reviewCount > 0) {
+      return partner;
+    }
 
     try {
       final snapshot = await _firestore
           .collection('reviews')
           .where('restaurantId', isEqualTo: partner.id)
+          .limit(50)
           .get();
       if (snapshot.docs.isEmpty) {
         return partner.copyWith(clearAverageRating: true, reviewCount: 0);

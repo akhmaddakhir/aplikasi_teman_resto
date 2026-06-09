@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../models/user_model.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
 import './register_page.dart';
@@ -42,6 +44,7 @@ class _LoginPageState extends State<LoginPage> {
         if (user != null && mounted) {
           // Simpan session
           await _sessionService.saveUserSession(user);
+          await _prepareDataAfterLogin(user);
 
           if (!mounted) return;
           // Navigate ke home
@@ -75,6 +78,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!result.needsProfileCompletion) {
         await _sessionService.saveUserSession(result.user);
+        await _prepareDataAfterLogin(result.user);
       }
 
       if (!mounted) return;
@@ -103,6 +107,28 @@ class _LoginPageState extends State<LoginPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Login dengan $provider belum tersedia')),
     );
+  }
+
+  Future<void> _prepareDataAfterLogin(UserModel user) async {
+    if (!mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _PreparingDataDialog(),
+    );
+
+    try {
+      await AppDataCacheService()
+          .preloadAfterLogin(user: user)
+          .timeout(const Duration(seconds: 12));
+    } catch (e) {
+      debugPrint('[PRELOAD_DEBUG] data gagal dimuat saat login: $e');
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
   }
 
   void _handleForgotPassword() {
@@ -395,6 +421,43 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _PreparingDataDialog extends StatelessWidget {
+  const _PreparingDataDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Dialog(
+      backgroundColor: Colors.white,
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFFF5722),
+              ),
+            ),
+            SizedBox(width: 16),
+            Flexible(
+              child: Text(
+                'Menyiapkan data aplikasi...',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

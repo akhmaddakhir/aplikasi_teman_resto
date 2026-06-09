@@ -6,9 +6,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:teman_resto/pages/home/notification_page.dart';
 import 'package:teman_resto/pages/home/see_all.dart';
+import 'package:teman_resto/services/app_data_cache_service.dart';
 import 'package:teman_resto/services/auth_service.dart';
 import 'package:teman_resto/services/location_service.dart';
-import 'package:teman_resto/services/partner_service.dart';
 import 'package:teman_resto/services/session_service.dart';
 import 'package:teman_resto/utils/restaurant_card_data.dart';
 import 'package:teman_resto/widgets/wishlist_button.dart';
@@ -30,8 +30,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   StreamSubscription<Position>? _locationSubscription;
   final _authService = AuthService();
   final _sessionService = SessionService();
-  final _partnerService = PartnerService();
-  late Future<List<PartnerModel>> _restaurantsFuture;
+  final _cache = AppDataCacheService();
+  List<PartnerModel> _restaurants = [];
+  bool _loadingRestaurants = false;
   Position? _currentPosition;
 
   static const Color _orange = Color(0xFFFF4F0F);
@@ -41,9 +42,34 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _restaurantsFuture = _partnerService.getRestaurants();
+    _restaurants = _cache.getCachedRestaurants(debugSource: 'HomePage.init');
+    _loadRestaurants();
     _currentPosition = LocationService.instance.latestPosition;
     _refreshDistancePosition();
+  }
+
+  Future<void> _loadRestaurants({bool forceRefresh = false}) async {
+    if (_loadingRestaurants) return;
+    if (_restaurants.isEmpty && mounted) {
+      setState(() {
+        _loadingRestaurants = true;
+      });
+    }
+
+    try {
+      final restaurants = await _cache.getOrLoadMainRestaurants(
+        forceRefresh: forceRefresh,
+        debugSource: 'HomePage',
+      );
+      if (!mounted) return;
+      setState(() {
+        _restaurants = restaurants;
+      });
+    } catch (e) {
+      debugPrint('[PRELOAD_DEBUG] data gagal dimuat (HomePage): $e');
+    } finally {
+      if (mounted) setState(() => _loadingRestaurants = false);
+    }
   }
 
   @override
@@ -395,143 +421,118 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Popular near you',
-                            style: TextStyle(
-                              fontFamily: _font,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0A0A0A),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SeeAllPage(
-                                  title: 'Popular near you',
-                                ),
-                              ),
-                            ),
-                            child: const Text(
-                              'See all',
+              child: RefreshIndicator(
+                color: _orange,
+                onRefresh: () => _loadRestaurants(forceRefresh: true),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Popular near you',
                               style: TextStyle(
                                 fontFamily: _font,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: _orange,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0A0A0A),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 270,
-                      child: FutureBuilder<List<PartnerModel>>(
-                        future: _restaurantsFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(
-                                color: _orange,
-                              ),
-                            );
-                          }
-
-                          if (snapshot.hasError) {
-                            return _emptyRestaurantState(height: 270);
-                          }
-
-                          final restaurants = snapshot.data ?? [];
-                          if (restaurants.isEmpty) {
-                            return _emptyRestaurantState(height: 270);
-                          }
-
-                          return _popularPartnerList(restaurants);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Another Restaurants',
-                            style: TextStyle(
-                              fontFamily: _font,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0A0A0A),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SeeAllPage(
-                                  title: 'Another Restaurants',
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SeeAllPage(
+                                    title: 'Popular near you',
+                                  ),
                                 ),
                               ),
-                            ),
-                            child: const Text(
-                              'See all',
-                              style: TextStyle(
-                                fontFamily: _font,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: _orange,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: FutureBuilder<List<PartnerModel>>(
-                        future: _restaurantsFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const SizedBox(
-                              height: 120,
-                              child: Center(
-                                child: CircularProgressIndicator(
+                              child: const Text(
+                                'See all',
+                                style: TextStyle(
+                                  fontFamily: _font,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
                                   color: _orange,
                                 ),
                               ),
-                            );
-                          }
-
-                          if (snapshot.hasError) {
-                            return _emptyRestaurantState();
-                          }
-
-                          final restaurants = snapshot.data ?? [];
-                          if (restaurants.isEmpty) {
-                            return _emptyRestaurantState();
-                          }
-
-                          return _anotherPartnerList(restaurants);
-                        },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 270,
+                        child: _loadingRestaurants && _restaurants.isEmpty
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: _orange,
+                                ),
+                              )
+                            : _restaurants.isEmpty
+                                ? _emptyRestaurantState(height: 270)
+                                : _popularPartnerList(_restaurants),
+                      ),
+                      const SizedBox(height: 32),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Another Restaurants',
+                              style: TextStyle(
+                                fontFamily: _font,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0A0A0A),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SeeAllPage(
+                                    title: 'Another Restaurants',
+                                  ),
+                                ),
+                              ),
+                              child: const Text(
+                                'See all',
+                                style: TextStyle(
+                                  fontFamily: _font,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: _orange,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _loadingRestaurants && _restaurants.isEmpty
+                            ? const SizedBox(
+                                height: 120,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: _orange,
+                                  ),
+                                ),
+                              )
+                            : _restaurants.isEmpty
+                                ? _emptyRestaurantState()
+                                : _anotherPartnerList(_restaurants),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

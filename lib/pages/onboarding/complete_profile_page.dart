@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../../config/cloudinary_config.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/image_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
@@ -86,6 +88,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       final updatedUser = await _authService.getUserData(currentUser.uid);
       if (updatedUser != null) {
         await _sessionService.saveUserSession(updatedUser);
+        unawaited(AppDataCacheService().preloadAfterLogin(user: updatedUser));
       }
 
       if (mounted) {

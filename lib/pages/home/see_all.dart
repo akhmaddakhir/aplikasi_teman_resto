@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/partner_model.dart';
-import '../../services/partner_service.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../utils/restaurant_card_data.dart';
 import '../../widgets/wishlist_button.dart';
 import '../restaurant/restaurant_detail.dart';
@@ -22,8 +22,9 @@ class SeeAllPage extends StatefulWidget {
 class _SeeAllPageState extends State<SeeAllPage> {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
-  final _partnerService = PartnerService();
-  late Future<List<PartnerModel>> _restaurantsFuture;
+  final _cache = AppDataCacheService();
+  List<PartnerModel> _restaurants = [];
+  bool _loadingRestaurants = false;
   Position? _currentPosition;
 
   String _selectedFilter = 'All';
@@ -38,8 +39,29 @@ class _SeeAllPageState extends State<SeeAllPage> {
   @override
   void initState() {
     super.initState();
-    _restaurantsFuture = _partnerService.getRestaurants();
+    _restaurants = _cache.getCachedRestaurants(debugSource: 'SeeAllPage.init');
+    _loadRestaurants();
     _loadCurrentPosition();
+  }
+
+  Future<void> _loadRestaurants({bool forceRefresh = false}) async {
+    if (_loadingRestaurants) return;
+    if (_restaurants.isEmpty && mounted) {
+      setState(() => _loadingRestaurants = true);
+    }
+
+    try {
+      final restaurants = await _cache.getOrLoadMainRestaurants(
+        forceRefresh: forceRefresh,
+        debugSource: 'SeeAllPage',
+      );
+      if (!mounted) return;
+      setState(() => _restaurants = restaurants);
+    } catch (e) {
+      debugPrint('[PRELOAD_DEBUG] data gagal dimuat (SeeAllPage): $e');
+    } finally {
+      if (mounted) setState(() => _loadingRestaurants = false);
+    }
   }
 
   Future<void> _loadCurrentPosition() async {
@@ -127,160 +149,154 @@ class _SeeAllPageState extends State<SeeAllPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<PartnerModel>>(
-      future: _restaurantsFuture,
-      builder: (context, snapshot) {
-        final hasError = snapshot.hasError;
-        final isLoading = snapshot.connectionState == ConnectionState.waiting;
-        final partnerRestaurants = hasError
-            ? const <Map<String, dynamic>>[]
-            : _fromPartners(snapshot.data ?? const <PartnerModel>[]);
-        final source = partnerRestaurants;
-        final filtered = _filtered(source);
+    final isLoading = _loadingRestaurants && _restaurants.isEmpty;
+    final partnerRestaurants = _fromPartners(_restaurants);
+    final source = partnerRestaurants;
+    final filtered = _filtered(source);
 
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.dark,
-          child: Scaffold(
-            backgroundColor: Colors.white,
-            body: SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── App Bar ──────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: Row(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── App Bar ──────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Row(
+                  children: [
+                    // Back button
+                    Row(
                       children: [
-                        // Back button
-                        Row(
-                          children: [
-                            InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () => Navigator.pop(context),
-                              child: const SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: Icon(
-                                  Icons.arrow_back_ios,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.title,
-                          style: const TextStyle(
-                            fontFamily: _font,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        const Spacer(),
-                        // Count badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0EB),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          child: Text(
-                            '${source.length} places',
-                            style: const TextStyle(
-                              fontFamily: _font,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: _orange,
+                        InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => Navigator.pop(context),
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(
+                              Icons.arrow_back_ios,
+                              size: 20,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ── Filter chips ─────────────────────────────────────
-                  SizedBox(
-                    height: 36,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: _filters.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (_, i) {
-                        final active = _selectedFilter == _filters[i];
-                        return GestureDetector(
-                          onTap: () =>
-                              setState(() => _selectedFilter = _filters[i]),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: active ? _orange : Colors.white,
-                              borderRadius: BorderRadius.circular(50),
-                              border: Border.all(
-                                color:
-                                    active ? _orange : const Color(0xFFF3F3F3),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Text(
-                              _filters[i],
-                              style: TextStyle(
-                                fontFamily: _font,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: active
-                                    ? Colors.white
-                                    : const Color(0xFF4A4A4A),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontFamily: _font,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0A0A0A),
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ── List ─────────────────────────────────────────────
-                  Expanded(
-                    child: isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(color: _orange),
-                          )
-                        : filtered.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'Belum ada restoran mitra',
-                                  style: TextStyle(
-                                    fontFamily: _font,
-                                    fontSize: 14,
-                                    color: Color(0xFF888888),
-                                  ),
-                                ),
-                              )
-                            : ListView.separated(
-                                padding:
-                                    const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                                itemCount: filtered.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 14),
-                                itemBuilder: (_, i) =>
-                                    _SeeAllCard(data: filtered[i]),
-                              ),
-                  ),
-                ],
+                    const Spacer(),
+                    // Count badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF0EB),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Text(
+                        '${source.length} places',
+                        style: const TextStyle(
+                          fontFamily: _font,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _orange,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+
+              const SizedBox(height: 16),
+
+              // ── Filter chips ─────────────────────────────────────
+              SizedBox(
+                height: 36,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  itemCount: _filters.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) {
+                    final active = _selectedFilter == _filters[i];
+                    return GestureDetector(
+                      onTap: () =>
+                          setState(() => _selectedFilter = _filters[i]),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: active ? _orange : Colors.white,
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(
+                            color: active ? _orange : const Color(0xFFF3F3F3),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Text(
+                          _filters[i],
+                          style: TextStyle(
+                            fontFamily: _font,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                active ? Colors.white : const Color(0xFF4A4A4A),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ── List ─────────────────────────────────────────────
+              Expanded(
+                child: RefreshIndicator(
+                  color: _orange,
+                  onRefresh: () => _loadRestaurants(forceRefresh: true),
+                  child: isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: _orange),
+                        )
+                      : filtered.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Belum ada restoran mitra',
+                                style: TextStyle(
+                                  fontFamily: _font,
+                                  fontSize: 14,
+                                  color: Color(0xFF888888),
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 14),
+                              itemBuilder: (_, i) =>
+                                  _SeeAllCard(data: filtered[i]),
+                            ),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

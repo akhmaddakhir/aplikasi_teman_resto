@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../config/cloudinary_config.dart';
 import '../../models/partner_model.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/image_service.dart';
 import 'partner_theme.dart';
 
@@ -21,11 +22,13 @@ class _MenuManagePageState extends State<MenuManagePage> {
 
   final _firestore = FirebaseFirestore.instance;
   final _imageService = ImageService();
+  final _cache = AppDataCacheService();
 
   Stream<QuerySnapshot<Map<String, dynamic>>> get _menuStream => _firestore
       .collection('restaurants')
       .doc(widget.partner.id)
       .collection('menus')
+      .limit(100)
       .snapshots();
 
   String _formatPriceIndonesian(int price) {
@@ -41,9 +44,11 @@ class _MenuManagePageState extends State<MenuManagePage> {
     return chunks.join('.').split('').reversed.join();
   }
 
-  Future<void> _showMenuSheet(
-      {DocumentSnapshot<Map<String, dynamic>>? doc}) async {
-    final data = doc?.data() ?? {};
+  Future<void> _showMenuSheet({
+    DocumentSnapshot<Map<String, dynamic>>? doc,
+    CachedFirestoreDocument? cachedDoc,
+  }) async {
+    final data = doc?.data() ?? cachedDoc?.data ?? {};
     final nameCtrl = TextEditingController(text: data['name'] as String? ?? '');
     // Remove dots from formatted price for editing
     final priceText = data['price'] == null
@@ -78,7 +83,8 @@ class _MenuManagePageState extends State<MenuManagePage> {
             setModal(() => saving = true);
             try {
               // Generate custom ID for new menu
-              String menuId = doc?.id ?? await _generateMenuId();
+              String menuId =
+                  doc?.id ?? cachedDoc?.id ?? await _generateMenuId();
 
               if (pickedImage != null) {
                 imageUrl = await _imageService.uploadProfileImage(
@@ -405,8 +411,10 @@ class _MenuManagePageState extends State<MenuManagePage> {
   }
 
   void _confirmDeleteMenu(
-      BuildContext context, DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
+    BuildContext context,
+    String menuId,
+    Map<String, dynamic> data,
+  ) {
     final menuName = data['name'] as String? ?? 'menu';
 
     showDialog(
@@ -477,7 +485,7 @@ class _MenuManagePageState extends State<MenuManagePage> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        _deleteMenu(doc.id);
+                        _deleteMenu(menuId);
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
@@ -535,6 +543,262 @@ class _MenuManagePageState extends State<MenuManagePage> {
     });
   }
 
+  List<CachedFirestoreDocument> _snapshotToCacheDocs(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    return docs
+        .map(
+          (doc) => CachedFirestoreDocument(
+            id: doc.id,
+            data: Map<String, dynamic>.from(doc.data()),
+          ),
+        )
+        .toList();
+  }
+
+  List<_MenuEntry> _cachedMenuEntries() {
+    return _cache
+        .getCachedMenusForRestaurant(
+          widget.partner.id,
+          debugSource: 'MenuManagePage',
+        )
+        .map(_MenuEntry.fromCached)
+        .toList();
+  }
+
+  Widget _buildMenuList(List<_MenuEntry> entries) {
+    if (entries.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: _orange.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.restaurant_menu_rounded,
+                color: _orange,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Belum ada menu',
+              style: TextStyle(
+                fontFamily: _font,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tambahkan menu untuk restoran Anda',
+              style: TextStyle(
+                fontFamily: _font,
+                fontSize: 14,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      itemCount: entries.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, i) {
+        final entry = entries[i];
+        final data = entry.data;
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.28),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: (data['imageUrl'] as String?)?.isNotEmpty == true
+                          ? Image.network(
+                              data['imageUrl'],
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 80,
+                              height: 80,
+                              color: const Color(0xFFFFF1EC),
+                              child: const Icon(
+                                Icons.restaurant_menu,
+                                color: _orange,
+                                size: 32,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            data['name'] as String? ?? '-',
+                            style: const TextStyle(
+                              fontFamily: _font,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(
+                        Icons.more_vert_rounded,
+                        color: Color(0xFFBBBBBB),
+                        size: 20,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showMenuSheet(
+                            doc: entry.snapshot,
+                            cachedDoc: entry.cachedDoc,
+                          );
+                        } else if (value == 'delete') {
+                          _confirmDeleteMenu(context, entry.id, data);
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<String>(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.edit_outlined,
+                                  size: 18, color: Color(0xFF1A1A1A)),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Edit',
+                                style: TextStyle(
+                                  fontFamily: _font,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.delete_outline_rounded,
+                                size: 18,
+                                color: Color(0xFFE24B4A),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Hapus',
+                                style: TextStyle(
+                                  fontFamily: _font,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFE24B4A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(
+                  children: [
+                    Icon(Icons.local_offer_outlined,
+                        size: 16, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Rp ${data['price'] ?? 0}  -  ${data['category'] as String? ?? ''}',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          fontSize: 14,
+                          color: const Color(0xFF555555),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(Icons.description_outlined,
+                          size: 14, color: Colors.grey.shade500),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        data['description'] as String? ?? '',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          fontSize: 14,
+                          color: const Color(0xFF777777),
+                          height: 1.5,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PartnerTheme.wrap(
@@ -571,10 +835,20 @@ class _MenuManagePageState extends State<MenuManagePage> {
                   stream: _menuStream,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
+                      final cachedEntries = _cachedMenuEntries();
+                      if (cachedEntries.isNotEmpty) {
+                        return _buildMenuList(cachedEntries);
+                      }
                       return const Center(
                           child: CircularProgressIndicator(color: _orange));
                     }
                     final docs = snapshot.data?.docs ?? [];
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _cache.setMenusForRestaurant(
+                        widget.partner.id,
+                        _snapshotToCacheDocs(docs),
+                      );
+                    });
                     if (docs.isEmpty) {
                       return Center(
                         child: Column(
@@ -700,7 +974,11 @@ class _MenuManagePageState extends State<MenuManagePage> {
                                         if (value == 'edit') {
                                           _showMenuSheet(doc: doc);
                                         } else if (value == 'delete') {
-                                          _confirmDeleteMenu(context, doc);
+                                          _confirmDeleteMenu(
+                                            context,
+                                            doc.id,
+                                            data,
+                                          );
                                         }
                                       },
                                       itemBuilder: (BuildContext context) => [
@@ -824,6 +1102,28 @@ class _MenuManagePageState extends State<MenuManagePage> {
     return const PartnerPageHeader(
       title: 'Kelola Menu',
       subtitle: 'Tambah dan ubah menu',
+    );
+  }
+}
+
+class _MenuEntry {
+  final String id;
+  final Map<String, dynamic> data;
+  final DocumentSnapshot<Map<String, dynamic>>? snapshot;
+  final CachedFirestoreDocument? cachedDoc;
+
+  const _MenuEntry({
+    required this.id,
+    required this.data,
+    this.snapshot,
+    this.cachedDoc,
+  });
+
+  factory _MenuEntry.fromCached(CachedFirestoreDocument doc) {
+    return _MenuEntry(
+      id: doc.id,
+      data: doc.data,
+      cachedDoc: doc,
     );
   }
 }

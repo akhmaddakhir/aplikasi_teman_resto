@@ -5,13 +5,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/malang_restaurant_locations.dart';
-import '../../models/partner_model.dart';
 import '../../models/route_model.dart';
 import '../../models/route_step_model.dart';
 import '../../services/navigation_service.dart';
+import '../../services/partner_service.dart';
 import '../../services/route_service.dart';
 
 class NavigatePage extends StatefulWidget {
@@ -56,7 +55,7 @@ class _NavigatePageState extends State<NavigatePage>
   bool _isLoadingRoute = false;
   String? _routeError;
   final TextEditingController _searchCtrl = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final PartnerService _partnerService = PartnerService();
   late final RouteService _routeService;
   StreamSubscription<Position>? _positionSubscription;
   late SharedPreferences _prefs;
@@ -316,17 +315,12 @@ class _NavigatePageState extends State<NavigatePage>
     setState(() => _isLoadingRestaurants = true);
 
     try {
-      final querySnapshot = await _firestore.collection('restaurants').get();
+      final partnerRestaurants = await _partnerService.getRestaurants();
 
       final restaurants = <_RestaurantData>[];
 
-      for (final doc in querySnapshot.docs) {
+      for (final partner in partnerRestaurants) {
         try {
-          final data = doc.data();
-          final partner = PartnerModel.fromFirestore({
-            ...data,
-            'id': doc.id,
-          });
           final knownLocation = findMalangRestaurantLocation(
             restaurantName: partner.restaurantName,
             restaurantAddress: partner.address,
@@ -337,31 +331,15 @@ class _NavigatePageState extends State<NavigatePage>
           double lng = knownLocation?.longitude ?? 112.6326;
 
           // Validasi dan parse latitude
-          if (data['latitude'] != null) {
-            try {
-              lat = (data['latitude'] as num).toDouble();
-              // Validasi: check NaN, Infinity, dan range latitude
-              if (!lat.isFinite || lat < -90 || lat > 90) {
-                lat = -7.9666;
-              }
-            } catch (e) {
-              print('Error parsing latitude: $e');
-              lat = -7.9666;
-            }
+          if (partner.latitude != null) {
+            lat = partner.latitude!;
+            if (!lat.isFinite || lat < -90 || lat > 90) lat = -7.9666;
           }
 
           // Validasi dan parse longitude
-          if (data['longitude'] != null) {
-            try {
-              lng = (data['longitude'] as num).toDouble();
-              // Validasi: check NaN, Infinity, dan range longitude
-              if (!lng.isFinite || lng < -180 || lng > 180) {
-                lng = 112.6326;
-              }
-            } catch (e) {
-              print('Error parsing longitude: $e');
-              lng = 112.6326;
-            }
+          if (partner.longitude != null) {
+            lng = partner.longitude!;
+            if (!lng.isFinite || lng < -180 || lng > 180) lng = 112.6326;
           }
 
           // Double check validity sebelum add

@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../models/partner_model.dart';
 import '../../models/wishlist_item_model.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/location_service.dart';
 import '../../services/wishlist_service.dart';
 import '../../utils/restaurant_card_data.dart';
@@ -18,16 +19,42 @@ class WishlistPage extends StatefulWidget {
 class WishlistState extends State<WishlistPage> {
   static const Color _orange = Color(0xFFFF4F0F);
   static const String _font = 'Inter';
-  final _wishlistService = WishlistService();
+  final _cache = AppDataCacheService();
 
   String selectedCuisine = 'All';
   Position? _currentPosition;
+  bool _loadingWishlist = false;
+  String? _wishlistError;
 
   @override
   void initState() {
     super.initState();
     _currentPosition = LocationService.instance.latestPosition;
     _refreshCardChipPosition();
+    _loadWishlist();
+  }
+
+  Future<void> _loadWishlist({bool forceRefresh = false}) async {
+    final cached =
+        _cache.getCachedWishlistItems(debugSource: 'WishlistPage.init');
+    if (cached.isEmpty && mounted) {
+      setState(() {
+        _loadingWishlist = true;
+        _wishlistError = null;
+      });
+    }
+
+    try {
+      await _cache.getOrLoadWishlistItems(
+        forceRefresh: forceRefresh,
+        debugSource: 'WishlistPage',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _wishlistError = e.toString());
+    } finally {
+      if (mounted) setState(() => _loadingWishlist = false);
+    }
   }
 
   Future<void> _refreshCardChipPosition() async {
@@ -44,33 +71,48 @@ class WishlistState extends State<WishlistPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(16, 24, 16, 0),
-              child: Center(
-                child: Text(
-                  'Wishlist',
-                  style: TextStyle(
-                    fontFamily: _font,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0A0A0A),
+              child: Row(
+                children: [
+                  const SizedBox(width: 48),
+                  const Expanded(
+                    child: Text(
+                      'Wishlist',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: _font,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0A0A0A),
+                      ),
+                    ),
                   ),
-                ),
+                  IconButton(
+                    onPressed: () => _loadWishlist(forceRefresh: true),
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: StreamBuilder<List<WishlistItemModel>>(
-                stream: _wishlistService.streamWishlistItems(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+              child: AnimatedBuilder(
+                animation: _cache,
+                builder: (context, _) {
+                  final wishlistItems = _cache.getCachedWishlistItems(
+                    debugSource: 'WishlistPage',
+                  );
+                  if (_loadingWishlist && wishlistItems.isEmpty) {
                     return const Center(
                       child: CircularProgressIndicator(color: _orange),
                     );
                   }
 
-                  final wishlistItems =
-                      snapshot.data ?? const <WishlistItemModel>[];
+                  if (_wishlistError != null && wishlistItems.isEmpty) {
+                    return _buildEmptyState(message: 'Gagal memuat wishlist.');
+                  }
+
                   final cuisineFilters = _cuisineFiltersFor(wishlistItems);
                   final activeCuisine = cuisineFilters.contains(selectedCuisine)
                       ? selectedCuisine
@@ -140,15 +182,21 @@ class WishlistState extends State<WishlistPage> {
                       Expanded(
                         child: filtered.isEmpty
                             ? _buildEmptyState()
-                            : ListView.separated(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 0, 16, 112),
-                                itemCount: filtered.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 16),
-                                itemBuilder: (context, index) => _WishlistCard(
-                                  item: filtered[index],
-                                  currentPosition: _currentPosition,
+                            : RefreshIndicator(
+                                color: _orange,
+                                onRefresh: () =>
+                                    _loadWishlist(forceRefresh: true),
+                                child: ListView.separated(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(16, 0, 16, 112),
+                                  itemCount: filtered.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 16),
+                                  itemBuilder: (context, index) =>
+                                      _WishlistCard(
+                                    item: filtered[index],
+                                    currentPosition: _currentPosition,
+                                  ),
                                 ),
                               ),
                       ),
@@ -172,7 +220,8 @@ class WishlistState extends State<WishlistPage> {
     return ['All', ...cuisines.toList()..sort()];
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(
+      {String message = 'Restaurants you save will appear here.'}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -201,8 +250,8 @@ class WishlistState extends State<WishlistPage> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Restaurants you save will appear here.',
+          Text(
+            message,
             style: TextStyle(
               fontFamily: _font,
               fontSize: 14,

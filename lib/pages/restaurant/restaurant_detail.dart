@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/partner_model.dart';
+import '../../services/app_data_cache_service.dart';
 import '../../services/review_service.dart';
 import '../../services/session_service.dart';
 import '../../utils/restaurant_card_data.dart';
@@ -29,6 +29,7 @@ class RestaurantDetailState extends State<RestaurantDetail>
   late TabController _tabController;
   late final FocusNode _menuSearchFocusNode;
   final _sessionService = SessionService();
+  final _cache = AppDataCacheService();
   final _reviewService = ReviewService();
   StreamSubscription<List<Map<String, dynamic>>>? _reviewsSubscription;
   String selectedFilter = 'Most relevant';
@@ -172,30 +173,25 @@ class RestaurantDetailState extends State<RestaurantDetail>
 
   Future<void> _loadRestaurantMenus() async {
     if (_restaurantId.isEmpty) return;
+    final cached = _cache.getCachedMenusForRestaurant(
+      _restaurantId,
+      debugSource: 'RestaurantDetail',
+    );
+    if (cached.isNotEmpty) {
+      setState(() {
+        _firestoreMenuItems = _menuDocsToItems(cached);
+        _loadingMenus = false;
+      });
+      return;
+    }
+
     setState(() => _loadingMenus = true);
     try {
-      final query = await FirebaseFirestore.instance
-          .collection('restaurants')
-          .doc(_restaurantId)
-          .collection('menus')
-          .get();
-
-      final menus = query.docs.map((doc) {
-        final data = doc.data();
-        final price = data['price']?.toString() ?? '0';
-        final cleanPrice =
-            price.replaceAll('.', '').replaceAll('Rp', '').trim();
-        return {
-          'name': data['name']?.toString() ?? 'Menu',
-          'price': price.startsWith('Rp') ? price : 'Rp $price',
-          'priceNum': int.tryParse(cleanPrice) ?? 0,
-          'image': data['imageUrl']?.toString().isNotEmpty == true
-              ? data['imageUrl'].toString()
-              : 'assets/images/gambar_makanan_2.jfif',
-          'category': data['category']?.toString().toUpperCase() ?? 'MENU',
-          'description': data['description']?.toString() ?? '',
-        };
-      }).toList();
+      final docs = await _cache.getOrLoadMenusForRestaurant(
+        _restaurantId,
+        debugSource: 'RestaurantDetail',
+      );
+      final menus = _menuDocsToItems(docs);
 
       if (!mounted) return;
       setState(() {
@@ -206,6 +202,26 @@ class RestaurantDetailState extends State<RestaurantDetail>
       if (!mounted) return;
       setState(() => _loadingMenus = false);
     }
+  }
+
+  List<Map<String, dynamic>> _menuDocsToItems(
+    List<CachedFirestoreDocument> docs,
+  ) {
+    return docs.map((doc) {
+      final data = doc.data;
+      final price = data['price']?.toString() ?? '0';
+      final cleanPrice = price.replaceAll('.', '').replaceAll('Rp', '').trim();
+      return {
+        'name': data['name']?.toString() ?? 'Menu',
+        'price': price.startsWith('Rp') ? price : 'Rp $price',
+        'priceNum': int.tryParse(cleanPrice) ?? 0,
+        'image': data['imageUrl']?.toString().isNotEmpty == true
+            ? data['imageUrl'].toString()
+            : 'assets/images/gambar_makanan_2.jfif',
+        'category': data['category']?.toString().toUpperCase() ?? 'MENU',
+        'description': data['description']?.toString() ?? '',
+      };
+    }).toList();
   }
 
   void _listenRestaurantReviews() {

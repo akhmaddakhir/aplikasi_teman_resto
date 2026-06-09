@@ -1,6 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/partner_model.dart';
+import '../../services/app_data_cache_service.dart';
+import '../../services/partner_service.dart';
 import '../../services/reservation_service.dart';
 import '../../utils/restaurant_card_data.dart';
 import '../booking/booking_cancelled.dart';
@@ -22,14 +23,15 @@ class OrdersPageState extends State<OrdersPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _reservationService = ReservationService();
-  final _firestore = FirebaseFirestore.instance;
-  String? _ordersSignature;
+  final _partnerService = PartnerService();
+  final _cache = AppDataCacheService();
   Future<List<_BookingOrder>>? _ordersFuture;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _ordersFuture = _loadOrders();
   }
 
   @override
@@ -39,30 +41,30 @@ class OrdersPageState extends State<OrdersPage>
   }
 
   Future<List<_BookingOrder>> _hydrateOrders(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+    List<CachedFirestoreDocument> docs,
   ) async {
     final restaurantIds = docs
-        .map((doc) => doc.data()['restaurantId'] as String?)
+        .map((doc) => doc.data['restaurantId'] as String?)
         .whereType<String>()
         .where((id) => id.trim().isNotEmpty)
         .toSet();
 
     final restaurants = <String, PartnerModel>{};
     await Future.wait(restaurantIds.map((id) async {
-      try {
-        final snap = await _firestore.collection('restaurants').doc(id).get();
-        final data = snap.data();
-        if (data != null) {
-          restaurants[id] = PartnerModel.fromFirestore({...data, 'id': id});
-        }
-      } catch (_) {
-        // Reservation data is still usable even when restaurant metadata
-        // cannot be read, for example because the partner is no longer active.
+      final cached = _cache.getRestaurantById(
+        id,
+        debugSource: 'OrdersPage._hydrateOrders',
+      );
+      if (cached != null) {
+        restaurants[id] = cached;
+        return;
       }
+      final restaurant = await _partnerService.getPartnerByRestaurantId(id);
+      if (restaurant != null) restaurants[id] = restaurant;
     }));
 
     final orders = docs.map((doc) {
-      final data = doc.data();
+      final data = doc.data;
       final restaurantId = data['restaurantId'] as String? ?? '';
       return _BookingOrder.fromFirestore(
         id: doc.id,
@@ -79,18 +81,19 @@ class OrdersPageState extends State<OrdersPage>
     return orders;
   }
 
-  Future<List<_BookingOrder>> _ordersFutureFor(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
-  ) {
-    final signature = docs
-        .map((doc) =>
-            '${doc.id}:${doc.data()['updatedAt'] ?? ''}:${doc.data()['status'] ?? ''}')
-        .join('|');
-    if (_ordersFuture == null || _ordersSignature != signature) {
-      _ordersSignature = signature;
-      _ordersFuture = _hydrateOrders(docs);
-    }
-    return _ordersFuture!;
+  Future<List<_BookingOrder>> _loadOrders({bool forceRefresh = false}) async {
+    final docs = await _reservationService.getCurrentUserReservationDocs(
+      forceRefresh: forceRefresh,
+    );
+    return _hydrateOrders(docs);
+  }
+
+  Future<void> _refreshOrders() async {
+    final future = _loadOrders(forceRefresh: true);
+    setState(() {
+      _ordersFuture = future;
+    });
+    await future;
   }
 
   Map<_OrderBucket, List<_BookingOrder>> _groupOrders(
@@ -146,7 +149,11 @@ class OrdersPageState extends State<OrdersPage>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 44),
+                  IconButton(
+                    onPressed: _refreshOrders,
+                    icon: const Icon(Icons.refresh_rounded),
+                    color: const Color(0xFF0D0D0D),
+                  ),
                 ],
               ),
             ),
@@ -172,8 +179,8 @@ class OrdersPageState extends State<OrdersPage>
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _reservationService.streamCurrentUserReservations(),
+              child: FutureBuilder<List<_BookingOrder>>(
+                future: _ordersFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -190,45 +197,23 @@ class OrdersPageState extends State<OrdersPage>
                     );
                   }
 
-                  final docs = snapshot.data?.docs ?? [];
-                  return FutureBuilder<List<_BookingOrder>>(
-                    future: _ordersFutureFor(docs),
-                    builder: (context, hydratedSnapshot) {
-                      if (hydratedSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFFFF4F0F),
-                          ),
-                        );
-                      }
-                      if (hydratedSnapshot.hasError) {
-                        return _emptyState(
-                          Icons.error_outline_rounded,
-                          'Gagal memuat detail booking',
-                          hydratedSnapshot.error.toString(),
-                        );
-                      }
-
-                      final grouped = _groupOrders(hydratedSnapshot.data ?? []);
-                      return TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildOrdersList(
-                            grouped[_OrderBucket.active]!,
-                            _OrderBucket.active,
-                          ),
-                          _buildOrdersList(
-                            grouped[_OrderBucket.completed]!,
-                            _OrderBucket.completed,
-                          ),
-                          _buildOrdersList(
-                            grouped[_OrderBucket.cancelled]!,
-                            _OrderBucket.cancelled,
-                          ),
-                        ],
-                      );
-                    },
+                  final grouped = _groupOrders(snapshot.data ?? []);
+                  return TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildOrdersList(
+                        grouped[_OrderBucket.active]!,
+                        _OrderBucket.active,
+                      ),
+                      _buildOrdersList(
+                        grouped[_OrderBucket.completed]!,
+                        _OrderBucket.completed,
+                      ),
+                      _buildOrdersList(
+                        grouped[_OrderBucket.cancelled]!,
+                        _OrderBucket.cancelled,
+                      ),
+                    ],
                   );
                 },
               ),
@@ -257,7 +242,7 @@ class OrdersPageState extends State<OrdersPage>
       };
       return _emptyState(Icons.event_note_rounded, label, subtitle);
     }
- 
+
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       itemCount: orders.length,

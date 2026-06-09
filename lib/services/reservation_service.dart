@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/restaurant_area_model.dart';
+import 'app_data_cache_service.dart';
 import 'notification_service.dart';
 
 class ReservationService {
@@ -24,7 +27,15 @@ class ReservationService {
       return restaurantId.trim();
     }
 
-    final query = await _firestore.collection('restaurants').limit(1).get();
+    final cached = AppDataCacheService().getCachedRestaurants(
+        debugSource: 'ReservationService.resolveRestaurantId');
+    if (cached.isNotEmpty) return cached.first.id;
+
+    final query = await _firestore
+        .collection('restaurants')
+        .where('status', whereIn: ['active', 'approved'])
+        .limit(1)
+        .get();
     if (query.docs.isEmpty) return null;
     return query.docs.first.id;
   }
@@ -32,12 +43,20 @@ class ReservationService {
   Future<List<RestaurantArea>> getAvailableAreas({
     required String restaurantId,
   }) async {
+    final cached = AppDataCacheService().getCachedAreasForRestaurant(
+      restaurantId,
+      activeOnly: true,
+      debugSource: 'ReservationService.getAvailableAreas',
+    );
+    if (cached.isNotEmpty) return cached;
+
     final areasQuery = await _firestore
         .collection('restaurant_areas')
         .where('restaurantId', isEqualTo: restaurantId)
         .where('isActive', isEqualTo: true)
+        .limit(50)
         .get();
-    return areasQuery.docs
+    final areas = areasQuery.docs
         .map((doc) => RestaurantArea.fromFirestore({
               ...doc.data(),
               'id': doc.id,
@@ -45,6 +64,12 @@ class ReservationService {
             }))
         .toList()
       ..sort((a, b) => a.areaName.compareTo(b.areaName));
+    AppDataCacheService().setAreasForRestaurant(
+      restaurantId,
+      areas,
+      includesInactive: false,
+    );
+    return areas;
   }
 
   Future<DocumentReference<Map<String, dynamic>>> createReservation({
@@ -147,7 +172,18 @@ class ReservationService {
       },
     );
 
+    unawaited(AppDataCacheService().refreshData());
+
     return reservationRef;
+  }
+
+  Future<List<CachedFirestoreDocument>> getCurrentUserReservationDocs({
+    bool forceRefresh = false,
+  }) {
+    return AppDataCacheService().getOrLoadUserBookings(
+      forceRefresh: forceRefresh,
+      debugSource: 'ReservationService.getCurrentUserReservationDocs',
+    );
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> streamCurrentUserReservations() {
@@ -159,6 +195,7 @@ class ReservationService {
     return _firestore
         .collection('reservations')
         .where('userId', isEqualTo: user.uid)
+        .limit(50)
         .snapshots();
   }
 
@@ -168,6 +205,7 @@ class ReservationService {
     return _firestore
         .collection('reservations')
         .where('restaurantId', isEqualTo: restaurantId)
+        .limit(100)
         .snapshots();
   }
 
@@ -191,6 +229,7 @@ class ReservationService {
       batch.delete(_firestore.collection('reservation_locks').doc(lockId));
     }
     await batch.commit();
+    unawaited(AppDataCacheService().refreshData());
 
     if (currentStatus != normalizedStatus) {
       final userId = data['customUserId'] as String?;
@@ -233,6 +272,7 @@ class ReservationService {
       batch.delete(_firestore.collection('reservation_locks').doc(lockId));
     }
     await batch.commit();
+    unawaited(AppDataCacheService().refreshData());
 
     if (currentStatus != 'cancelled') {
       final userId = data['customUserId'] as String?;
